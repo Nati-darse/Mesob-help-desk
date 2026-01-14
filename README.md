@@ -167,18 +167,16 @@ cd client
 npm run dev
 Access the Application
 
-Frontend: http://localhost:3000
+Frontend: http://localhost:5173
 
 Backend API: http://localhost:5000
 
-👤 Default User Accounts
-After setting up, use these credentials to test different roles:
+### 👤 Testing the System
+Since the database starts empty, the **first user you register will automatically be given the Admin role**. 
 
-Role	Email	Password	Permissions
-Admin	admin@mesob.com	admin123	Full system access
-Team Lead	lead@mesob.com	lead123	Manage tickets & assignments
-Technician	tech@mesob.com	tech123	Handle assigned tickets
-Worker	worker@mesob.com	worker123	Create & track tickets
+1. **Register** a new account at `http://localhost:5173/register`
+2. **Login** with that account.
+3. You will have full access to create tickets, assign them, and view the dashboard.
 📡 API Documentation
 Authentication
 POST /api/auth/register - Register new user
