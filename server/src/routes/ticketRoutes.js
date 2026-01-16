@@ -9,10 +9,13 @@ const {
     addComment,
     resolveTicket,
     rateTicket,
+    addWorkLog,
 } = require('../controllers/ticketController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
 
 router.use(protect); // All ticket routes are protected
+router.use(enforceMaintenance);
 
 router.route('/')
     .post(createTicket)
@@ -26,5 +29,6 @@ router.put('/:id/assign', authorize('Team Lead', 'Admin'), assignTicket);
 router.post('/:id/comment', addComment);
 router.put('/:id/resolve', authorize('Technician', 'Admin'), resolveTicket);
 router.put('/:id/rate', rateTicket);
+router.post('/:id/worklog', authorize('Technician', 'Admin'), addWorkLog);
 
 module.exports = router;

@@ -13,7 +13,7 @@ const ticketSchema = new mongoose.Schema({
     category: {
         type: String,
         required: [true, 'Please add a category'],
-        enum: ['Software', 'Hardware', 'Network', 'Account', 'Other'],
+        enum: ['Software', 'Hardware', 'Network', 'Account', 'Building', 'Other'],
     },
     priority: {
         type: String,
@@ -39,6 +39,13 @@ const ticketSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    companyId: {
+        type: Number,
+        required: true,
+    },
+    buildingWing: {
+        type: String,
+    },
     attachments: [{
         filename: String,
         path: String,
@@ -61,6 +68,17 @@ const ticketSchema = new mongoose.Schema({
         max: 5,
     },
     feedback: String,
+    workLog: [{
+        note: String,
+        technician: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now,
+        },
+    }],
     createdAt: {
         type: Date,
         default: Date.now,
@@ -71,7 +89,8 @@ const ticketSchema = new mongoose.Schema({
     },
 });
 
-// Update the updatedAt field on save
+ticketSchema.index({ companyId: 1, status: 1, createdAt: -1 });
+
 ticketSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
     next();

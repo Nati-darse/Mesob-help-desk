@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Container, Paper, TextField, Button, Typography, Box, Link, Alert, MenuItem } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.png';
+import { COMPANIES } from '../../../utils/companies';
+import { ROLES } from '../../../constants/roles';
+import logo from '../../../assets/logo.png';
 
 const departments = [
     'IT Support',
@@ -18,12 +20,28 @@ const Register = () => {
         email: '',
         password: '',
         department: '',
+        companyId: '',
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const { register } = useAuth();
     const navigate = useNavigate();
+
+    const getRedirectPath = (role) => {
+        switch (role) {
+            case ROLES.SYSTEM_ADMIN:
+                return '/sys-admin';
+            case ROLES.SUPER_ADMIN:
+                return '/admin';
+            case ROLES.TECHNICIAN:
+                return '/tech';
+            case ROLES.EMPLOYEE:
+                return '/portal';
+            default:
+                return '/dashboard';
+        }
+    };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -36,7 +54,8 @@ const Register = () => {
 
         const result = await register(formData);
         if (result.success) {
-            navigate('/');
+            const redirectPath = getRedirectPath(result.user.role);
+            navigate(redirectPath);
         } else {
             setError(result.message);
         }
@@ -44,8 +63,8 @@ const Register = () => {
     };
 
     return (
-        <Container maxWidth="xs" sx={{ mt: 4, mb: 4 }}>
-            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', border: '1px solid #eee', borderRadius: 2 }}>
+        <Container maxWidth="xs" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
+            <Paper elevation={0} sx={{ p: 4, width: '100%', textAlign: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                 <Box sx={{ mb: 2 }}>
                     <img src={logo} alt="Mesob Logo" style={{ height: 60 }} />
                 </Box>
@@ -91,6 +110,23 @@ const Register = () => {
                         {departments.map((option) => (
                             <MenuItem key={option} value={option}>
                                 {option}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                    <TextField
+                        fullWidth
+                        select
+                        label="Select Bureau / Organization"
+                        name="companyId"
+                        variant="outlined"
+                        margin="normal"
+                        required
+                        value={formData.companyId}
+                        onChange={handleChange}
+                    >
+                        {COMPANIES.map((option) => (
+                            <MenuItem key={option.id} value={option.id}>
+                                {option.name}
                             </MenuItem>
                         ))}
                     </TextField>

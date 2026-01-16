@@ -2,10 +2,15 @@ const Ticket = require('../models/Ticket');
 const User = require('../models/User');
 const { sendEmail, sendSMS } = require('../services/notificationService');
 
-// Helper to emit socket events
 const emitUpdate = (req, event, data) => {
     const io = req.app.get('io');
-    if (io) io.emit(event, data);
+    if (!io) return;
+    const cid = (data && data.companyId) || req.tenantId || (req.user && req.user.companyId);
+    if (cid) {
+        io.to(`company:${cid}`).emit(event, data);
+    } else {
+        io.emit(event, data);
+    }
 };
 
 // @desc    Create new ticket
@@ -13,14 +18,16 @@ const emitUpdate = (req, event, data) => {
 // @access  Private (Worker)
 exports.createTicket = async (req, res) => {
     try {
-        const { title, description, category, priority } = req.body;
+        const { title, description, category, priority, buildingWing, companyId } = req.body;
 
         const ticket = await Ticket.create({
             title,
             description,
             category,
             priority,
-            requester: req.user.id,
+            buildingWing,
+            companyId: companyId || req.tenantId || req.user.companyId || 1,
+            requester: req.user._id,
             department: req.user.department,
         });
 
@@ -49,15 +56,34 @@ exports.getTickets = async (req, res) => {
 
         // Filter by role
         if (req.user.role === 'Worker') {
-            query = Ticket.find({ requester: req.user.id });
+            const base = { requester: req.user._id };
+            const scoped = req.tenantId ? { ...base, companyId: req.tenantId } : base;
+            query = Ticket.find(scoped);
         } else if (req.user.role === 'Technician') {
-            query = Ticket.find({ technician: req.user.id });
+            const base = { technician: req.user._id };
+            const scoped = req.tenantId ? { ...base, companyId: req.tenantId } : base;
+            query = Ticket.find(scoped);
         } else {
-            // Admin or Team Lead can see all
-            query = Ticket.find();
+            const scoped = req.tenantId ? { companyId: req.tenantId } : {};
+            query = Ticket.find(scoped);
         }
 
-        const tickets = await query.populate('requester', 'name email department').populate('technician', 'name email');
+        const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+        const pageSize = Math.max(parseInt(req.query.pageSize || '20', 10), 1);
+
+        const total = await Ticket.countDocuments(query.getQuery());
+
+        const tickets = await query
+            .select('title status priority companyId createdAt') // projection for table views
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * pageSize)
+            .limit(pageSize)
+            .lean();
+
+        // Non-breaking change: return array, but include pagination via headers
+        res.set('X-Total-Count', String(total));
+        res.set('X-Page', String(page));
+        res.set('X-Page-Size', String(pageSize));
         res.json(tickets);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -79,7 +105,7 @@ exports.getTicket = async (req, res) => {
         }
 
         // Check if user is authorized to see this ticket
-        if (req.user.role === 'Worker' && ticket.requester._id.toString() !== req.user.id) {
+        if (req.user.role === 'Worker' && ticket.requester._id.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized to access this ticket' });
         }
 
@@ -105,6 +131,7 @@ exports.updateTicket = async (req, res) => {
             runValidators: true,
         });
 
+        emitUpdate(req, 'ticket_updated', ticket);
         res.json(ticket);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -163,7 +190,7 @@ exports.addComment = async (req, res) => {
         }
 
         const comment = {
-            user: req.user.id,
+            user: req.user._id,
             text,
         };
 
@@ -214,6 +241,29 @@ exports.rateTicket = async (req, res) => {
         ticket.status = 'Closed';
         await ticket.save();
 
+        emitUpdate(req, 'ticket_updated', ticket);
+        res.json(ticket);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+// @desc    Add work log entry
+// @route   POST /api/tickets/:id/worklog
+// @access  Private (Technician/Admin)
+exports.addWorkLog = async (req, res) => {
+    try {
+        const { note } = req.body;
+        let ticket = await Ticket.findById(req.params.id);
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        ticket.workLog.push({
+            note,
+            technician: req.user._id
+        });
+
+        await ticket.save();
         emitUpdate(req, 'ticket_updated', ticket);
         res.json(ticket);
     } catch (error) {
