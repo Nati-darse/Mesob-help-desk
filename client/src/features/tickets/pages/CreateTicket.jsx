@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Container, Paper, TextField, Button, Typography, Box, MenuItem, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../../auth/context/AuthContext';
 
 const categories = ['Software', 'Hardware', 'Network', 'Account', 'Other'];
 const priorities = ['Low', 'Medium', 'High', 'Critical'];
@@ -12,7 +13,9 @@ const CreateTicket = () => {
         description: '',
         category: '',
         priority: 'Medium',
+        buildingWing: '',
     });
+    const { user } = useAuth();
     const [attachments, setAttachments] = useState([]);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -34,6 +37,8 @@ const CreateTicket = () => {
         formDataToSend.append('description', formData.description);
         formDataToSend.append('category', formData.category);
         formDataToSend.append('priority', formData.priority);
+        formDataToSend.append('buildingWing', formData.buildingWing);
+        formDataToSend.append('companyId', user?.companyId || 1);
 
         for (let i = 0; i < attachments.length; i++) {
             formDataToSend.append('attachments', attachments[i]);
@@ -112,6 +117,17 @@ const CreateTicket = () => {
                             ))}
                         </TextField>
                     </Box>
+
+                    <TextField
+                        fullWidth
+                        label="Building Wing / Floor / Office"
+                        name="buildingWing"
+                        variant="outlined"
+                        margin="normal"
+                        value={formData.buildingWing}
+                        onChange={handleChange}
+                        placeholder="e.g. Wing A, 4th Floor, Office 412"
+                    />
 
                     <TextField
                         fullWidth

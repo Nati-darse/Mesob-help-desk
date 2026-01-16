@@ -23,12 +23,17 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['Worker', 'Technician', 'Team Lead', 'Admin'],
+        enum: ['Worker', 'Technician', 'Team Lead', 'Admin', 'System Admin', 'Super Admin'],
         default: 'Worker',
     },
     department: {
         type: String,
         required: [true, 'Please add a department'],
+    },
+    companyId: {
+        type: Number,
+        required: [true, 'Please add a company ID'],
+        default: 1,
     },
     isAvailable: {
         type: Boolean,

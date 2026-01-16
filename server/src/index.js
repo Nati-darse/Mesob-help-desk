@@ -1,6 +1,17 @@
 const dotenv = require('dotenv');
 dotenv.config();
+
+if (
+    !process.env.MONGODB_URI ||
+    !process.env.PORT ||
+    !process.env.JWT_SECRET ||
+    !process.env.JWT_REFRESH_SECRET
+) {
+    throw new Error('Missing required environment variables');
+}
 const express = require('express');
+const compression = require('compression');
+const morgan = require('morgan');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const http = require('http');
@@ -9,6 +20,8 @@ const authRoutes = require('./routes/authRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const technicianRoutes = require('./routes/technicianRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 // Connect to Database
 connectDB();
@@ -28,21 +41,46 @@ app.set('io', io);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(compression());
+if (process.env.NODE_ENV !== 'production') {
+    app.use(morgan('tiny'));
+}
+app.use(express.json({ limit: '50kb' }));
+app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+app.use((req, res, next) => {
+    const h = req.headers['x-tenant-id'];
+    if (h) {
+        const n = Number(h);
+        req.tenantId = Number.isNaN(n) ? h : n;
+    }
+    next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/technician', technicianRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Socket.io connection
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+    const h = socket.handshake.headers['x-tenant-id'];
+    const a = socket.handshake.auth && socket.handshake.auth.companyId;
+    const n = Number(h || a);
+    const companyId = Number.isNaN(n) ? (h || a) : n;
+    if (companyId) {
+        socket.join(`company:${companyId}`);
+    }
+    socket.on('join_company', (cid) => {
+        if (cid) {
+            socket.join(`company:${cid}`);
+        }
+    });
 
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
+        return;
     });
 });
 

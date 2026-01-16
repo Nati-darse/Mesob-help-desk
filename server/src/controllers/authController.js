@@ -7,7 +7,12 @@ const { sendEmail } = require('../services/notificationService');
 // @access  Public
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, department, role } = req.body;
+        const settings = require('../state/settings');
+        if (settings.getMaintenance()) {
+            return res.status(503).json({ message: 'Service unavailable: maintenance mode' });
+        }
+
+        const { name, email, password, department, role, companyId } = req.body;
 
         // Check if user exists
         const userExists = await User.findOne({ email });
@@ -26,6 +31,7 @@ exports.register = async (req, res) => {
             password,
             department,
             role: finalRole,
+            companyId: companyId || 1,
         });
 
         if (user) {
@@ -43,6 +49,7 @@ exports.register = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 department: user.department,
+                companyId: user.companyId,
                 token: generateToken(user._id),
             });
         }
@@ -70,12 +77,18 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        const settings = require('../state/settings');
+        if (settings.getMaintenance() && user.role !== 'System Admin') {
+            return res.status(403).json({ message: 'Maintenance mode active: only System Admins can login' });
+        }
+
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
             department: user.department,
+            companyId: user.companyId,
             token: generateToken(user._id),
             refreshToken: generateRefreshToken(user._id),
         });
@@ -97,10 +110,39 @@ exports.getMe = async (req, res) => {
                 email: user.email,
                 role: user.role,
                 department: user.department,
+                companyId: user.companyId,
             });
         } else {
             res.status(404).json({ message: 'User not found' });
         }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Impersonate user (System Admin only)
+// @route   POST /api/auth/impersonate
+// @access  Private (System Admin)
+exports.impersonateUser = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Return token as if that user logged in
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            companyId: user.companyId,
+            token: generateToken(user._id),
+            refreshToken: generateRefreshToken(user._id),
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

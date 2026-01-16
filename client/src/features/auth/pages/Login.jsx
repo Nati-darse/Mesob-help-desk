@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Container, Paper, TextField, Button, Typography, Box, Link, Alert } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.png';
+import logo from '../../../assets/logo.png';
+import { ROLES } from '../../../constants/roles';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -13,6 +14,21 @@ const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
+    const getRedirectPath = (role) => {
+        switch (role) {
+            case ROLES.SYSTEM_ADMIN:
+                return '/sys-admin';
+            case ROLES.SUPER_ADMIN:
+                return '/admin';
+            case ROLES.TECHNICIAN:
+                return '/tech';
+            case ROLES.EMPLOYEE:
+                return '/portal';
+            default:
+                return '/dashboard';
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -20,7 +36,8 @@ const Login = () => {
 
         const result = await login(email, password);
         if (result.success) {
-            navigate('/');
+            const redirectPath = getRedirectPath(result.user.role);
+            navigate(redirectPath);
         } else {
             setError(result.message);
         }
@@ -28,10 +45,10 @@ const Login = () => {
     };
 
     return (
-        <Container maxWidth="xs" sx={{ mt: 8 }}>
-            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', border: '1px solid #eee', borderRadius: 2 }}>
+        <Container maxWidth="xs" sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
+            <Paper elevation={0} sx={{ p: 4, width: '100%', textAlign: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                 <Box sx={{ mb: 3 }}>
-                    <img src={logo} alt="Mesob Logo" style={{ height: 80 }} />
+                    <img src="/logo.png" alt="Mesob Logo" style={{ height: 80 }} onError={(e) => { e.currentTarget.src = logo; }} />
                 </Box>
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                     Welcome Back

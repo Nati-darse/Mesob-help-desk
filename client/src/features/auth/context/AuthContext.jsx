@@ -10,13 +10,10 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('mesob_user');
-        if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            // Set axios default header
-            axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
-        }
+        // Clear any existing user data on app load for testing
+        localStorage.removeItem('mesob_user');
+        setUser(null);
+        delete axios.defaults.headers.common['Authorization'];
         setLoading(false);
     }, []);
 
@@ -26,7 +23,8 @@ export const AuthProvider = ({ children }) => {
             setUser(res.data);
             localStorage.setItem('mesob_user', JSON.stringify(res.data));
             axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-            return { success: true };
+            axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
+            return { success: true, user: res.data };
         } catch (error) {
             return {
                 success: false,
@@ -41,7 +39,8 @@ export const AuthProvider = ({ children }) => {
             setUser(res.data);
             localStorage.setItem('mesob_user', JSON.stringify(res.data));
             axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-            return { success: true };
+            axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
+            return { success: true, user: res.data };
         } catch (error) {
             return {
                 success: false,
@@ -54,10 +53,23 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem('mesob_user');
         delete axios.defaults.headers.common['Authorization'];
+        delete axios.defaults.headers.common['x-tenant-id'];
+    };
+
+    const updateAvailability = async (isAvailable) => {
+        try {
+            await axios.put('/api/users/availability', { isAvailable });
+            const updatedUser = { ...user, isAvailable };
+            setUser(updatedUser);
+            localStorage.setItem('mesob_user', JSON.stringify(updatedUser));
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || 'Failed to update availability' };
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, updateAvailability }}>
             {!loading && children}
         </AuthContext.Provider>
     );

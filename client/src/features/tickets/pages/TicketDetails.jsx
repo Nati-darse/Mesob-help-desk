@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { Container, Paper, Typography, Box, Grid, Chip, Divider, TextField, Button, MenuItem, List, ListItem, ListItemText, Avatar, Alert } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../auth/context/AuthContext';
 import FeedbackForm from '../components/FeedbackForm';
+import { ROLES } from '../../../constants/roles';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const priorityColors = { Low: 'success', Medium: 'info', High: 'warning', Critical: 'error' };
 const statusColors = { New: 'primary', Assigned: 'secondary', 'In Progress': 'info', Resolved: 'success', Closed: 'default' };
@@ -19,10 +21,11 @@ const TicketDetails = () => {
     const [status, setStatus] = useState('');
     const [selectedTech, setSelectedTech] = useState('');
     const [error, setError] = useState('');
+    const qc = useQueryClient();
 
     useEffect(() => {
         fetchTicket();
-        if (user?.role === 'Team Lead' || user?.role === 'Admin') {
+        if (user?.role === ROLES.TEAM_LEAD || user?.role === ROLES.SUPER_ADMIN || user?.role === ROLES.SYSTEM_ADMIN) {
             fetchTechnicians();
         }
     }, [id]);
@@ -55,13 +58,33 @@ const TicketDetails = () => {
         }
     };
 
-    const handleStatusUpdate = async () => {
-        try {
-            await axios.put(`/api/tickets/${id}`, { status });
-            fetchTicket();
-        } catch (err) {
+    const updateStatusMutation = useMutation({
+        mutationFn: async (newStatus) => {
+            const res = await axios.put(`/api/tickets/${id}`, { status: newStatus });
+            return res.data;
+        },
+        onMutate: async (newStatus) => {
+            setTicket(prev => (prev ? { ...prev, status: newStatus } : prev));
+            await qc.cancelQueries({ queryKey: ['tickets'] });
+            const previous = qc.getQueryData(['tickets']);
+            qc.setQueryData(['tickets'], (old) => {
+                if (!old || !Array.isArray(old)) return old;
+                return old.map(t => (t._id === id ? { ...t, status: newStatus } : t));
+            });
+            return { previous };
+        },
+        onError: (err, newStatus, context) => {
+            if (context && context.previous) qc.setQueryData(['tickets'], context.previous);
             setError('Failed to update status');
+        },
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey: ['tickets'] });
+            fetchTicket();
         }
+    });
+
+    const handleStatusUpdate = () => {
+        updateStatusMutation.mutate(status);
     };
 
     const handleResolve = async () => {
@@ -93,8 +116,8 @@ const TicketDetails = () => {
 
             <Grid container spacing={3}>
                 {/* Main Ticket Info */}
-                <Grid item xs={12} md={8}>
-                    <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, border: '1px solid #eee', borderRadius: 2 }}>
+                <Grid size={{ xs: 12, md: 8 }}>
+                    <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'start', sm: 'center' }, gap: 2, mb: 2 }}>
                             <Typography variant="h4" sx={{ fontWeight: 'bold', fontSize: { xs: '1.5rem', md: '2.125rem' } }}>{ticket.title}</Typography>
                             <Chip label={ticket.status} color={statusColors[ticket.status]} />
@@ -177,7 +200,7 @@ const TicketDetails = () => {
 
                         {/* View Feedback (If Closed) */}
                         {ticket.status === 'Closed' && ticket.rating && (
-                            <Box sx={{ mt: 4, p: 3, bgcolor: '#f1f8ff', borderRadius: 2 }}>
+                            <Box sx={{ mt: 4, p: 3, bgcolor: 'action.hover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                 <Typography variant="h6" color="primary.main" gutterBottom>Resolution Feedback</Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <Rating value={ticket.rating} readOnly />
@@ -194,8 +217,8 @@ const TicketDetails = () => {
                 </Grid>
 
                 {/* Sidebar Actions */}
-                <Grid item xs={12} md={4}>
-                    <Paper elevation={0} sx={{ p: 3, border: '1px solid #eee', borderRadius: 2 }}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <Typography variant="h6" gutterBottom>Lifecycle Management</Typography>
 
                         {/* Requester Info */}
@@ -206,7 +229,7 @@ const TicketDetails = () => {
                         </Box>
 
                         {/* Assignment (Team Lead/Admin) */}
-                        {(user?.role === 'Team Lead' || user?.role === 'Admin') && ticket.status === 'New' && (
+                        {(user?.role === ROLES.TEAM_LEAD || user?.role === ROLES.SUPER_ADMIN || user?.role === ROLES.SYSTEM_ADMIN) && ticket.status === 'New' && (
                             <Box sx={{ mb: 3 }}>
                                 <Typography variant="subtitle2" color="text.secondary">Assign Technician</Typography>
                                 <TextField
@@ -234,7 +257,7 @@ const TicketDetails = () => {
                         )}
 
                         {/* Status Update (Technician/Admin) */}
-                        {(user?.role === 'Technician' || user?.role === 'Admin') && (ticket.status === 'Assigned' || ticket.status === 'In Progress') && (
+                        {(user?.role === ROLES.TECHNICIAN || user?.role === ROLES.SUPER_ADMIN || user?.role === ROLES.SYSTEM_ADMIN) && (ticket.status === 'Assigned' || ticket.status === 'In Progress') && (
                             <Box sx={{ mb: 3 }}>
                                 <Typography variant="subtitle2" color="text.secondary">Update Status</Typography>
                                 <TextField

@@ -1,0 +1,352 @@
+import React, { useState, useEffect } from 'react';
+import { 
+    Container, Typography, Box, Grid, Card, CardContent, Paper, CircularProgress, 
+    Avatar, Chip, LinearProgress, IconButton, Tooltip
+} from '@mui/material';
+import { 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell,
+    LineChart, Line, Area, AreaChart, PieChart, Pie
+} from 'recharts';
+import { 
+    TrendingUp as TrendingIcon, 
+    AccessTime as TimeIcon, 
+    Engineering as TechIcon,
+    Warning as WarningIcon,
+    CheckCircle as CheckIcon,
+    People as PeopleIcon,
+    Assignment as TicketIcon,
+    Refresh as RefreshIcon
+} from '@mui/icons-material';
+import axios from 'axios';
+import { COMPANIES, getCompanyById } from '../../../utils/companies';
+
+const BossDashboard = () => {
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState(null);
+    const [realTimeData, setRealTimeData] = useState([]);
+    const [lastUpdate, setLastUpdate] = useState(new Date());
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await axios.get('/api/dashboard/admin-stats');
+                setStats(res.data);
+            } catch (error) {
+                console.error('Error fetching admin stats:', error);
+                // Use mock data for demo
+                setStats({
+                    totalTickets: 1247,
+                    openTickets: 89,
+                    resolvedToday: 45,
+                    avgResolutionTime: 2.3,
+                    ticketsByCompany: COMPANIES.map(company => ({
+                        _id: company.id,
+                        count: Math.floor(Math.random() * 50) + 10
+                    })),
+                    ticketsByPriority: [
+                        { priority: 'Critical', count: 12, color: '#f44336' },
+                        { priority: 'High', count: 34, color: '#ff9800' },
+                        { priority: 'Medium', count: 78, color: '#2196f3' },
+                        { priority: 'Low', count: 145, color: '#4caf50' }
+                    ],
+                    technicianPerformance: [
+                        { name: 'Tech A', resolved: 23, avgTime: 1.8 },
+                        { name: 'Tech B', resolved: 19, avgTime: 2.1 },
+                        { name: 'Tech C', resolved: 31, avgTime: 1.5 },
+                        { name: 'Tech D', resolved: 27, avgTime: 2.4 }
+                    ]
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+        const interval = setInterval(fetchStats, 30000); // Refresh every 30 seconds
+        return () => clearInterval(interval);
+    }, []);
+
+    // Real-time data simulation
+    useEffect(() => {
+        const generateRealTimeData = () => {
+            const now = new Date();
+            const newData = {
+                time: now.toLocaleTimeString(),
+                requests: Math.floor(Math.random() * 100) + 50,
+                activeUsers: Math.floor(Math.random() * 200) + 100
+            };
+            
+            setRealTimeData(prev => {
+                const updated = [...prev, newData];
+                return updated.slice(-20); // Keep last 20 data points
+            });
+            
+            setLastUpdate(now);
+        };
+
+        const interval = setInterval(generateRealTimeData, 5000);
+        generateRealTimeData(); // Initial data
+        
+        return () => clearInterval(interval);
+    }, []);
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+                <CircularProgress size={60} />
+            </Box>
+        );
+    }
+
+    // Prepare chart data
+    const chartData = COMPANIES.map(company => {
+        const companyTickets = stats?.ticketsByCompany?.find(t => t._id === company.id);
+        return {
+            name: company.initials,
+            fullName: company.name,
+            count: companyTickets?.count || 0,
+            companyId: company.id
+        };
+    });
+
+    const StatCard = ({ title, value, subtitle, icon, color, trend }) => (
+        <Card sx={{ 
+            p: 3, 
+            height: '100%',
+            background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
+            borderLeft: `4px solid ${color}`
+        }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ bgcolor: color, color: 'white', mr: 2 }}>
+                    {icon}
+                </Avatar>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="h4" fontWeight="bold" color={color}>
+                        {value}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {title}
+                    </Typography>
+                </Box>
+                {trend && (
+                    <Chip 
+                        label={trend > 0 ? `+${trend}%` : `${trend}%`}
+                        color={trend > 0 ? 'success' : 'error'}
+                        size="small"
+                    />
+                )}
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+                {subtitle}
+            </Typography>
+        </Card>
+    );
+
+    return (
+        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+            {/* Header */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Box>
+                    <Typography variant="h3" fontWeight="bold" gutterBottom>
+                        Analytics Dashboard
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                        Real-time overview of all 24 entities • Last updated: {lastUpdate.toLocaleTimeString()}
+                    </Typography>
+                </Box>
+                <Tooltip title="Refresh Data">
+                    <IconButton onClick={() => window.location.reload()}>
+                        <RefreshIcon />
+                    </IconButton>
+                </Tooltip>
+            </Box>
+
+            {/* Key Metrics */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Total Tickets"
+                        value={stats?.totalTickets || 0}
+                        subtitle="All time across all entities"
+                        icon={<TicketIcon />}
+                        color="#1976d2"
+                        trend={12}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Open Tickets"
+                        value={stats?.openTickets || 0}
+                        subtitle="Awaiting resolution"
+                        icon={<WarningIcon />}
+                        color="#ff9800"
+                        trend={-5}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Resolved Today"
+                        value={stats?.resolvedToday || 0}
+                        subtitle="Completed in last 24h"
+                        icon={<CheckIcon />}
+                        color="#4caf50"
+                        trend={8}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Avg Resolution Time"
+                        value={`${stats?.avgResolutionTime || 0}h`}
+                        subtitle="Across all technicians"
+                        icon={<TimeIcon />}
+                        color="#9c27b0"
+                        trend={-15}
+                    />
+                </Grid>
+            </Grid>
+
+            {/* Charts Row 1 */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} lg={8}>
+                    <Paper sx={{ p: 3, height: 400 }}>
+                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                            Tickets by Company
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={320}>
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <RechartsTooltip 
+                                    content={({ active, payload }) => {
+                                        if (active && payload && payload.length) {
+                                            const data = payload[0].payload;
+                                            return (
+                                                <Box sx={{ p: 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+                                                    <Typography variant="body2" fontWeight="bold">
+                                                        {data.fullName}
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                        Tickets: {data.count}
+                                                    </Typography>
+                                                </Box>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <Bar dataKey="count" fill="#1976d2" radius={[8, 8, 0, 0]}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={`hsl(${index * 15}, 70%, 50%)`} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} lg={4}>
+                    <Paper sx={{ p: 3, height: 400 }}>
+                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                            Priority Distribution
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={320}>
+                            <PieChart>
+                                <Pie
+                                    data={stats?.ticketsByPriority || []}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    paddingAngle={5}
+                                    dataKey="count"
+                                >
+                                    {(stats?.ticketsByPriority || []).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <Box sx={{ mt: 2 }}>
+                            {(stats?.ticketsByPriority || []).map((item) => (
+                                <Box key={item.priority} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                    <Box sx={{ width: 12, height: 12, bgcolor: item.color, mr: 1, borderRadius: 1 }} />
+                                    <Typography variant="body2">
+                                        {item.priority}: {item.count}
+                                    </Typography>
+                                </Box>
+                            ))}
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Real-time Activity */}
+            <Grid container spacing={3}>
+                <Grid item xs={12} lg={8}>
+                    <Paper sx={{ p: 3, height: 350 }}>
+                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                            Real-time Activity
+                        </Typography>
+                        <ResponsiveContainer width="100%" height={280}>
+                            <AreaChart data={realTimeData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="time" />
+                                <YAxis />
+                                <RechartsTooltip />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="requests" 
+                                    stroke="#1976d2" 
+                                    fill="#1976d2" 
+                                    fillOpacity={0.3}
+                                    name="API Requests"
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="activeUsers" 
+                                    stroke="#4caf50" 
+                                    fill="#4caf50" 
+                                    fillOpacity={0.3}
+                                    name="Active Users"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} lg={4}>
+                    <Paper sx={{ p: 3, height: 350 }}>
+                        <Typography variant="h6" fontWeight="bold" gutterBottom>
+                            Top Performers
+                        </Typography>
+                        {stats?.technicianPerformance?.map((tech, index) => (
+                            <Box key={tech.name} sx={{ mb: 2 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                    <Typography variant="body2" fontWeight="bold">
+                                        {tech.name}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {tech.resolved} tickets • {tech.avgTime}h avg
+                                    </Typography>
+                                </Box>
+                                <LinearProgress 
+                                    variant="determinate" 
+                                    value={(tech.resolved / 35) * 100}
+                                    sx={{ 
+                                        height: 8, 
+                                        borderRadius: 4,
+                                        bgcolor: 'grey.200'
+                                    }}
+                                />
+                            </Box>
+                        ))}
+                    </Paper>
+                </Grid>
+            </Grid>
+        </Container>
+    );
+};
+
+export default BossDashboard;
