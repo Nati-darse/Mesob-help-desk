@@ -3,6 +3,7 @@ import { Box, Typography, Paper, TextField, MenuItem, Button, Select, FormContro
 import { Send as SendIcon, Campaign as CampaignIcon, Group as GroupIcon } from '@mui/icons-material';
 import { COMPANIES } from '../../../utils/companies';
 import { ROLE_LABELS } from '../../../constants/roles';
+import axios from 'axios';
 
 const BroadcastCenter = () => {
     const [targetAudience, setTargetAudience] = useState('all');
@@ -14,17 +15,50 @@ const BroadcastCenter = () => {
         { id: 2, msg: 'Ethio Telecom network restored', target: 'Ethio Telecom', time: '2 days ago' },
     ]);
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!message.trim()) return;
-        setToastOpen(true);
-        const newLog = {
-            id: Date.now(),
-            msg: message,
-            target: targetAudience === 'all' ? 'All Users' : 'Specific Group',
-            time: 'Just now'
-        };
-        setHistory([newLog, ...history]);
-        setMessage('');
+
+        try {
+            // Parse target audience
+            let targetType = 'all';
+            let targetValue = '';
+
+            if (targetAudience.startsWith('company-')) {
+                targetType = 'company';
+                targetValue = targetAudience.replace('company-', '');
+            } else if (targetAudience.startsWith('role-')) {
+                targetType = 'role';
+                // Map local role keys to actual DB role strings if needed
+                const roleMap = {
+                    super_admin: 'Super Admin',
+                    sys_admin: 'System Admin',
+                    technician: 'Technician',
+                    employee: 'Employee'
+                };
+                const key = targetAudience.replace('role-', '');
+                targetValue = roleMap[key] || 'Employee';
+            }
+
+            await axios.post('/api/notifications/broadcast', {
+                message,
+                priority,
+                targetType,
+                targetValue
+            });
+
+            setToastOpen(true);
+            const newLog = {
+                id: Date.now(),
+                msg: message,
+                target: targetAudience === 'all' ? 'All Users' : targetValue || targetAudience,
+                time: 'Just now'
+            };
+            setHistory([newLog, ...history]);
+            setMessage('');
+        } catch (error) {
+            console.error(error);
+            alert('Failed to broadcast message');
+        }
     };
 
     return (
