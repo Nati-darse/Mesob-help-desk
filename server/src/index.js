@@ -88,6 +88,7 @@ app.use('/api/users', checkMaint, userRoutes);
 app.use('/api/dashboard', checkMaint, dashboardRoutes);
 app.use('/api/technician', checkMaint, technicianRoutes);
 app.use('/api/settings', checkMaint, settingsRoutes);
+app.use('/api/notifications', checkMaint, require('./routes/notificationRoutes'));
 
 // Socket.io connection
 io.on('connection', (socket) => {
