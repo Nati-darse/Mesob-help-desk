@@ -84,6 +84,22 @@ const AppContent = () => {
         return [ticket, ...prev];
       });
     });
+
+    s.on('broadcast_message', (notification) => {
+      // Filter if relevant to me
+      let isRelevant = false;
+      if (notification.targetType === 'all') isRelevant = true;
+      if (notification.targetType === 'company' && String(user.companyId) === String(notification.targetValue)) isRelevant = true;
+      if (notification.targetType === 'role' && user.role === notification.targetValue) isRelevant = true;
+
+      if (isRelevant) {
+        qc.setQueryData(['notifications'], (prev) => {
+          const list = Array.isArray(prev) ? prev : [];
+          // data might come from API with _id, ensure structure
+          return [notification, ...list];
+        });
+      }
+    });
     return () => {
       s.disconnect();
       socketRef.current = null;
