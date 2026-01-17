@@ -89,6 +89,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Mesob API is running' });
 });
 
+// Root route for easy verification
+app.get('/', (req, res) => {
+    res.send('Mesob Help Desk API is running 🚀');
+});
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
