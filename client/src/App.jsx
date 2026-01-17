@@ -15,6 +15,7 @@ import TicketList from './features/tickets/pages/TicketList';
 import CreateTicket from './features/tickets/pages/CreateTicket';
 import TicketDetails from './features/tickets/pages/TicketDetails';
 import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
+import MaintenancePage from './pages/MaintenancePage';
 
 import { ROLES } from './constants/roles';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -103,6 +104,7 @@ const AppContent = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/redirect" element={<RoleBasedRedirect />} />
+              <Route path="/maintenance" element={<MaintenancePage />} />
 
               {/* System Admin Routes */}
               {/* System Admin Routes (God Mode) */}

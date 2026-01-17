@@ -7,6 +7,19 @@ import axios from 'axios';
 // Configure axios base URL for production
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
 
+// Add global interceptor for Maintenance Mode
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 503) {
+      if (!window.location.pathname.includes('/maintenance') && !window.location.pathname.includes('/sys-admin')) {
+        window.location.href = '/maintenance';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
