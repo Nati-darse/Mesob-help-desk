@@ -5,8 +5,10 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { useTickets } from '../../tickets/hooks/useTickets';
 import { getCompanyById } from '../../../utils/companies';
 import TruncatedText from '../../../components/TruncatedText';
-import { Newspaper as NewsIcon, Business as CompanyIcon } from '@mui/icons-material';
+import { Newspaper as NewsIcon, Business as CompanyIcon, NotificationsActive as AlertIcon } from '@mui/icons-material';
 import React, { useMemo, memo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 const StatCard = memo(({ icon, value, label, color }) => {
     return (
@@ -43,6 +45,12 @@ const UserDashboard = () => {
         () => tickets.filter(t => t.status === 'Closed').length,
         [tickets]
     );
+
+    // Fetch Notifications
+    const { data: notifications = [] } = useQuery(['notifications'], async () => {
+        const res = await axios.get('/api/notifications');
+        return res.data;
+    });
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -114,30 +122,39 @@ const UserDashboard = () => {
             <Grid container spacing={4}>
                 <Grid item xs={12} md={4}>
                     <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                        Bureau News
+                        Announcements
                     </Typography>
                     <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, height: 'fit-content', bgcolor: (theme) => theme.palette.mode === 'dark' ? '#112240' : '#f8f9fa' }}>
                         <CardContent sx={{ p: 4 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, color: 'primary.main' }}>
-                                <NewsIcon />
+                                <AlertIcon />
                                 <Typography variant="h6" sx={{ fontWeight: 700 }}>Latest Updates</Typography>
                             </Box>
                             <Stack spacing={3}>
-                                <Box>
-                                    <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>Internal Memo</Typography>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>Annual IT System Maintenance</Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Scheduled for this weekend. Please backup your local files.</Typography>
-                                </Box>
-                                <Divider />
-                                <Box>
-                                    <Typography variant="caption" color="primary.main" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>New Policy</Typography>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>Remote Access Security Update</Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>All {companyInitials} employees must enable 2FA by Friday.</Typography>
-                                </Box>
-                                <Divider />
-                                <Box sx={{ p: 2, bgcolor: 'primary.main', borderRadius: 3, color: 'white', textAlign: 'center' }}>
-                                    <Typography variant="button" sx={{ fontWeight: 700 }}>View All {companyInitials} Announcements</Typography>
-                                </Box>
+                                {notifications.length === 0 ? (
+                                    <Box sx={{ textAlign: 'center', py: 2 }}>
+                                        <Typography variant="body2" color="text.secondary">No new announcements at this time.</Typography>
+                                    </Box>
+                                ) : (
+                                    notifications.map((note) => (
+                                        <Box key={note._id || note.id || Math.random()}>
+                                            <Typography
+                                                variant="caption"
+                                                color={note.priority === 'error' ? 'error.main' : note.priority === 'warning' ? 'warning.main' : 'info.main'}
+                                                sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, display: 'block' }}
+                                            >
+                                                {note.priority || 'Info'} Alert
+                                            </Typography>
+                                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>
+                                                {note.message}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                                {note.createdAt ? new Date(note.createdAt).toLocaleString() : 'Just now'}
+                                            </Typography>
+                                            <Divider sx={{ mt: 2 }} />
+                                        </Box>
+                                    ))
+                                )}
                             </Stack>
                         </CardContent>
                     </Card>
