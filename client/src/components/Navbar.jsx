@@ -37,6 +37,13 @@ const Navbar = () => {
                                     Global Administrator
                                 </Typography>
                             </>
+                        ) : user?.role === ROLES.SUPER_ADMIN ? (
+                            <>
+                                <Typography variant="h6" sx={{ color: 'divider', fontWeight: 300 }}>|</Typography>
+                                <Typography variant="h6" sx={{ color: '#1976d2', fontWeight: 700, letterSpacing: 0.5 }}>
+                                    Super Administrator
+                                </Typography>
+                            </>
                         ) : company ? (
                             <>
                                 <Typography variant="h6" sx={{ color: 'divider', fontWeight: 300 }}>|</Typography>
@@ -60,7 +67,10 @@ const Navbar = () => {
                             {user.role === ROLES.SYSTEM_ADMIN && (
                                 <Button color="warning" component={RouterLink} to="/sys-admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SysAdmin</Button>
                             )}
-                            <Button color="primary" component={RouterLink} to="/dashboard" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Dashboard</Button>
+                            {user.role === ROLES.SUPER_ADMIN && (
+                                <Button color="secondary" component={RouterLink} to="/admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SuperAdmin</Button>
+                            )}
+                            <Button color="primary" component={RouterLink} to="/redirect" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Dashboard</Button>
                             <Button color="primary" component={RouterLink} to="/tickets" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Tickets</Button>
                             <Button variant="outlined" color="primary" onClick={handleLogout} sx={{ ml: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Logout</Button>
                         </>
