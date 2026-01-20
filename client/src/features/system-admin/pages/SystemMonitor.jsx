@@ -72,7 +72,7 @@ const SystemMonitor = () => {
                                 size={120}
                                 thickness={4}
                                 sx={{
-                                    color: '#D4AF37',
+                                    color: 'primary.main',
                                     position: 'absolute',
                                     left: 0,
                                 }}
@@ -90,7 +90,7 @@ const SystemMonitor = () => {
                                     flexDirection: 'column'
                                 }}
                             >
-                                <HubIcon sx={{ color: '#D4AF37', fontSize: 40 }} />
+                                <HubIcon sx={{ color: 'primary.main', fontSize: 40 }} />
                             </Box>
                         </Box>
                         <Typography variant="h4" sx={{ fontWeight: 700 }}>

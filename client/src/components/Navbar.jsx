@@ -33,7 +33,7 @@ const Navbar = () => {
                         {user?.role === ROLES.SYSTEM_ADMIN ? (
                             <>
                                 <Typography variant="h6" sx={{ color: 'divider', fontWeight: 300 }}>|</Typography>
-                                <Typography variant="h6" sx={{ color: '#D4AF37', fontWeight: 700, letterSpacing: 0.5 }}>
+                                <Typography variant="h6" sx={{ color: '#0061f2', fontWeight: 700, letterSpacing: 0.5 }}>
                                     Global Administrator
                                 </Typography>
                             </>
@@ -65,7 +65,7 @@ const Navbar = () => {
                         <>
                             <AvailabilityToggle />
                             {user.role === ROLES.SYSTEM_ADMIN && (
-                                <Button color="warning" component={RouterLink} to="/sys-admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SysAdmin</Button>
+                                <Button color="primary" component={RouterLink} to="/sys-admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SysAdmin</Button>
                             )}
                             {user.role === ROLES.SUPER_ADMIN && (
                                 <Button color="secondary" component={RouterLink} to="/admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SuperAdmin</Button>
@@ -76,8 +76,7 @@ const Navbar = () => {
                         </>
                     ) : (
                         <>
-                            <Button color="primary" component={RouterLink} to="/login" sx={{ px: { xs: 1, sm: 2 } }}>Login</Button>
-                            <Button variant="contained" color="primary" component={RouterLink} to="/register" sx={{ px: { xs: 1, sm: 2 } }}>Register</Button>
+                            <Button variant="contained" color="primary" component={RouterLink} to="/login" sx={{ px: { xs: 2, sm: 4 } }}>Login</Button>
                         </>
                     )}
                 </Box>

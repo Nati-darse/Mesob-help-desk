@@ -7,7 +7,7 @@ const MaintenancePage = () => {
         <Container maxWidth="md" sx={{ mt: 10, textAlign: 'center' }}>
             <Paper elevation={3} sx={{ p: 5, borderRadius: 2 }}>
                 <Box display="flex" justifyContent="center" mb={3}>
-                    <EngineeringIcon sx={{ fontSize: 80, color: 'warning.main' }} />
+                    <EngineeringIcon sx={{ fontSize: 80, color: 'primary.main' }} />
                 </Box>
                 <Typography variant="h3" gutterBottom color="text.primary" fontWeight="bold">
                     Under Maintenance

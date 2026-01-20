@@ -88,33 +88,33 @@ const GlobalDashboard = () => {
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={pulseData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                                    <XAxis 
-                                        dataKey="time" 
+                                    <XAxis
+                                        dataKey="time"
                                         stroke={theme.palette.text.secondary}
                                         tick={{ fontSize: 12 }}
                                     />
-                                    <YAxis 
+                                    <YAxis
                                         stroke={theme.palette.text.secondary}
                                         tick={{ fontSize: 12 }}
                                     />
-                                    <Tooltip 
+                                    <Tooltip
                                         contentStyle={{
                                             backgroundColor: theme.palette.background.paper,
                                             border: `1px solid ${theme.palette.divider}`,
                                             borderRadius: 8
                                         }}
                                     />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="requests" 
+                                    <Line
+                                        type="monotone"
+                                        dataKey="requests"
                                         stroke={theme.palette.primary.main}
                                         strokeWidth={2}
                                         dot={false}
                                         name="API Requests"
                                     />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="entities" 
+                                    <Line
+                                        type="monotone"
+                                        dataKey="entities"
                                         stroke={theme.palette.secondary.main}
                                         strokeWidth={2}
                                         dot={false}
@@ -135,13 +135,13 @@ const GlobalDashboard = () => {
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                             System service status
                         </Typography>
-                        
+
                         <Grid container spacing={2}>
                             {healthItems.map((item) => (
                                 <Grid item xs={12} key={item.key}>
-                                    <Card 
-                                        variant="outlined" 
-                                        sx={{ 
+                                    <Card
+                                        variant="outlined"
+                                        sx={{
                                             bgcolor: theme.palette.background.paper,
                                             borderColor: theme.palette.divider,
                                             '&:hover': {
@@ -161,12 +161,12 @@ const GlobalDashboard = () => {
                                                         {platformHealth[item.key].details}
                                                     </Typography>
                                                 </Box>
-                                                <Typography 
-                                                    variant="body2" 
+                                                <Typography
+                                                    variant="body2"
                                                     fontWeight="600"
-                                                    sx={{ 
-                                                        color: platformHealth[item.key].status.includes('🟢') ? 
-                                                            theme.palette.success.main : theme.palette.error.main 
+                                                    sx={{
+                                                        color: platformHealth[item.key].status.includes('🟢') ?
+                                                            theme.palette.success.main : theme.palette.error.main
                                                     }}
                                                 >
                                                     {platformHealth[item.key].status}
@@ -189,7 +189,7 @@ const GlobalDashboard = () => {
                         <Grid container spacing={3}>
                             <Grid item xs={6} md={3}>
                                 <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color={theme.palette.primary.main} fontWeight="bold">
+                                    <Typography variant="h3" color="#1e4fb1" fontWeight="bold">
                                         24
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
@@ -199,7 +199,7 @@ const GlobalDashboard = () => {
                             </Grid>
                             <Grid item xs={6} md={3}>
                                 <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color={theme.palette.success.main} fontWeight="bold">
+                                    <Typography variant="h3" color="#0061f2" fontWeight="bold">
                                         1,247
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
@@ -209,7 +209,7 @@ const GlobalDashboard = () => {
                             </Grid>
                             <Grid item xs={6} md={3}>
                                 <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color={theme.palette.warning.main} fontWeight="bold">
+                                    <Typography variant="h3" color="#153b8a" fontWeight="bold">
                                         89
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
@@ -219,7 +219,7 @@ const GlobalDashboard = () => {
                             </Grid>
                             <Grid item xs={6} md={3}>
                                 <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color={theme.palette.info.main} fontWeight="bold">
+                                    <Typography variant="h3" color="#42a5f5" fontWeight="bold">
                                         99.9%
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">

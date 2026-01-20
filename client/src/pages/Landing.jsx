@@ -154,7 +154,7 @@ const Landing = () => {
                                         component={RouterLink}
                                         to="/login"
                                         sx={{
-                                            px: 6,
+                                            px: 10,
                                             py: 2.5,
                                             fontSize: '1.2rem',
                                             borderRadius: '16px',
@@ -166,27 +166,6 @@ const Landing = () => {
                                         }}
                                     >
                                         Member Login
-                                    </Button>
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        size="large"
-                                        component={RouterLink}
-                                        to="/register"
-                                        sx={{
-                                            px: 6,
-                                            py: 2.5,
-                                            fontSize: '1.2rem',
-                                            borderRadius: '16px',
-                                            textTransform: 'none',
-                                            fontWeight: 700,
-                                            borderWidth: '2px',
-                                            '&:hover': {
-                                                borderWidth: '2px'
-                                            }
-                                        }}
-                                    >
-                                        Register
                                     </Button>
                                 </>
                             )}

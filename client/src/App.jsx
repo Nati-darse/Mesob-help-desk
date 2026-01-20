@@ -117,7 +117,6 @@ const AppContent = () => {
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/redirect" element={<RoleBasedRedirect />} />
               <Route path="/maintenance" element={<MaintenancePage />} />

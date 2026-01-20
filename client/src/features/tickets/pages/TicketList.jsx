@@ -11,7 +11,7 @@ import React, { memo } from 'react';
 const priorityColors = {
     Low: 'success',
     Medium: 'info',
-    High: 'warning',
+    High: 'primary',
     Critical: 'error',
 };
 

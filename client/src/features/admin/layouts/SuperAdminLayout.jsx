@@ -12,7 +12,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { ROLES } from '../../../constants/roles';
 
 const DRAWER_WIDTH = 280;
-const SUPER_ADMIN_ACCENT = '#1976d2'; // Professional Blue for Super Admin
+const SUPER_ADMIN_ACCENT = '#1e4fb1'; // Brand Blue
 const NAVY_BG = '#0A1929'; // Deep Navy
 
 const SuperAdminLayout = () => {

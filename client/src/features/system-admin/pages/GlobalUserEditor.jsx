@@ -89,7 +89,7 @@ const GlobalUserEditor = () => {
     return (
         <Box>
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#D4AF37' }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
                     Global User Directory
                 </Typography>
                 <FormControl sx={{ minWidth: 250 }} size="small">

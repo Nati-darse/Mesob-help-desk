@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Container, Typography, Box, Grid, Card, CardContent, Paper, CircularProgress, 
+import {
+    Container, Typography, Box, Grid, Card, CardContent, Paper, CircularProgress,
     Avatar, Chip, LinearProgress, IconButton, Tooltip
 } from '@mui/material';
-import { 
+import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell,
     LineChart, Line, Area, AreaChart, PieChart, Pie
 } from 'recharts';
-import { 
-    TrendingUp as TrendingIcon, 
-    AccessTime as TimeIcon, 
+import {
+    TrendingUp as TrendingIcon,
+    AccessTime as TimeIcon,
     Engineering as TechIcon,
     Warning as WarningIcon,
     CheckCircle as CheckIcon,
@@ -75,18 +75,18 @@ const BossDashboard = () => {
                 requests: Math.floor(Math.random() * 100) + 50,
                 activeUsers: Math.floor(Math.random() * 200) + 100
             };
-            
+
             setRealTimeData(prev => {
                 const updated = [...prev, newData];
                 return updated.slice(-20); // Keep last 20 data points
             });
-            
+
             setLastUpdate(now);
         };
 
         const interval = setInterval(generateRealTimeData, 5000);
         generateRealTimeData(); // Initial data
-        
+
         return () => clearInterval(interval);
     }, []);
 
@@ -110,8 +110,8 @@ const BossDashboard = () => {
     });
 
     const StatCard = ({ title, value, subtitle, icon, color, trend }) => (
-        <Card sx={{ 
-            p: 3, 
+        <Card sx={{
+            p: 3,
             height: '100%',
             background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
             borderLeft: `4px solid ${color}`
@@ -129,7 +129,7 @@ const BossDashboard = () => {
                     </Typography>
                 </Box>
                 {trend && (
-                    <Chip 
+                    <Chip
                         label={trend > 0 ? `+${trend}%` : `${trend}%`}
                         color={trend > 0 ? 'success' : 'error'}
                         size="small"
@@ -169,7 +169,7 @@ const BossDashboard = () => {
                         value={stats?.totalTickets || 0}
                         subtitle="All time across all entities"
                         icon={<TicketIcon />}
-                        color="#1976d2"
+                        color="#1e4fb1"
                         trend={12}
                     />
                 </Grid>
@@ -199,7 +199,7 @@ const BossDashboard = () => {
                         value={`${stats?.avgResolutionTime || 0}h`}
                         subtitle="Across all technicians"
                         icon={<TimeIcon />}
-                        color="#9c27b0"
+                        color="#0061f2"
                         trend={-15}
                     />
                 </Grid>
@@ -217,7 +217,7 @@ const BossDashboard = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" />
                                 <YAxis />
-                                <RechartsTooltip 
+                                <RechartsTooltip
                                     content={({ active, payload }) => {
                                         if (active && payload && payload.length) {
                                             const data = payload[0].payload;
@@ -235,7 +235,7 @@ const BossDashboard = () => {
                                         return null;
                                     }}
                                 />
-                                <Bar dataKey="count" fill="#1976d2" radius={[8, 8, 0, 0]}>
+                                <Bar dataKey="count" fill="#1e4fb1" radius={[8, 8, 0, 0]}>
                                     {chartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={`hsl(${index * 15}, 70%, 50%)`} />
                                     ))}
@@ -295,19 +295,19 @@ const BossDashboard = () => {
                                 <XAxis dataKey="time" />
                                 <YAxis />
                                 <RechartsTooltip />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="requests" 
-                                    stroke="#1976d2" 
-                                    fill="#1976d2" 
+                                <Area
+                                    type="monotone"
+                                    dataKey="requests"
+                                    stroke="#1e4fb1"
+                                    fill="#1e4fb1"
                                     fillOpacity={0.3}
                                     name="API Requests"
                                 />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="activeUsers" 
-                                    stroke="#4caf50" 
-                                    fill="#4caf50" 
+                                <Area
+                                    type="monotone"
+                                    dataKey="activeUsers"
+                                    stroke="#4caf50"
+                                    fill="#4caf50"
                                     fillOpacity={0.3}
                                     name="Active Users"
                                 />
@@ -331,11 +331,11 @@ const BossDashboard = () => {
                                         {tech.resolved} tickets • {tech.avgTime}h avg
                                     </Typography>
                                 </Box>
-                                <LinearProgress 
-                                    variant="determinate" 
+                                <LinearProgress
+                                    variant="determinate"
                                     value={(tech.resolved / 35) * 100}
-                                    sx={{ 
-                                        height: 8, 
+                                    sx={{
+                                        height: 8,
                                         borderRadius: 4,
                                         bgcolor: 'grey.200'
                                     }}

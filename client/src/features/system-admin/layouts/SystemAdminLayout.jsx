@@ -10,7 +10,8 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { ROLES } from '../../../constants/roles';
 
 const DRAWER_WIDTH = 280;
-const GOLD_ACCENT = '#FFD700';
+const BRAND_BLUE = '#1e4fb1';
+const ACCENT_BLUE = '#0061f2';
 const NAVY_BG = '#0A1929'; // Deep Navy
 
 const SystemAdminLayout = () => {
@@ -63,14 +64,14 @@ const SystemAdminLayout = () => {
                     alignItems: 'center',
                     gap: 2
                 }}>
-                    <Avatar sx={{ bgcolor: GOLD_ACCENT, color: NAVY_BG }}>
+                    <Avatar sx={{ bgcolor: ACCENT_BLUE, color: 'white' }}>
                         <SecurityIcon />
                     </Avatar>
                     <Box>
-                        <Typography variant="subtitle1" fontWeight="bold" sx={{ color: GOLD_ACCENT, letterSpacing: 1 }}>
-                            GOD MODE
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{ color: 'white', letterSpacing: 1 }}>
+                            MESOB ADMIN
                         </Typography>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
                             System Administrator
                         </Typography>
                     </Box>
@@ -88,14 +89,14 @@ const SystemAdminLayout = () => {
                                 sx={{
                                     mb: 1,
                                     borderRadius: 1,
-                                    borderLeft: active ? `4px solid ${GOLD_ACCENT}` : '4px solid transparent',
-                                    bgcolor: active ? 'rgba(255, 215, 0, 0.08)' : 'transparent',
+                                    borderLeft: active ? `4px solid ${ACCENT_BLUE}` : '4px solid transparent',
+                                    bgcolor: active ? 'rgba(0, 97, 242, 0.12)' : 'transparent',
                                     '&:hover': {
                                         bgcolor: 'rgba(255, 255, 255, 0.05)',
                                     }
                                 }}
                             >
-                                <ListItemIcon sx={{ color: active ? GOLD_ACCENT : 'rgba(255,255,255,0.7)' }}>
+                                <ListItemIcon sx={{ color: active ? ACCENT_BLUE : 'rgba(255,255,255,0.7)' }}>
                                     {item.icon}
                                 </ListItemIcon>
                                 <ListItemText

@@ -108,13 +108,13 @@ const UserDashboard = () => {
             {/* Stats Overview */}
             <Grid container spacing={3} sx={{ mb: 6 }}>
                 <Grid item xs={12} sm={4}>
-                    <StatCard icon={<TicketIcon />} value={totalTicketsCount} label="Total Requests" color="primary.main" />
+                    <StatCard icon={<TicketIcon />} value={totalTicketsCount} label="Total Requests" color="#1e4fb1" />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                    <StatCard icon={<TimeIcon />} value={activeTickets.length} label="Active Tickets" color="warning.main" />
+                    <StatCard icon={<TimeIcon />} value={activeTickets.length} label="Active Tickets" color="#0061f2" />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                    <StatCard icon={<CheckIcon />} value={resolvedCount} label="Resolved Today" color="success.main" />
+                    <StatCard icon={<CheckIcon />} value={resolvedCount} label="Resolved Today" color="#42a5f5" />
                 </Grid>
             </Grid>
 

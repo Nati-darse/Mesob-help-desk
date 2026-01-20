@@ -7,7 +7,7 @@ import FeedbackForm from '../components/FeedbackForm';
 import { ROLES } from '../../../constants/roles';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const priorityColors = { Low: 'success', Medium: 'info', High: 'warning', Critical: 'error' };
+const priorityColors = { Low: 'success', Medium: 'info', High: 'primary', Critical: 'error' };
 const statusColors = { New: 'primary', Assigned: 'secondary', 'In Progress': 'info', Resolved: 'success', Closed: 'default' };
 
 const TicketDetails = () => {

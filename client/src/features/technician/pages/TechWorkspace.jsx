@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Container, Typography, Box, Grid, Card, CardContent, Chip, Avatar, 
+import {
+    Container, Typography, Box, Grid, Card, CardContent, Chip, Avatar,
     Button, IconButton, Tooltip, Badge, LinearProgress, Paper, Tabs, Tab,
     List, ListItem, ListItemText, ListItemIcon, Divider, TextField, Select, MenuItem,
     FormControl, InputLabel, Switch, FormControlLabel
@@ -49,20 +49,20 @@ const TechWorkspace = () => {
         const now = new Date();
         const created = new Date(createdAt);
         const hoursElapsed = (now - created) / (1000 * 60 * 60);
-        
+
         if (priority === 'Critical') {
-            return hoursElapsed > 1 ? '#ff1744' : '#ff5252'; // Red if >1hr
+            return hoursElapsed > 1 ? '#0a192f' : '#153b8a'; // Deep Navy if >1hr
         } else if (priority === 'High') {
-            return hoursElapsed > 4 ? '#ff9800' : '#ffa726'; // Orange if >4hrs
+            return hoursElapsed > 4 ? '#1e4fb1' : '#0061f2'; // Brand Blue if >4hrs
         }
-        return '#2196f3'; // Blue for normal
+        return '#42a5f5'; // Light Blue for normal
     };
 
     const getSLABadge = (priority, createdAt) => {
         const now = new Date();
         const created = new Date(createdAt);
         const hoursElapsed = (now - created) / (1000 * 60 * 60);
-        
+
         if (priority === 'Critical') {
             return hoursElapsed <= 1 ? 'SLA OK' : 'SLA BREACH';
         } else if (priority === 'High') {
@@ -77,9 +77,9 @@ const TechWorkspace = () => {
         const isSLABreach = slaStatus === 'SLA BREACH';
 
         return (
-            <Card 
-                sx={{ 
-                    mb: 2, 
+            <Card
+                sx={{
+                    mb: 2,
                     cursor: 'pointer',
                     border: isSLABreach ? `2px solid ${priorityColor}` : '1px solid #e0e0e0',
                     borderRadius: 2,
@@ -107,7 +107,7 @@ const TechWorkspace = () => {
                             </Box>
                         </Box>
                         <Box sx={{ textAlign: 'right' }}>
-                            <Chip 
+                            <Chip
                                 label={slaStatus}
                                 color={isSLABreach ? 'error' : 'success'}
                                 size="small"
@@ -118,13 +118,13 @@ const TechWorkspace = () => {
                             </Typography>
                         </Box>
                     </Box>
-                    
+
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Chip 
+                        <Chip
                             label={ticket.priority}
                             size="small"
-                            sx={{ 
-                                bgcolor: priorityColor, 
+                            sx={{
+                                bgcolor: priorityColor,
                                 color: 'white',
                                 fontWeight: 'bold'
                             }}
@@ -140,11 +140,11 @@ const TechWorkspace = () => {
 
     const DutyPulse = () => (
         <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-            <StatusIcon 
-                sx={{ 
-                    color: dutyStatus === 'Active' ? '#4caf50' : 
-                           dutyStatus === 'On-Site' ? '#ff9800' : 
-                           dutyStatus === 'Break' ? '#2196f3' : '#9e9e9e',
+            <StatusIcon
+                sx={{
+                    color: dutyStatus === 'Active' ? '#1e4fb1' :
+                        dutyStatus === 'On-Site' ? '#0061f2' :
+                            dutyStatus === 'Break' ? '#42a5f5' : '#9e9e9e',
                     mr: 1,
                     fontSize: 12
                 }}
@@ -215,7 +215,7 @@ const TechWorkspace = () => {
                                     ))}
                                 </Box>
                             )}
-                            
+
                             {activeTab === 1 && (
                                 <Box>
                                     <Typography variant="h6" gutterBottom>
@@ -226,17 +226,17 @@ const TechWorkspace = () => {
                                     ))}
                                 </Box>
                             )}
-                            
+
                             {activeTab === 2 && (
                                 <Box>
                                     <Typography variant="h6" gutterBottom>
-                                        Today's Resolved ({tickets.filter(t => t.status === 'Resolved' && 
+                                        Today's Resolved ({tickets.filter(t => t.status === 'Resolved' &&
                                             new Date(t.resolvedAt).toDateString() === new Date().toDateString()).length})
                                     </Typography>
-                                    {tickets.filter(t => t.status === 'Resolved' && 
+                                    {tickets.filter(t => t.status === 'Resolved' &&
                                         new Date(t.resolvedAt).toDateString() === new Date().toDateString()).map(ticket => (
-                                        <TicketCard key={ticket._id} ticket={ticket} />
-                                    ))}
+                                            <TicketCard key={ticket._id} ticket={ticket} />
+                                        ))}
                                 </Box>
                             )}
                         </Box>
@@ -256,8 +256,8 @@ const TechWorkspace = () => {
                                     <Typography variant="body2">
                                         Total Resolved
                                     </Typography>
-                                    <LinearProgress 
-                                        variant="determinate" 
+                                    <LinearProgress
+                                        variant="determinate"
                                         value={(tickets.filter(t => t.status === 'Resolved').length / Math.max(tickets.length, 1)) * 100}
                                         sx={{ mt: 2, bgcolor: 'rgba(255,255,255,0.2)' }}
                                     />
@@ -272,24 +272,24 @@ const TechWorkspace = () => {
                                     Quick Actions
                                 </Typography>
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    <Button 
-                                        variant="contained" 
+                                    <Button
+                                        variant="contained"
                                         startIcon={<LocationIcon />}
                                         fullWidth
                                         sx={{ justifyContent: 'flex-start' }}
                                     >
                                         On-site Now
                                     </Button>
-                                    <Button 
-                                        variant="outlined" 
+                                    <Button
+                                        variant="outlined"
                                         startIcon={<BuildIcon />}
                                         fullWidth
                                         sx={{ justifyContent: 'flex-start' }}
                                     >
                                         Waiting for Parts
                                     </Button>
-                                    <Button 
-                                        variant="outlined" 
+                                    <Button
+                                        variant="outlined"
                                         startIcon={<WarningIcon />}
                                         fullWidth
                                         sx={{ justifyContent: 'flex-start' }}

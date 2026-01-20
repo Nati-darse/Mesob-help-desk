@@ -13,6 +13,8 @@ import { useAuth } from '../../auth/context/AuthContext';
 
 const drawerWidth = 280;
 
+const ACCENT_BLUE = '#0061f2';
+
 const SysAdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('users');
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -32,8 +34,8 @@ const SysAdminDashboard = () => {
     const drawerContent = (
         <Box sx={{
             height: '100%',
-            bgcolor: '#1a1a1a',
-            color: '#D4AF37', // Mesob Gold
+            bgcolor: '#0a192f',
+            color: 'white',
             display: 'flex',
             flexDirection: 'column'
         }}>
@@ -42,8 +44,8 @@ const SysAdminDashboard = () => {
                 <Avatar
                     sx={{
                         bgcolor: 'transparent',
-                        border: '2px solid #D4AF37',
-                        color: '#D4AF37',
+                        border: `2px solid ${ACCENT_BLUE}`,
+                        color: ACCENT_BLUE,
                         fontWeight: 900
                     }}
                 >
@@ -51,15 +53,15 @@ const SysAdminDashboard = () => {
                 </Avatar>
                 <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: 1 }}>
-                        MESOB GOLD
+                        MESOB ADMIN
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#888' }}>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
                         System Admin
                     </Typography>
                 </Box>
             </Box>
 
-            <Divider sx={{ borderColor: 'rgba(212, 175, 55, 0.2)' }} />
+            <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
             {/* Nav Items */}
             <List sx={{ flexGrow: 1, pt: 2 }}>
@@ -72,14 +74,14 @@ const SysAdminDashboard = () => {
                         mx: 1,
                         borderRadius: 2,
                         '&.Mui-selected': {
-                            bgcolor: 'rgba(212, 175, 55, 0.15)',
-                            borderLeft: '4px solid #D4AF37',
-                            '&:hover': { bgcolor: 'rgba(212, 175, 55, 0.25)' }
+                            bgcolor: 'rgba(0, 97, 242, 0.12)',
+                            borderLeft: `4px solid ${ACCENT_BLUE}`,
+                            '&:hover': { bgcolor: 'rgba(0, 97, 242, 0.2)' }
                         },
                         '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' }
                     }}
                 >
-                    <ListItemIcon sx={{ color: activeTab === 'users' ? '#D4AF37' : '#888' }}>
+                    <ListItemIcon sx={{ color: activeTab === 'users' ? ACCENT_BLUE : 'rgba(255,255,255,0.7)' }}>
                         <PeopleIcon />
                     </ListItemIcon>
                     <ListItemText primary="User Directory" primaryTypographyProps={{ fontWeight: 600 }} />
@@ -94,21 +96,21 @@ const SysAdminDashboard = () => {
                         mx: 1,
                         borderRadius: 2,
                         '&.Mui-selected': {
-                            bgcolor: 'rgba(212, 175, 55, 0.15)',
-                            borderLeft: '4px solid #D4AF37',
-                            '&:hover': { bgcolor: 'rgba(212, 175, 55, 0.25)' }
+                            bgcolor: 'rgba(0, 97, 242, 0.12)',
+                            borderLeft: `4px solid ${ACCENT_BLUE}`,
+                            '&:hover': { bgcolor: 'rgba(0, 97, 242, 0.2)' }
                         },
                         '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.05)' }
                     }}
                 >
-                    <ListItemIcon sx={{ color: activeTab === 'monitor' ? '#D4AF37' : '#888' }}>
+                    <ListItemIcon sx={{ color: activeTab === 'monitor' ? ACCENT_BLUE : 'rgba(255,255,255,0.7)' }}>
                         <MonitorIcon />
                     </ListItemIcon>
                     <ListItemText primary="System Monitor" primaryTypographyProps={{ fontWeight: 600 }} />
                 </ListItem>
             </List>
 
-            <Divider sx={{ borderColor: 'rgba(212, 175, 55, 0.2)' }} />
+            <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
             {/* Logout */}
             <Box sx={{ p: 2 }}>
@@ -164,7 +166,7 @@ const SysAdminDashboard = () => {
                     variant="permanent"
                     sx={{
                         display: { xs: 'none', md: 'block' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: '1px solid #D4AF37' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: `1px solid ${ACCENT_BLUE}` },
                     }}
                     open
                 >
