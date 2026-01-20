@@ -10,10 +10,19 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Clear any existing user data on app load for testing
-        localStorage.removeItem('mesob_user');
-        setUser(null);
-        delete axios.defaults.headers.common['Authorization'];
+        // Restore user from localStorage on app load
+        const storedUser = localStorage.getItem('mesob_user');
+        if (storedUser) {
+            try {
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
+                axios.defaults.headers.common['x-tenant-id'] = String(parsedUser.companyId || '');
+            } catch (e) {
+                console.error('Failed to parse stored user');
+                localStorage.removeItem('mesob_user');
+            }
+        }
         setLoading(false);
     }, []);
 
