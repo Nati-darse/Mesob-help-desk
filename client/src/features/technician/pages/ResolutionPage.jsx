@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
     Container, Typography, Box, Grid, Card, CardContent, Paper, TextField, 
     Button, Chip, Avatar, Divider, Select, MenuItem,
-    FormControl, InputLabel, Switch, FormControlLabel, IconButton, Tooltip
+    FormControl, InputLabel, Switch, FormControlLabel, IconButton, Tooltip,
+    Alert, Stepper, Step, StepLabel, Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import {
     Timeline, TimelineItem, TimelineSeparator,
@@ -16,10 +17,14 @@ import {
     Save as SaveIcon,
     Send as SendIcon,
     Phone as PhoneIcon,
-    LocationOn as LocationIcon,
+    Place as LocationIcon,
     AccessTime as TimeIcon,
     Person as PersonIcon,
-    Assignment as TaskIcon
+    Assignment as TaskIcon,
+    PlayArrow as StartIcon,
+    Stop as FinishIcon,
+    Feedback as FeedbackIcon,
+    Note as NoteIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -39,9 +44,19 @@ const ResolutionPage = () => {
         resolutionCode: '',
         timeSpent: '',
         partsUsed: '',
-        nextSteps: ''
+        nextSteps: '',
+        rootCause: '',
+        actionTaken: ''
     });
     const [timeline, setTimeline] = useState([]);
+    const [technicianNote, setTechnicianNote] = useState('');
+    const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+    const [acceptStartDialogOpen, setAcceptStartDialogOpen] = useState(false);
+    const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+    const [initialNote, setInitialNote] = useState('');
+    const [completionNote, setCompletionNote] = useState('');
+    const [workflowStep, setWorkflowStep] = useState(0);
+    const [alert, setAlert] = useState({ show: false, message: '', severity: 'info' });
 
     const qc = useQueryClient();
 
@@ -50,6 +65,17 @@ const ResolutionPage = () => {
             fetchTicketDetails();
         }
     }, [id]);
+
+    useEffect(() => {
+        // Determine workflow step based on ticket status
+        if (ticket) {
+            if (!ticket.acceptedAt) setWorkflowStep(0);
+            else if (!ticket.startedAt) setWorkflowStep(1);
+            else if (!ticket.finishedAt) setWorkflowStep(2);
+            else if (!ticket.feedbackRequestedAt) setWorkflowStep(3);
+            else setWorkflowStep(4);
+        }
+    }, [ticket]);
 
     const fetchTicketDetails = async () => {
         try {
@@ -87,6 +113,111 @@ const ResolutionPage = () => {
             fetchTicketDetails();
         }
     });
+
+    const handleAcceptAndStartTicket = async () => {
+        setAcceptStartDialogOpen(true);
+    };
+
+    const handleConfirmAcceptAndStart = async () => {
+        try {
+            await axios.put(`/api/technician/${id}/accept-and-start`, {
+                initialNote: initialNote.trim() || undefined
+            });
+            setAlert({ show: true, message: 'Ticket accepted and work started successfully!', severity: 'success' });
+            setAcceptStartDialogOpen(false);
+            setInitialNote('');
+            fetchTicketDetails();
+        } catch (error) {
+            console.error('Error accepting and starting ticket:', error);
+            setAlert({ show: true, message: 'Error accepting and starting ticket', severity: 'error' });
+        }
+    };
+
+    const handleFinishAndRequestFeedback = async () => {
+        setFinishDialogOpen(true);
+    };
+
+    const handleConfirmFinishAndRequestFeedback = async () => {
+        try {
+            await axios.put(`/api/technician/${id}/finish-and-request-feedback`, {
+                completionNote: completionNote.trim() || undefined
+            });
+            setAlert({ show: true, message: 'Work finished and feedback requested from team leader!', severity: 'success' });
+            setFinishDialogOpen(false);
+            setCompletionNote('');
+            fetchTicketDetails();
+        } catch (error) {
+            console.error('Error finishing and requesting feedback:', error);
+            setAlert({ show: true, message: 'Error finishing work and requesting feedback', severity: 'error' });
+        }
+    };
+
+    const handleAcceptTicket = async () => {
+        try {
+            await axios.put(`/api/technician/${id}/accept`);
+            setAlert({ show: true, message: 'Ticket accepted successfully!', severity: 'success' });
+            fetchTicketDetails(); // Refresh ticket data
+        } catch (error) {
+            console.error('Error accepting ticket:', error);
+            setAlert({ show: true, message: 'Error accepting ticket', severity: 'error' });
+        }
+    };
+
+    const handleStartTicket = async () => {
+        try {
+            await axios.put(`/api/technician/${id}/start`);
+            setAlert({ show: true, message: 'Work started on ticket!', severity: 'success' });
+            fetchTicketDetails();
+        } catch (error) {
+            console.error('Error starting ticket:', error);
+            setAlert({ show: true, message: 'Error starting ticket', severity: 'error' });
+        }
+    };
+
+    const handleFinishTicket = async () => {
+        try {
+            await axios.put(`/api/technician/${id}/finish`);
+            setAlert({ show: true, message: 'Work finished on ticket!', severity: 'success' });
+            fetchTicketDetails();
+        } catch (error) {
+            console.error('Error finishing ticket:', error);
+            setAlert({ show: true, message: 'Error finishing ticket', severity: 'error' });
+        }
+    };
+
+    const handleRequestFeedback = async () => {
+        try {
+            await axios.put(`/api/technician/${id}/request-feedback`);
+            setAlert({ show: true, message: 'Feedback requested from team leader!', severity: 'success' });
+            fetchTicketDetails();
+        } catch (error) {
+            console.error('Error requesting feedback:', error);
+            setAlert({ show: true, message: 'Error requesting feedback', severity: 'error' });
+        }
+    };
+
+    const handleAddNote = async () => {
+        if (!technicianNote.trim()) {
+            setAlert({ show: true, message: 'Please enter a note', severity: 'warning' });
+            return;
+        }
+        
+        if (technicianNote.length > 500) {
+            setAlert({ show: true, message: 'Note must be 500 characters or less', severity: 'warning' });
+            return;
+        }
+
+        try {
+            await axios.post(`/api/technician/${id}/notes`, { note: technicianNote });
+            setAlert({ show: true, message: 'Note added successfully!', severity: 'success' });
+            setTechnicianNote('');
+            setNoteDialogOpen(false);
+            fetchTicketDetails();
+        } catch (error) {
+            console.error('Error adding note:', error);
+            setAlert({ show: true, message: 'Error adding note', severity: 'error' });
+        }
+    };
 
     const handleQuickAction = (action) => {
         const updates = {
@@ -134,6 +265,13 @@ const ResolutionPage = () => {
     };
 
     const handleResolve = () => {
+        // Validate required fields
+        if (!resolutionData.category || !resolutionData.resolutionCode || 
+            !resolutionData.rootCause || !resolutionData.actionTaken) {
+            alert('Please fill in all required fields: Category, Resolution Code, Root Cause, and Action Taken');
+            return;
+        }
+
         const resolveData = {
             ...resolutionData,
             resolvedAt: new Date(),
@@ -150,6 +288,11 @@ const ResolutionPage = () => {
     const getTimelineIcon = (type) => {
         switch (type) {
             case 'created': return <TaskIcon color="primary" />;
+            case 'assigned': return <PersonIcon color="info" />;
+            case 'accepted': return <CheckIcon color="success" />;
+            case 'started': return <StartIcon color="primary" />;
+            case 'finished': return <FinishIcon color="warning" />;
+            case 'feedback_requested': return <FeedbackIcon color="secondary" />;
             case 'internal': return <BuildIcon color="secondary" />;
             case 'customer': return <PersonIcon color="success" />;
             case 'resolved': return <CheckIcon color="success" />;
@@ -175,6 +318,41 @@ const ResolutionPage = () => {
 
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+            {/* Alert */}
+            {alert.show && (
+                <Alert 
+                    severity={alert.severity} 
+                    onClose={() => setAlert({ show: false, message: '', severity: 'info' })}
+                    sx={{ mb: 2 }}
+                >
+                    {alert.message}
+                </Alert>
+            )}
+
+            {/* Workflow Stepper */}
+            <Paper sx={{ p: 2, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                    Technician Workflow Progress
+                </Typography>
+                <Stepper activeStep={workflowStep} alternativeLabel>
+                    <Step>
+                        <StepLabel>Accept Ticket</StepLabel>
+                    </Step>
+                    <Step>
+                        <StepLabel>Start Work</StepLabel>
+                    </Step>
+                    <Step>
+                        <StepLabel>Finish Work</StepLabel>
+                    </Step>
+                    <Step>
+                        <StepLabel>Request Feedback</StepLabel>
+                    </Step>
+                    <Step>
+                        <StepLabel>Complete</StepLabel>
+                    </Step>
+                </Stepper>
+            </Paper>
+
             <Grid container spacing={3}>
                 {/* Left: Ticket Details */}
                 <Grid item xs={12} md={8}>
@@ -193,7 +371,7 @@ const ResolutionPage = () => {
                                         sx={{ fontWeight: 'bold' }}
                                     />
                                     <Chip 
-                                        label={ticket.company?.initials || 'Unknown'}
+                                        label={ticket.companyDisplayInitials || ticket.company?.initials || 'Unknown'}
                                         variant="outlined"
                                         size="small"
                                     />
@@ -206,34 +384,76 @@ const ResolutionPage = () => {
                                 <Typography variant="body2" color="text.secondary">
                                     Created: {new Date(ticket.createdAt).toLocaleString()}
                                 </Typography>
+                                <Typography variant="body2" color="primary" sx={{ fontWeight: 'bold' }}>
+                                    Client: {ticket.companyDisplayName || ticket.company?.name || 'Unknown Company'}
+                                </Typography>
                             </Box>
                             
-                            {/* Quick Actions */}
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                                <Tooltip title="Mark as On-Site">
-                                    <IconButton 
-                                        color="primary"
-                                        onClick={() => handleQuickAction('onsite')}
+                            {/* Workflow Action Buttons */}
+                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+                                {/* Accept & Start Button */}
+                                {!ticket.acceptedAt && ticket.status !== 'Resolved' && (
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        startIcon={<CheckIcon />}
+                                        onClick={handleAcceptAndStartTicket}
+                                        sx={{ mb: 1 }}
                                     >
-                                        <LocationIcon />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Waiting for Parts">
-                                    <IconButton 
+                                        Accept & Start Work
+                                    </Button>
+                                )}
+                                
+                                {/* Finish & Request Feedback Button */}
+                                {ticket.startedAt && !ticket.feedbackRequestedAt && ticket.status !== 'Resolved' && (
+                                    <Button
+                                        variant="contained"
                                         color="warning"
-                                        onClick={() => handleQuickAction('parts')}
+                                        startIcon={<FeedbackIcon />}
+                                        onClick={handleFinishAndRequestFeedback}
+                                        sx={{ mb: 1 }}
                                     >
-                                        <BuildIcon />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Escalate to Team Lead">
-                                    <IconButton 
-                                        color="error"
-                                        onClick={() => handleQuickAction('escalate')}
-                                    >
-                                        <WarningIcon />
-                                    </IconButton>
-                                </Tooltip>
+                                        Finish & Request Feedback
+                                    </Button>
+                                )}
+                                
+                                {/* Add Note Button */}
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<NoteIcon />}
+                                    onClick={() => setNoteDialogOpen(true)}
+                                    sx={{ mb: 1 }}
+                                >
+                                    Add Note
+                                </Button>
+                                
+                                {/* Quick Actions */}
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Tooltip title="Mark as On-Site">
+                                        <IconButton 
+                                            color="primary"
+                                            onClick={() => handleQuickAction('onsite')}
+                                        >
+                                            <LocationIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Waiting for Parts">
+                                        <IconButton 
+                                            color="warning"
+                                            onClick={() => handleQuickAction('parts')}
+                                        >
+                                            <BuildIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Escalate to Team Lead">
+                                        <IconButton 
+                                            color="error"
+                                            onClick={() => handleQuickAction('escalate')}
+                                        >
+                                            <WarningIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
                             </Box>
                         </Box>
 
@@ -248,6 +468,25 @@ const ResolutionPage = () => {
                                 {ticket.description}
                             </Typography>
                         </Box>
+
+                        {/* Technician Notes Section */}
+                        {ticket.technicianNotes && ticket.technicianNotes.length > 0 && (
+                            <Box sx={{ mb: 3 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Technician Notes (For Future Reference)
+                                </Typography>
+                                {ticket.technicianNotes.map((noteItem, index) => (
+                                    <Card key={index} sx={{ mb: 1, p: 2, backgroundColor: '#f8f9fa' }}>
+                                        <Typography variant="body2" sx={{ mb: 1 }}>
+                                            {noteItem.note}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            Added on {new Date(noteItem.createdAt).toLocaleString()}
+                                        </Typography>
+                                    </Card>
+                                ))}
+                            </Box>
+                        )}
 
                         {/* Timeline */}
                         <Box sx={{ mb: 3 }}>
@@ -337,6 +576,32 @@ const ResolutionPage = () => {
                                             fullWidth
                                             multiline
                                             rows={3}
+                                            label="Root Cause *"
+                                            size="small"
+                                            required
+                                            value={resolutionData.rootCause}
+                                            onChange={(e) => setResolutionData({...resolutionData, rootCause: e.target.value})}
+                                            helperText="Describe the underlying cause of the issue"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <TextField
+                                            fullWidth
+                                            multiline
+                                            rows={3}
+                                            label="Action Taken *"
+                                            size="small"
+                                            required
+                                            value={resolutionData.actionTaken}
+                                            onChange={(e) => setResolutionData({...resolutionData, actionTaken: e.target.value})}
+                                            helperText="Describe the steps taken to resolve the issue"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <TextField
+                                            fullWidth
+                                            multiline
+                                            rows={3}
                                             label="Next Steps"
                                             size="small"
                                             value={resolutionData.nextSteps}
@@ -349,7 +614,8 @@ const ResolutionPage = () => {
                                             color="success"
                                             startIcon={<CheckIcon />}
                                             onClick={handleResolve}
-                                            disabled={!resolutionData.category || !resolutionData.resolutionCode}
+                                            disabled={!resolutionData.category || !resolutionData.resolutionCode || 
+                                                     !resolutionData.rootCause || !resolutionData.actionTaken}
                                         >
                                             Mark as Resolved
                                         </Button>
@@ -448,6 +714,113 @@ const ResolutionPage = () => {
                     </Grid>
                 </Grid>
             </Grid>
+
+            {/* Add Note Dialog */}
+            <Dialog open={noteDialogOpen} onClose={() => setNoteDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Add Technician Note</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Add a note for future reference when encountering similar issues. Maximum 500 characters.
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={technicianNote}
+                        onChange={(e) => setTechnicianNote(e.target.value)}
+                        placeholder="Describe the issue, solution, or important details for future reference..."
+                        helperText={`${technicianNote.length}/500 characters`}
+                        error={technicianNote.length > 500}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
+                    <Button 
+                        onClick={handleAddNote} 
+                        variant="contained"
+                        disabled={!technicianNote.trim() || technicianNote.length > 500}
+                    >
+                        Add Note
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Accept & Start Dialog */}
+            <Dialog open={acceptStartDialogOpen} onClose={() => setAcceptStartDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <CheckIcon color="success" />
+                        Accept & Start Work
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        You're about to accept this ticket and start working on it immediately. 
+                        You can optionally add an initial note about your approach or findings.
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={initialNote}
+                        onChange={(e) => setInitialNote(e.target.value)}
+                        placeholder="Optional: Add initial note about your approach or findings (max 500 characters)..."
+                        inputProps={{ maxLength: 500 }}
+                        helperText={`${initialNote.length}/500 characters`}
+                        sx={{ mt: 1 }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setAcceptStartDialogOpen(false)}>Cancel</Button>
+                    <Button 
+                        onClick={handleConfirmAcceptAndStart}
+                        variant="contained"
+                        color="success"
+                        startIcon={<CheckIcon />}
+                    >
+                        Accept & Start Work
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Finish & Request Feedback Dialog */}
+            <Dialog open={finishDialogOpen} onClose={() => setFinishDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <FeedbackIcon color="warning" />
+                        Finish Work & Request Feedback
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        You're about to mark this work as finished and automatically request feedback 
+                        from the team leader who created this ticket. You can add a completion note 
+                        describing what was done.
+                    </Typography>
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={4}
+                        value={completionNote}
+                        onChange={(e) => setCompletionNote(e.target.value)}
+                        placeholder="Optional: Add completion note describing what was done (max 500 characters)..."
+                        inputProps={{ maxLength: 500 }}
+                        helperText={`${completionNote.length}/500 characters`}
+                        sx={{ mt: 1 }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setFinishDialogOpen(false)}>Cancel</Button>
+                    <Button 
+                        onClick={handleConfirmFinishAndRequestFeedback}
+                        variant="contained"
+                        color="warning"
+                        startIcon={<FeedbackIcon />}
+                    >
+                        Finish & Request Feedback
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 };

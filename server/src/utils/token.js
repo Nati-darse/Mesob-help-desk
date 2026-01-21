@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 // Generate Access Token
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '1h',
+        expiresIn: '24h', // Extended to 24 hours for better user experience
     });
 };
 

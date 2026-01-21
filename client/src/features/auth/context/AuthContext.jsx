@@ -28,13 +28,22 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
+            console.log('=== AUTH CONTEXT LOGIN ===');
+            console.log('Making login request to /api/auth/login');
             const res = await axios.post('/api/auth/login', { email, password });
+            console.log('Login response received:', res.data);
+            
             setUser(res.data);
             localStorage.setItem('mesob_user', JSON.stringify(res.data));
             axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
             axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
+            
+            console.log('User set in context:', res.data);
+            console.log('Token set in axios headers');
+            
             return { success: true, user: res.data };
         } catch (error) {
+            console.error('Login error in AuthContext:', error);
             return {
                 success: false,
                 message: error.response?.data?.message || 'Login failed'

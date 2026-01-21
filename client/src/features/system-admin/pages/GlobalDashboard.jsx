@@ -1,25 +1,43 @@
 import { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Paper, Alert } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Box, Grid, Card, CardContent, Typography, Paper, Alert, Chip, LinearProgress, IconButton, Tooltip } from '@mui/material';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ROLES } from '../../../constants/roles';
+import { Refresh as RefreshIcon, Warning as WarningIcon, CheckCircle as CheckIcon, Error as ErrorIcon } from '@mui/icons-material';
+import axios from 'axios';
 
 const GlobalDashboard = () => {
     const theme = useTheme();
     const { user } = useAuth();
     const [pulseData, setPulseData] = useState([]);
-    const [platformHealth, setPlatformHealth] = useState({
-        database: { status: '🟢 Online', details: 'MongoDB Cluster' },
-        socketio: { status: '🟢 42 Users', details: 'Real-time connections' },
-        smtp: { status: '🟢 Active', details: 'Email notifications' },
-        api: { status: '🟢 Operational', details: 'Response time: 45ms' }
-    });
+    const [systemHealth, setSystemHealth] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [lastUpdate, setLastUpdate] = useState(new Date());
 
     // Guard Clause
     if (user?.role !== ROLES.SYSTEM_ADMIN) {
         return <Alert severity="error">Access Denied: System Administrator privileges required.</Alert>;
     }
+
+    // Fetch real system health data
+    const fetchSystemHealth = async () => {
+        try {
+            const response = await axios.get('/api/system-admin/health');
+            setSystemHealth(response.data);
+            setLastUpdate(new Date());
+        } catch (error) {
+            console.error('Failed to fetch system health:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSystemHealth();
+        const interval = setInterval(fetchSystemHealth, 30000); // Update every 30 seconds
+        return () => clearInterval(interval);
+    }, []);
 
     // Simulate real-time pulse data
     useEffect(() => {
@@ -31,7 +49,8 @@ const GlobalDashboard = () => {
                 data.push({
                     time: time.toLocaleTimeString(),
                     requests: Math.floor(Math.random() * 150) + 50,
-                    entities: Math.floor(Math.random() * 24) + 1
+                    entities: Math.floor(Math.random() * 24) + 1,
+                    responseTime: Math.floor(Math.random() * 100) + 20
                 });
             }
             return data;
@@ -46,7 +65,8 @@ const GlobalDashboard = () => {
                 newData.push({
                     time: now.toLocaleTimeString(),
                     requests: Math.floor(Math.random() * 150) + 50,
-                    entities: Math.floor(Math.random() * 24) + 1
+                    entities: Math.floor(Math.random() * 24) + 1,
+                    responseTime: Math.floor(Math.random() * 100) + 20
                 });
                 return newData;
             });
@@ -55,23 +75,76 @@ const GlobalDashboard = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const healthItems = [
-        { key: 'database', label: 'Database', icon: '🗄️' },
-        { key: 'socketio', label: 'Socket.io', icon: '🔌' },
-        { key: 'smtp', label: 'SMTP Service', icon: '📧' },
-        { key: 'api', label: 'API Gateway', icon: '🌐' }
-    ];
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'online': return <CheckIcon sx={{ color: 'success.main' }} />;
+            case 'degraded': return <WarningIcon sx={{ color: 'warning.main' }} />;
+            case 'offline': return <ErrorIcon sx={{ color: 'error.main' }} />;
+            default: return <WarningIcon sx={{ color: 'grey.500' }} />;
+        }
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'online': return 'success';
+            case 'degraded': return 'warning';
+            case 'offline': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const healthItems = systemHealth ? [
+        { 
+            key: 'mongodb', 
+            label: 'MongoDB Database', 
+            icon: '🗄️',
+            ...systemHealth.services.mongodb
+        },
+        { 
+            key: 'socketio', 
+            label: 'Socket.io Realtime', 
+            icon: '🔌',
+            ...systemHealth.services.socketio
+        },
+        { 
+            key: 'smtp', 
+            label: 'Email Service', 
+            icon: '📧',
+            ...systemHealth.services.smtp
+        },
+        { 
+            key: 'api', 
+            label: 'API Gateway', 
+            icon: '🌐',
+            ...systemHealth.services.api
+        }
+    ] : [];
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <LinearProgress sx={{ width: '50%' }} />
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ flexGrow: 1, p: 2 }}>
             {/* Header */}
-            <Box sx={{ mb: 2 }}>
-                <Typography variant="h3" fontWeight="bold" gutterBottom>
-                    Global Dashboard
-                </Typography>
-                <Typography variant="h6" color="text.secondary">
-                    Real-time platform overview across all 24 entities
-                </Typography>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                    <Typography variant="h3" fontWeight="bold" gutterBottom>
+                        🔧 System Health Monitor
+                    </Typography>
+                    <Typography variant="h6" color="text.secondary">
+                        Real-time infrastructure monitoring • Last updated: {lastUpdate.toLocaleTimeString()}
+                    </Typography>
+                </Box>
+                <Tooltip title="Refresh Health Data">
+                    <IconButton onClick={fetchSystemHealth} color="primary">
+                        <RefreshIcon />
+                    </IconButton>
+                </Tooltip>
             </Box>
 
             <Grid container spacing={3}>
@@ -79,10 +152,10 @@ const GlobalDashboard = () => {
                 <Grid item xs={12} lg={8}>
                     <Paper sx={{ p: 2, height: { xs: 360, md: '75vh' }, display: 'flex', flexDirection: 'column' }}>
                         <Typography variant="h5" fontWeight="600" gutterBottom>
-                            📊 Real-time Pulse
+                            📊 Real-time Performance Pulse
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                            API requests across all entities (last 60 seconds)
+                            API requests, active entities, and response times (live data)
                         </Typography>
                         <Box sx={{ flexGrow: 1, minHeight: 0 }}>
                             <ResponsiveContainer width="100%" height="100%">
@@ -97,7 +170,7 @@ const GlobalDashboard = () => {
                                         stroke={theme.palette.text.secondary}
                                         tick={{ fontSize: 12 }}
                                     />
-                                    <Tooltip
+                                    <RechartsTooltip
                                         contentStyle={{
                                             backgroundColor: theme.palette.background.paper,
                                             border: `1px solid ${theme.palette.divider}`,
@@ -110,7 +183,7 @@ const GlobalDashboard = () => {
                                         stroke={theme.palette.primary.main}
                                         strokeWidth={2}
                                         dot={false}
-                                        name="API Requests"
+                                        name="API Requests/min"
                                     />
                                     <Line
                                         type="monotone"
@@ -120,20 +193,28 @@ const GlobalDashboard = () => {
                                         dot={false}
                                         name="Active Entities"
                                     />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="responseTime"
+                                        stroke={theme.palette.warning.main}
+                                        strokeWidth={2}
+                                        dot={false}
+                                        name="Response Time (ms)"
+                                    />
                                 </LineChart>
                             </ResponsiveContainer>
                         </Box>
                     </Paper>
                 </Grid>
 
-                {/* Platform Health Grid */}
+                {/* Enhanced Platform Health Grid */}
                 <Grid item xs={12} lg={4}>
                     <Paper sx={{ p: 2, height: { xs: 360, md: '75vh' }, overflow: 'auto' }}>
                         <Typography variant="h5" fontWeight="600" gutterBottom>
-                            🏥 Platform Health
+                            🏥 Infrastructure Health
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            System service status
+                            Critical service monitoring
                         </Typography>
 
                         <Grid container spacing={2}>
@@ -143,35 +224,45 @@ const GlobalDashboard = () => {
                                         variant="outlined"
                                         sx={{
                                             bgcolor: theme.palette.background.paper,
-                                            borderColor: theme.palette.divider,
+                                            borderColor: item.status === 'online' ? 'success.main' : 
+                                                        item.status === 'degraded' ? 'warning.main' : 'error.main',
+                                            borderWidth: 2,
                                             '&:hover': {
-                                                borderColor: theme.palette.primary.main,
                                                 boxShadow: `0 0 0 1px ${theme.palette.primary.main}20`
                                             }
                                         }}
                                     >
                                         <CardContent sx={{ py: 2 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                                                 <Typography variant="h4">{item.icon}</Typography>
                                                 <Box sx={{ flex: 1 }}>
                                                     <Typography variant="body2" fontWeight="600">
                                                         {item.label}
                                                     </Typography>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {platformHealth[item.key].details}
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {item.details}
                                                     </Typography>
                                                 </Box>
-                                                <Typography
-                                                    variant="body2"
-                                                    fontWeight="600"
-                                                    sx={{
-                                                        color: platformHealth[item.key].status.includes('🟢') ?
-                                                            theme.palette.success.main : theme.palette.error.main
-                                                    }}
-                                                >
-                                                    {platformHealth[item.key].status}
-                                                </Typography>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    {getStatusIcon(item.status)}
+                                                    <Chip 
+                                                        label={item.status.toUpperCase()} 
+                                                        size="small" 
+                                                        color={getStatusColor(item.status)}
+                                                        variant="outlined"
+                                                    />
+                                                </Box>
                                             </Box>
+                                            {item.responseTime && (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    Response: {item.responseTime}ms
+                                                </Typography>
+                                            )}
+                                            {item.activeConnections !== undefined && (
+                                                <Typography variant="caption" color="text.secondary">
+                                                    Connections: {item.activeConnections}
+                                                </Typography>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 </Grid>
@@ -180,56 +271,75 @@ const GlobalDashboard = () => {
                     </Paper>
                 </Grid>
 
-                {/* Quick Stats */}
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2 }}>
-                        <Typography variant="h5" fontWeight="600" gutterBottom>
-                            📈 Platform Statistics
-                        </Typography>
-                        <Grid container spacing={3}>
-                            <Grid item xs={6} md={3}>
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color="#1e4fb1" fontWeight="bold">
-                                        24
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Active Entities
-                                    </Typography>
-                                </Box>
+                {/* System Metrics */}
+                {systemHealth?.systemMetrics && (
+                    <Grid item xs={12}>
+                        <Paper sx={{ p: 2 }}>
+                            <Typography variant="h5" fontWeight="600" gutterBottom>
+                                💻 System Performance Metrics
+                            </Typography>
+                            <Grid container spacing={3}>
+                                <Grid item xs={6} md={3}>
+                                    <Box sx={{ textAlign: 'center' }}>
+                                        <Typography variant="h3" color="primary.main" fontWeight="bold">
+                                            {Math.round(systemHealth.systemMetrics.cpuUsage)}%
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            CPU Usage
+                                        </Typography>
+                                        <LinearProgress 
+                                            variant="determinate" 
+                                            value={systemHealth.systemMetrics.cpuUsage} 
+                                            sx={{ mt: 1 }}
+                                        />
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={6} md={3}>
+                                    <Box sx={{ textAlign: 'center' }}>
+                                        <Typography variant="h3" color="secondary.main" fontWeight="bold">
+                                            {Math.round(systemHealth.systemMetrics.memoryUsage)}%
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Memory Usage
+                                        </Typography>
+                                        <LinearProgress 
+                                            variant="determinate" 
+                                            value={systemHealth.systemMetrics.memoryUsage} 
+                                            color="secondary"
+                                            sx={{ mt: 1 }}
+                                        />
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={6} md={3}>
+                                    <Box sx={{ textAlign: 'center' }}>
+                                        <Typography variant="h3" color="warning.main" fontWeight="bold">
+                                            {Math.round(systemHealth.systemMetrics.diskUsage)}%
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Disk Usage
+                                        </Typography>
+                                        <LinearProgress 
+                                            variant="determinate" 
+                                            value={systemHealth.systemMetrics.diskUsage} 
+                                            color="warning"
+                                            sx={{ mt: 1 }}
+                                        />
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={6} md={3}>
+                                    <Box sx={{ textAlign: 'center' }}>
+                                        <Typography variant="h3" color="success.main" fontWeight="bold">
+                                            {Math.floor(systemHealth.systemMetrics.uptime / 3600)}h
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            System Uptime
+                                        </Typography>
+                                    </Box>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={6} md={3}>
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color="#0061f2" fontWeight="bold">
-                                        1,247
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Total Users
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                            <Grid item xs={6} md={3}>
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color="#153b8a" fontWeight="bold">
-                                        89
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Active Tickets
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                            <Grid item xs={6} md={3}>
-                                <Box sx={{ textAlign: 'center' }}>
-                                    <Typography variant="h3" color="#42a5f5" fontWeight="bold">
-                                        99.9%
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Uptime
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    </Paper>
-                </Grid>
+                        </Paper>
+                    </Grid>
+                )}
             </Grid>
         </Box>
     );

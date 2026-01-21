@@ -116,7 +116,7 @@ const TicketDetails = () => {
 
             <Grid container spacing={3}>
                 {/* Main Ticket Info */}
-                <Grid size={{ xs: 12, md: 8 }}>
+                <Grid item xs={12} md={8}>
                     <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'start', sm: 'center' }, gap: 2, mb: 2 }}>
                             <Typography variant="h4" sx={{ fontWeight: 'bold', fontSize: { xs: '1.5rem', md: '2.125rem' } }}>{ticket.title}</Typography>
@@ -217,7 +217,7 @@ const TicketDetails = () => {
                 </Grid>
 
                 {/* Sidebar Actions */}
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid item xs={12} md={4}>
                     <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <Typography variant="h6" gutterBottom>Lifecycle Management</Typography>
 

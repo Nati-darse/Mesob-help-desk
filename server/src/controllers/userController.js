@@ -5,16 +5,17 @@ const User = require('../models/User');
 // @access  Private (Team Lead/Admin)
 exports.getTechnicians = async (req, res) => {
     try {
-        const filter = { role: 'Technician', isAvailable: true };
+        const filter = { role: 'Technician', isAvailable: true, isHidden: { $ne: true } };
         const scoped = req.tenantId ? { ...filter, companyId: req.tenantId } : filter;
         const technicians = await User.find(scoped)
-            .select('name email department')
+            .select('name email department dutyStatus dutyStatusUpdatedAt')
             .lean();
         res.json(technicians);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
 // @desc    Update user availability
 // @route   PUT /api/users/availability
 // @access  Private
@@ -40,7 +41,8 @@ exports.updateAvailability = async (req, res) => {
 // @access  Private (System Admin)
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}).sort({ createdAt: -1 });
+        // System Admins can see all users including hidden ones
+        const users = await User.findIncludingHidden({}).sort({ createdAt: -1 });
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -59,10 +61,60 @@ exports.updateUserRole = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Force MESOB company for technicians
+        if (role === 'Technician') {
+            user.companyId = 1; // MESOB Internal
+            user.department = 'IT Support'; // Default department for technicians
+        }
+
         user.role = role;
         await user.save();
 
         res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Create new user (Admin)
+// @route   POST /api/users
+// @access  Private (Admin)
+exports.createUser = async (req, res) => {
+    try {
+        const { name, email, password, role, department, companyId } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        // Force MESOB company for technicians
+        let finalCompanyId = companyId;
+        let finalDepartment = department;
+        
+        if (role === 'Technician') {
+            finalCompanyId = 1; // MESOB Internal
+            finalDepartment = 'IT Support'; // Default department for technicians
+        }
+
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role,
+            department: finalDepartment,
+            companyId: finalCompanyId
+        });
+
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            companyId: user.companyId
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

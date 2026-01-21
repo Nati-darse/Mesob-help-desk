@@ -15,17 +15,32 @@ const Login = () => {
     const navigate = useNavigate();
 
     const getRedirectPath = (role) => {
+        console.log('=== LOGIN REDIRECT DEBUG ===');
+        console.log('User role from server:', role);
+        console.log('Role type:', typeof role);
+        console.log('Role length:', role?.length);
+        console.log('Role comparison with "Technician":', role === 'Technician');
+        console.log('Role comparison with "TECHNICIAN":', role === 'TECHNICIAN');
+        
         switch (role) {
-            case ROLES.SYSTEM_ADMIN:
+            case 'System Admin':
+                console.log('Redirecting to /sys-admin');
                 return '/sys-admin';
-            case ROLES.SUPER_ADMIN:
+            case 'Super Admin':
+                console.log('Redirecting to /admin');
                 return '/admin';
-            case ROLES.TECHNICIAN:
+            case 'Technician':
+            case 'TECHNICIAN':
+                console.log('Redirecting to /tech');
                 return '/tech';
-            case ROLES.EMPLOYEE:
+            case 'Worker':
+            case 'Employee':
+                console.log('Redirecting to /portal');
                 return '/portal';
             default:
-                return '/dashboard';
+                console.log('No role match, redirecting to /redirect');
+                console.log('Available roles: System Admin, Super Admin, Technician, TECHNICIAN, Worker, Employee');
+                return '/redirect';
         }
     };
 
@@ -34,11 +49,22 @@ const Login = () => {
         setError('');
         setLoading(true);
 
+        console.log('=== LOGIN ATTEMPT ===');
+        console.log('Email:', email);
+        console.log('Attempting login...');
+
         const result = await login(email, password);
+        console.log('Login result:', result);
+        
         if (result.success) {
+            console.log('Login successful!');
+            console.log('User data:', result.user);
             const redirectPath = getRedirectPath(result.user.role);
+            console.log('Redirect path:', redirectPath);
+            console.log('Navigating to:', redirectPath);
             navigate(redirectPath);
         } else {
+            console.log('Login failed:', result.message);
             setError(result.message);
         }
         setLoading(false);

@@ -5,7 +5,7 @@ import {
 import {
     Speed as SpeedIcon,
     Hub as HubIcon,
-    Campaign as CampaignIcon
+    Announcement as CampaignIcon
 } from '@mui/icons-material';
 
 const SystemMonitor = () => {

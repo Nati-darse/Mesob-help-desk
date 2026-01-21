@@ -22,6 +22,7 @@ const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const technicianRoutes = require('./routes/technicianRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const systemAdminRoutes = require('./routes/systemAdminRoutes');
 
 // Connect to Database
 connectDB();
@@ -33,8 +34,12 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: process.env.CLIENT_URL || "http://localhost:5173",
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'], // Allow both transports
+    pingTimeout: 60000,
+    pingInterval: 25000
 });
 
 app.set('io', io);
@@ -89,24 +94,35 @@ app.use('/api/dashboard', checkMaint, dashboardRoutes);
 app.use('/api/technician', checkMaint, technicianRoutes);
 app.use('/api/settings', checkMaint, settingsRoutes);
 app.use('/api/notifications', checkMaint, require('./routes/notificationRoutes'));
+app.use('/api/system-admin', checkMaint, systemAdminRoutes);
 
 // Socket.io connection
 io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    
     const h = socket.handshake.headers['x-tenant-id'];
     const a = socket.handshake.auth && socket.handshake.auth.companyId;
     const n = Number(h || a);
     const companyId = Number.isNaN(n) ? (h || a) : n;
+    
     if (companyId) {
         socket.join(`company:${companyId}`);
+        console.log(`Socket ${socket.id} joined company:${companyId}`);
     }
+    
     socket.on('join_company', (cid) => {
         if (cid) {
             socket.join(`company:${cid}`);
+            console.log(`Socket ${socket.id} joined company:${cid}`);
         }
     });
 
-    socket.on('disconnect', () => {
-        return;
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.log('Client disconnected:', socket.id, 'Reason:', reason);
     });
 });
 

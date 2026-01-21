@@ -7,7 +7,7 @@ import {
 import {
     Edit as EditIcon,
     Login as LoginIcon,
-    AdminPanelSettings as AdminIcon
+    Security as AdminIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { COMPANIES, getCompanyById } from '../../../utils/companies';

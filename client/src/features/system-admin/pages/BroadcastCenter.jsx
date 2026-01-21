@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Paper, TextField, MenuItem, Button, Select, FormControl, InputLabel, Grid, Alert, Snackbar, Chip } from '@mui/material';
-import { Send as SendIcon, Campaign as CampaignIcon, Group as GroupIcon } from '@mui/icons-material';
+import { Send as SendIcon, Announcement as CampaignIcon, Group as GroupIcon } from '@mui/icons-material';
 import { COMPANIES } from '../../../utils/companies';
 import { ROLE_LABELS } from '../../../constants/roles';
 import axios from 'axios';

@@ -1,5 +1,5 @@
 export const COMPANIES = [
-    { id: 1, name: "Ethiopian Electric Utility Services", initials: "EEU" },
+    { id: 1, name: "MESOB IT Support Team", initials: "MESOB" },
     { id: 2, name: "Addis Ababa city Government Land Development and Administration Bureau Services", initials: "LDAB" },
     { id: 3, name: "Addis Ababa Housing Development Corporation Services", initials: "AAHDC" },
     { id: 4, name: "Addis Ababa City Administration Traffic Management Authority Services", initials: "TMAS" },
@@ -18,6 +18,9 @@ export const COMPANIES = [
     { id: 17, name: "comercial bank of ethiopia", initials: "CBE" },
     { id: 18, name: "ethio post", initials: "POST" },
     { id: 19, name: "ethio telecom", initials: "TELE" },
+    { id: 20, name: "Ethiopian Electric Utility Services", initials: "EEU" },
 ];
 
-export const getCompanyById = (id) => COMPANIES.find(c => c.id === parseInt(id)) || COMPANIES[0];
+export const getCompanyById = (id) => {
+    return COMPANIES.find(c => c.id === parseInt(id)) || COMPANIES[0];
+};
