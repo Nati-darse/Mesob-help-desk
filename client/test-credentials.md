@@ -29,6 +29,14 @@
   - **Password**: tech123
   - **Role**: Technician
   - **Access**: Same as above, for a different company
+- **🆕 Enhanced Technician (MESOB Internal Staff)**
+  - **Email**: techtest@mesob.com
+  - **Password**: tech123
+  - **Role**: Technician
+  - **Company**: MESOB Internal (ID: 1)
+  - **Department**: IT Support
+  - **Features**: Cross-tenant access, KPI tracking, duty status, performance metrics
+  - **Access**: ALL company tickets, enhanced dashboard, mission control workspace
 
 ## Employees (Workers)
 - **EEU Employee**
@@ -88,6 +96,7 @@
 
 ### System Admin Routes
 - `/sys-admin` - Global Dashboard
+- `/sys-admin/accounts` - **🆕 Account Management** (Create Super Admin, Technician, Team Lead accounts)
 - `/sys-admin/companies` - Company Registry
 - `/sys-admin/users` - Master User Table
 - `/sys-admin/audit-logs` - Audit Logs
@@ -95,8 +104,8 @@
 - `/sys-admin/broadcast` - Broadcast Center
 
 ### Technician Routes
-- `/tech` - Technician Dashboard
-- `/tech/tickets/:id` - Ticket Action
+- `/tech` - 🎯 **Unified Technician Dashboard** (Performance Metrics, Duty Status, Mission Control)
+- `/tech/tickets/:id` - Ticket Resolution Page (Enhanced with Accept Button)
 
 ### Employee Routes
 - `/portal` - User Dashboard
@@ -114,15 +123,31 @@
 2. **Login as System Admin** (sysadmin@mesob.com / sysadmin123)
    - Navigate to `/sys-admin`
    - Check Mesob Gold theme
+   - **🆕 Test Account Management** - Navigate to `/sys-admin/accounts`
+     - Create new Super Admin, Technician, or Team Lead accounts
+     - View account statistics and management table
+     - Edit and delete privileged accounts
+     - All actions are logged in audit trail
    - Test user management
    - View audit logs
 
-3. **Login as Technician** (tech@mesob.com / tech123)
+3. **🆕 Login as Enhanced Technician** (techtest@mesob.com / tech123)
+   - Navigate to `/tech` - **Unified dashboard** with all features:
+     - Performance metrics with KPI tracking
+     - Duty status toggle (Online, On-Site, Break, Offline)
+     - Mission Control access to cross-tenant tickets
+     - Professional MESOB branding
+   - Click "Open Mission Control" to access tickets from all companies
+   - Accept tickets using new "Accept Ticket" button in ticket details
+   - Resolve tickets with required Root Cause and Action Taken fields
+   - Monitor real-time performance metrics (Response Time, Resolution Time)
+
+4. **Login as Technician** (tech@mesob.com / tech123)
    - Navigate to `/tech`
    - View assigned tickets
    - Update ticket status
 
-4. **Login as Employee** (example: ermias@eeu.com / emp123)
+5. **Login as Employee** (example: ermias@eeu.com / emp123)
    - Navigate to `/portal`
    - Create new ticket
    - View ticket history
@@ -139,3 +164,9 @@
 - ✅ Company directory (24 entities)
 - ✅ Responsive design
 - ✅ Theme switching
+- 🆕 **Cross-tenant technician access**
+- 🆕 **KPI performance tracking**
+- 🆕 **Duty status management**
+- 🆕 **Enhanced resolution workflow**
+- 🆕 **Real-time performance metrics**
+- 🆕 **System Admin Account Management** - Create privileged accounts with proper role assignment
