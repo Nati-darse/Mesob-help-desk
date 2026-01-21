@@ -5,7 +5,6 @@ import { useAuth } from '../features/auth/context/AuthContext';
 import { useColorMode } from '../context/ColorModeContext';
 import { getCompanyById } from '../utils/companies';
 import TruncatedText from './TruncatedText';
-import AvailabilityToggle from './AvailabilityToggle';
 import logo from '../assets/logo.png';
 import { ROLES } from '../constants/roles';
 
@@ -44,6 +43,13 @@ const Navbar = () => {
                                     Super Administrator
                                 </Typography>
                             </>
+                        ) : (user?.role === ROLES.TECHNICIAN || user?.role === 'TECHNICIAN') ? (
+                            <>
+                                <Typography variant="h6" sx={{ color: 'divider', fontWeight: 300 }}>|</Typography>
+                                <Typography variant="h6" sx={{ color: '#0061f2', fontWeight: 700, letterSpacing: 0.5 }}>
+                                    MESOB IT Support Team
+                                </Typography>
+                            </>
                         ) : company ? (
                             <>
                                 <Typography variant="h6" sx={{ color: 'divider', fontWeight: 300 }}>|</Typography>
@@ -63,15 +69,20 @@ const Navbar = () => {
                     </IconButton>
                     {user ? (
                         <>
-                            <AvailabilityToggle />
                             {user.role === ROLES.SYSTEM_ADMIN && (
                                 <Button color="primary" component={RouterLink} to="/sys-admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SysAdmin</Button>
                             )}
                             {user.role === ROLES.SUPER_ADMIN && (
                                 <Button color="secondary" component={RouterLink} to="/admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SuperAdmin</Button>
                             )}
-                            <Button color="primary" component={RouterLink} to="/redirect" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Dashboard</Button>
-                            <Button color="primary" component={RouterLink} to="/tickets" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Tickets</Button>
+                            <Button 
+                                color="primary" 
+                                component={RouterLink} 
+                                to={user.role === 'Technician' || user.role === 'TECHNICIAN' ? '/tech' : '/redirect'} 
+                                sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                            >
+                                Dashboard
+                            </Button>
                             <Button variant="outlined" color="primary" onClick={handleLogout} sx={{ ml: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Logout</Button>
                         </>
                     ) : (

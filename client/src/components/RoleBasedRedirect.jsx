@@ -14,33 +14,36 @@ const RoleBasedRedirect = () => {
     }
 
     // Redirect based on user role
-    console.log('Redirecting user with role:', user.role);
+    const userRole = user.role;
+    console.log('RoleBasedRedirect - User role:', userRole); // Debug log
+    console.log('RoleBasedRedirect - Full user object:', user); // Debug log
 
-    // Convert role to standard comparison (trim and same case)
-    const normalizedRole = String(user.role).trim();
-
-    switch (normalizedRole) {
-      case ROLES.SYSTEM_ADMIN:
-        console.log('Match: SYSTEM_ADMIN');
+    switch (userRole) {
+      case 'System Admin':
+        console.log('Redirecting to /sys-admin');
         navigate('/sys-admin');
         break;
-      case ROLES.SUPER_ADMIN:
-        console.log('Match: SUPER_ADMIN');
+      case 'Super Admin':
+        console.log('Redirecting to /admin');
         navigate('/admin');
         break;
-      case ROLES.TECHNICIAN:
+      case 'Technician':
+      case 'TECHNICIAN':
+        console.log('Redirecting to /tech');
         navigate('/tech');
         break;
-      case ROLES.TEAM_LEAD:
-        navigate('/tech');
+      case 'Team Lead':
+        console.log('Redirecting to /dashboard');
+        navigate('/dashboard');
         break;
-      case ROLES.EMPLOYEE:
-      case ROLES.WORKER:
+      case 'Worker':
+      case 'Employee':
+        console.log('Redirecting to /portal');
         navigate('/portal');
         break;
       default:
-        console.log('No specific match, going to generic dashboard');
-        navigate('/dashboard');
+        console.log('No role match, redirecting to /');
+        navigate('/');
     }
   }, [user, navigate]);
 

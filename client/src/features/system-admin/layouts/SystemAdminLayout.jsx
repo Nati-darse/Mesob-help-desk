@@ -27,11 +27,15 @@ const SystemAdminLayout = () => {
 
     const menuItems = [
         { text: 'Global Dashboard', icon: <DashboardIcon />, path: '/sys-admin' },
+        { text: 'Account Management', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>👥</Typography>, path: '/sys-admin/accounts' },
         { text: 'Company Registry', icon: <BusinessIcon />, path: '/sys-admin/companies' },
         { text: 'Master User List', icon: <PeopleIcon />, path: '/sys-admin/users' },
         { text: 'Audit Logs', icon: <SecurityIcon />, path: '/sys-admin/audit-logs' },
         { text: 'Broadcast Center', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>📡</Typography>, path: '/sys-admin/broadcast' },
         { text: 'Global Settings', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>⚙️</Typography>, path: '/sys-admin/settings' },
+        { text: 'Cross-Tenant Analytics', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>📊</Typography>, path: '/sys-admin/analytics' },
+        { text: 'Global Ticket Search', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>🔍</Typography>, path: '/sys-admin/ticket-search' },
+        { text: 'Bulk Data Cleanup', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>🗑️</Typography>, path: '/sys-admin/data-cleanup' },
     ];
 
     const handleLogout = () => {
