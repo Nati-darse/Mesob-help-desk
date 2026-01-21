@@ -1,6 +1,29 @@
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 const { generateToken, generateRefreshToken } = require('../utils/token');
 const { sendEmail } = require('../services/notificationService');
+
+// Helper function to log audit events
+const logAuditEvent = async (userId, userEmail, userRole, action, targetType, targetId, targetName, details, req, severity = 'LOW') => {
+    try {
+        await AuditLog.create({
+            userId,
+            userEmail,
+            userRole,
+            action,
+            targetType,
+            targetId,
+            targetName,
+            details,
+            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+            userAgent: req.get('User-Agent') || 'unknown',
+            companyId: req.user?.companyId || 1,
+            severity
+        });
+    } catch (error) {
+        console.error('Audit log error:', error);
+    }
+};
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -32,9 +55,18 @@ exports.register = async (req, res) => {
             department,
             role: finalRole,
             companyId: companyId || 1,
+            isHidden: finalRole === 'System Admin' // Hide System Admins
         });
 
         if (user) {
+            // Log user creation
+            await logAuditEvent(
+                user._id, user.email, user.role,
+                'USER_CREATED', 'USER', user._id.toString(), user.name,
+                { role: finalRole, department, companyId: user.companyId },
+                req, 'MEDIUM'
+            );
+
             // Send welcome email
             await sendEmail(
                 user.email,
@@ -50,6 +82,7 @@ exports.register = async (req, res) => {
                 role: user.role,
                 department: user.department,
                 companyId: user.companyId,
+                dutyStatus: user.dutyStatus, // Include duty status
                 token: generateToken(user._id),
             });
         }
@@ -64,22 +97,67 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+        const userAgent = req.get('User-Agent') || 'unknown';
 
         // Check for user email
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
+            // Log failed login attempt
+            await AuditLog.create({
+                userId: null,
+                userEmail: email,
+                userRole: 'UNKNOWN',
+                action: 'LOGIN_FAILED',
+                targetType: 'SYSTEM',
+                targetId: 'login',
+                targetName: 'Login System',
+                details: { reason: 'User not found', email },
+                ipAddress,
+                userAgent,
+                companyId: 1,
+                severity: 'HIGH'
+            });
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         // Check password
         const isMatch = await user.matchPassword(password);
         if (!isMatch) {
+            // Log failed login attempt
+            await logAuditEvent(
+                user._id, user.email, user.role,
+                'LOGIN_FAILED', 'SYSTEM', 'login', 'Login System',
+                { reason: 'Invalid password' },
+                req, 'HIGH'
+            );
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         const settings = require('../state/settings');
         if (settings.getMaintenance() && user.role !== 'System Admin') {
             return res.status(403).json({ message: 'Maintenance mode active: only System Admins can login' });
+        }
+
+        // Update login tracking
+        try {
+            await user.updateLoginInfo(ipAddress, userAgent);
+        } catch (error) {
+            console.error('Error updating login info for', email, ':', error);
+            // Continue with login even if login info update fails
+        }
+
+        // Log successful login
+        try {
+            await logAuditEvent(
+                user._id, user.email, user.role,
+                'LOGIN', 'SYSTEM', 'login', 'Login System',
+                { ipAddress, userAgent },
+                req, 'LOW'
+            );
+        } catch (error) {
+            console.error('Error logging audit event for', email, ':', error);
+            // Continue with login even if audit logging fails
         }
 
         res.json({
@@ -89,10 +167,12 @@ exports.login = async (req, res) => {
             role: user.role,
             department: user.department,
             companyId: user.companyId,
+            dutyStatus: user.dutyStatus, // Include duty status for technicians
             token: generateToken(user._id),
             refreshToken: generateRefreshToken(user._id),
         });
     } catch (error) {
+        console.error('Login error:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -111,6 +191,7 @@ exports.getMe = async (req, res) => {
                 role: user.role,
                 department: user.department,
                 companyId: user.companyId,
+                dutyStatus: user.dutyStatus, // Include duty status
             });
         } else {
             res.status(404).json({ message: 'User not found' });
@@ -132,6 +213,14 @@ exports.impersonateUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Log impersonation start
+        await logAuditEvent(
+            req.user._id, req.user.email, req.user.role,
+            'IMPERSONATION_START', 'USER', user._id.toString(), user.name,
+            { targetRole: user.role, targetCompany: user.companyId },
+            req, 'CRITICAL'
+        );
+
         // Return token as if that user logged in
         res.json({
             _id: user._id,
@@ -142,7 +231,27 @@ exports.impersonateUser = async (req, res) => {
             companyId: user.companyId,
             token: generateToken(user._id),
             refreshToken: generateRefreshToken(user._id),
+            impersonatedBy: req.user.email // Track who is impersonating
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+// @access  Private
+exports.logout = async (req, res) => {
+    try {
+        // Log logout
+        await logAuditEvent(
+            req.user._id, req.user.email, req.user.role,
+            'LOGOUT', 'SYSTEM', 'logout', 'Logout System',
+            {},
+            req, 'LOW'
+        );
+
+        res.json({ message: 'Logged out successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
