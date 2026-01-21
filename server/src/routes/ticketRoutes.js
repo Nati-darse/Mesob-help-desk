@@ -12,10 +12,10 @@ const {
     addWorkLog,
 } = require('../controllers/ticketController');
 const { protect, authorize } = require('../middleware/authMiddleware');
-const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
+const checkMaintenance = require('../middleware/maintenanceMiddleware');
 
 router.use(protect); // All ticket routes are protected
-router.use(enforceMaintenance);
+router.use(checkMaintenance);
 
 router.route('/')
     .post(createTicket)
