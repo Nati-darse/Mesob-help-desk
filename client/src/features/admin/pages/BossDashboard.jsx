@@ -143,9 +143,9 @@ const BossDashboard = () => {
     );
 
     return (
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="xl" sx={{ mt: 2, mb: 4 }}>
             {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, px: 2 }}>
                 <Box>
                     <Typography variant="h3" fontWeight="bold" gutterBottom>
                         Analytics Dashboard
@@ -155,14 +155,22 @@ const BossDashboard = () => {
                     </Typography>
                 </Box>
                 <Tooltip title="Refresh Data">
-                    <IconButton onClick={() => window.location.reload()}>
+                    <IconButton 
+                        onClick={() => window.location.reload()}
+                        sx={{ 
+                            bgcolor: 'background.paper',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            '&:hover': { bgcolor: 'action.hover' }
+                        }}
+                    >
                         <RefreshIcon />
                     </IconButton>
                 </Tooltip>
             </Box>
 
             {/* Key Metrics */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={3} sx={{ mb: 4, px: 2 }}>
                 <Grid item xs={12} sm={6} md={3}>
                     <StatCard
                         title="Total Tickets"
@@ -205,17 +213,24 @@ const BossDashboard = () => {
                 </Grid>
             </Grid>
 
-            {/* Charts Row 1 */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} lg={8}>
-                    <Paper sx={{ p: 3, height: 400 }}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            Tickets by Company
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={320}>
-                            <BarChart data={chartData}>
+            {/* Row 1 - Tickets by Company (90% width, centered) */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <Box sx={{ width: '90%', maxWidth: '100%' }}>
+                    <Paper sx={{ height: 500, overflow: 'hidden' }}>
+                        <Box sx={{ px: 3, py: 2 }}>
+                            <Typography variant="h6" fontWeight="bold">
+                                Tickets by Company
+                            </Typography>
+                        </Box>
+                        <ResponsiveContainer width="100%" height={430}>
+                            <BarChart data={chartData} margin={{ top: 10, right: 30, left: 30, bottom: 60 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
+                                <XAxis 
+                                    dataKey="name" 
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={100}
+                                />
                                 <YAxis />
                                 <RechartsTooltip
                                     content={({ active, payload }) => {
@@ -243,56 +258,27 @@ const BossDashboard = () => {
                             </BarChart>
                         </ResponsiveContainer>
                     </Paper>
-                </Grid>
+                </Box>
+            </Box>
 
-                <Grid item xs={12} lg={4}>
-                    <Paper sx={{ p: 3, height: 400 }}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            Priority Distribution
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={320}>
-                            <PieChart>
-                                <Pie
-                                    data={stats?.ticketsByPriority || []}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
-                                    paddingAngle={5}
-                                    dataKey="count"
-                                >
-                                    {(stats?.ticketsByPriority || []).map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <Box sx={{ mt: 2 }}>
-                            {(stats?.ticketsByPriority || []).map((item) => (
-                                <Box key={item.priority} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                    <Box sx={{ width: 12, height: 12, bgcolor: item.color, mr: 1, borderRadius: 1 }} />
-                                    <Typography variant="body2">
-                                        {item.priority}: {item.count}
-                                    </Typography>
-                                </Box>
-                            ))}
+            {/* Row 2 - Real-time Activity (90% width, centered) */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <Box sx={{ width: '90%', maxWidth: '100%' }}>
+                    <Paper sx={{ height: 350, overflow: 'hidden' }}>
+                        <Box sx={{ px: 3, py: 2 }}>
+                            <Typography variant="h6" fontWeight="bold">
+                                Real-time Activity
+                            </Typography>
                         </Box>
-                    </Paper>
-                </Grid>
-            </Grid>
-
-            {/* Real-time Activity */}
-            <Grid container spacing={3}>
-                <Grid item xs={12} lg={8}>
-                    <Paper sx={{ p: 3, height: 350 }}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            Real-time Activity
-                        </Typography>
-                        <ResponsiveContainer width="100%" height={280}>
-                            <AreaChart data={realTimeData}>
+                        <ResponsiveContainer width="100%" height={290}>
+                            <AreaChart data={realTimeData} margin={{ top: 10, right: 30, left: 30, bottom: 60 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="time" />
+                                <XAxis 
+                                    dataKey="time"
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={100}
+                                />
                                 <YAxis />
                                 <RechartsTooltip />
                                 <Area
@@ -314,37 +300,82 @@ const BossDashboard = () => {
                             </AreaChart>
                         </ResponsiveContainer>
                     </Paper>
-                </Grid>
+                </Box>
+            </Box>
 
-                <Grid item xs={12} lg={4}>
-                    <Paper sx={{ p: 3, height: 350 }}>
-                        <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            Top Performers
-                        </Typography>
-                        {stats?.technicianPerformance?.map((tech, index) => (
-                            <Box key={tech.name} sx={{ mb: 2 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                    <Typography variant="body2" fontWeight="bold">
-                                        {tech.name}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {tech.resolved} tickets • {tech.avgTime}h avg
-                                    </Typography>
+            {/* Row 3 - Priority & Top Performers (45% + 45% with space, centered in 90%) */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <Box sx={{ width: '90%', maxWidth: '100%', display: 'flex', gap: 3 }}>
+                    <Box sx={{ flex: '0 0 45%' }}>
+                        <Paper sx={{ p: 3, height: 400, display: 'flex', flexDirection: 'column' }}>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                Priority Distribution
+                            </Typography>
+                            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <ResponsiveContainer width="100%" height={280}>
+                                    <PieChart>
+                                        <Pie
+                                            data={stats?.ticketsByPriority || []}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={5}
+                                            dataKey="count"
+                                        >
+                                            {(stats?.ticketsByPriority || []).map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
+                                    {(stats?.ticketsByPriority || []).map((item) => (
+                                        <Box key={item.priority} sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Box sx={{ width: 12, height: 12, bgcolor: item.color, mr: 1, borderRadius: 1 }} />
+                                            <Typography variant="body2">
+                                                {item.priority}: {item.count}
+                                            </Typography>
+                                        </Box>
+                                    ))}
                                 </Box>
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={(tech.resolved / 35) * 100}
-                                    sx={{
-                                        height: 8,
-                                        borderRadius: 4,
-                                        bgcolor: 'grey.200'
-                                    }}
-                                />
                             </Box>
-                        ))}
-                    </Paper>
-                </Grid>
-            </Grid>
+                        </Paper>
+                    </Box>
+
+                    <Box sx={{ flex: '0 0 45%' }}>
+                        <Paper sx={{ p: 3, height: 400 }}>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                Top Performers
+                            </Typography>
+                            <Box sx={{ height: 320, overflowY: 'auto' }}>
+                                {stats?.technicianPerformance?.map((tech, index) => (
+                                    <Box key={tech.name} sx={{ mb: 2 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                            <Typography variant="body2" fontWeight="bold">
+                                                {tech.name}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {tech.resolved} tickets • {tech.avgTime}h avg
+                                            </Typography>
+                                        </Box>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={(tech.resolved / 35) * 100}
+                                            sx={{
+                                                height: 8,
+                                                borderRadius: 4,
+                                                bgcolor: 'grey.200'
+                                            }}
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Paper>
+                    </Box>
+                </Box>
+            </Box>
         </Container>
     );
 };

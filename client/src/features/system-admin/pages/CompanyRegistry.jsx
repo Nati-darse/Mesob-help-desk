@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Typography, Chip, IconButton, TextField, InputAdornment, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar } from '@mui/material';
+import { Box, Typography, Chip, IconButton, TextField, InputAdornment, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Card, CardContent, LinearProgress } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
-import { Search as SearchIcon, Edit as EditIcon, Circle as CircleIcon, Add as AddIcon, CloudUpload as UploadIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Edit as EditIcon, Circle as CircleIcon, Add as AddIcon, CloudUpload as UploadIcon, Business as BusinessIcon, TrendingUp as TrendingIcon, People as PeopleIcon } from '@mui/icons-material';
 import { COMPANIES } from '../../../utils/companies';
 
 const CompanyRegistry = () => {
@@ -79,13 +79,99 @@ const CompanyRegistry = () => {
     );
 
     return (
-        <Box maxWidth="1600px" margin="0 auto">
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#0A1929' }}>
-                    Company Registry
+        <Box maxWidth="1600px" margin="0 auto" sx={{ px: 2 }}>
+            {/* Header Section */}
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: '#0A1929', mb: 2 }}>
+                    Organization Registry
                 </Typography>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
-                    Onboard Company
+                <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+                    Manage all 19 government bureaus and their digital infrastructure
+                </Typography>
+                
+                {/* Stats Overview */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #1e4fb115 0%, #1e4fb105 100%)', borderLeft: '4px solid #1e4fb1' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#1e4fb1', mr: 2 }}>
+                                    <BusinessIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#1e4fb1">
+                                        {companies.length}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Total Organizations
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={95} sx={{ bgcolor: 'rgba(30, 79, 177, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #4caf5015 0%, #4caf5005 100%)', borderLeft: '4px solid #4caf50' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#4caf50', mr: 2 }}>
+                                    <CircleIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#4caf50">
+                                        {companies.length}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Active Systems
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={100} sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #ff980015 0%, #ff980005 100%)', borderLeft: '4px solid #ff9800' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#ff9800', mr: 2 }}>
+                                    <PeopleIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#ff9800">
+                                        2,847
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Total Users
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={78} sx={{ bgcolor: 'rgba(255, 152, 0, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #0061f215 0%, #0061f205 100%)', borderLeft: '4px solid #0061f2' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#0061f2', mr: 2 }}>
+                                    <TrendingIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#0061f2">
+                                        98.5%
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        System Uptime
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={98.5} sx={{ bgcolor: 'rgba(0, 97, 242, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                </Grid>
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    Organization Directory
+                </Typography>
+                <Button variant="contained" startIcon={<AddIcon />} sx={{ borderRadius: 3, px: 3 }}>
+                    Onboard New Organization
                 </Button>
             </Box>
 

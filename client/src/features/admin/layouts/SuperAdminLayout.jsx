@@ -1,4 +1,4 @@
-import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Avatar, Divider, IconButton, useTheme } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Divider, IconButton, useTheme } from '@mui/material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -7,6 +7,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import LogoutIcon from '@mui/icons-material/Logout';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PersonIcon from '@mui/icons-material/Person';
 import AvailabilityToggle from '../../../components/AvailabilityToggle';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ROLES } from '../../../constants/roles';
@@ -28,11 +29,13 @@ const SuperAdminLayout = () => {
 
     const menuItems = [
         { text: 'Command Center', icon: <DashboardIcon />, path: '/admin' },
-        { text: 'Analytics Dashboard', icon: <TrendingUpIcon />, path: '/admin/dashboard' },
+        { text: 'Analytics', icon: <TrendingUpIcon />, path: '/admin/dashboard' },
         { text: 'Manual Assignment', icon: <AssignmentIcon />, path: '/admin/assign' },
-        { text: 'Company Directory', icon: <BusinessIcon />, path: '/admin/companies' },
-        { text: 'Technician Management', icon: <PeopleIcon />, path: '/admin/technicians' },
-        { text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
+        { text: 'Organization Registry', icon: <BusinessIcon />, path: '/admin/companies' },
+        { text: 'Global User Directory', icon: <PeopleIcon />, path: '/admin/users' },
+        { text: 'Broadcast Center', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>📡</Typography>, path: '/admin/broadcast' },
+        { text: 'Global Settings', icon: <SettingsIcon />, path: '/admin/settings' },
+        { text: 'My Profile', icon: <PersonIcon />, path: '/profile' },
     ];
 
     const handleLogout = () => {
@@ -70,7 +73,7 @@ const SuperAdminLayout = () => {
                     </Avatar>
                     <Box>
                         <Typography variant="subtitle1" fontWeight="bold" sx={{ color: SUPER_ADMIN_ACCENT, letterSpacing: 1 }}>
-                            SUPER ADMIN
+                            MESOB ADMIN
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
                             IT Operations Manager
@@ -83,30 +86,30 @@ const SuperAdminLayout = () => {
                     {menuItems.map((item) => {
                         const active = location.pathname === item.path;
                         return (
-                            <ListItem
-                                button
-                                key={item.text}
-                                onClick={() => navigate(item.path)}
-                                sx={{
-                                    mb: 1,
-                                    borderRadius: 1,
-                                    borderLeft: active ? `4px solid ${SUPER_ADMIN_ACCENT}` : '4px solid transparent',
-                                    bgcolor: active ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(255, 255, 255, 0.05)',
-                                    }
-                                }}
-                            >
-                                <ListItemIcon sx={{ color: active ? SUPER_ADMIN_ACCENT : 'rgba(255,255,255,0.7)' }}>
-                                    {item.icon}
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={item.text}
-                                    primaryTypographyProps={{
-                                        fontWeight: active ? 600 : 400,
-                                        color: active ? 'white' : 'rgba(255,255,255,0.7)'
+                            <ListItem key={item.text} disablePadding>
+                                <ListItemButton
+                                    onClick={() => navigate(item.path)}
+                                    sx={{
+                                        mb: 1,
+                                        borderRadius: 1,
+                                        borderLeft: active ? `4px solid ${SUPER_ADMIN_ACCENT}` : '4px solid transparent',
+                                        bgcolor: active ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                        }
                                     }}
-                                />
+                                >
+                                    <ListItemIcon sx={{ color: active ? SUPER_ADMIN_ACCENT : 'rgba(255,255,255,0.7)' }}>
+                                        {item.icon}
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={item.text}
+                                        primaryTypographyProps={{
+                                            fontWeight: active ? 600 : 400,
+                                            color: active ? 'white' : 'rgba(255,255,255,0.7)'
+                                        }}
+                                    />
+                                </ListItemButton>
                             </ListItem>
                         );
                     })}
@@ -120,11 +123,13 @@ const SuperAdminLayout = () => {
                         <AvailabilityToggle variant="vertical" sx={{ color: 'white' }} />
                     </Box>
                     <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mb: 2 }} />
-                    <ListItem button onClick={handleLogout} sx={{ borderRadius: 1, color: '#ff4444' }}>
-                        <ListItemIcon sx={{ color: '#ff4444' }}>
-                            <LogoutIcon />
-                        </ListItemIcon>
-                        <ListItemText primary="Exit System" />
+                    <ListItem disablePadding sx={{ borderRadius: 1, color: '#ff4444' }}>
+                        <ListItemButton onClick={handleLogout}>
+                            <ListItemIcon sx={{ color: '#ff4444' }}>
+                                <LogoutIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Exit System" />
+                        </ListItemButton>
                     </ListItem>
                 </Box>
             </Drawer>

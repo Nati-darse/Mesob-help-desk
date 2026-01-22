@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, TextField, MenuItem, Button, Select, FormControl, InputLabel, Grid, Alert, Snackbar, Chip } from '@mui/material';
-import { Send as SendIcon, Campaign as CampaignIcon, Group as GroupIcon } from '@mui/icons-material';
+import { Box, Typography, Paper, TextField, MenuItem, Button, Select, FormControl, InputLabel, Grid, Alert, Snackbar, Chip, Card, CardContent, Avatar, LinearProgress, Badge } from '@mui/material';
+import { Send as SendIcon, Campaign as CampaignIcon, Group as GroupIcon, NotificationsActive as BellIcon, TrendingUp as TrendingIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
 import { COMPANIES } from '../../../utils/companies';
 import { ROLE_LABELS } from '../../../constants/roles';
 import axios from 'axios';
@@ -62,10 +62,92 @@ const BroadcastCenter = () => {
     };
 
     return (
-        <Box maxWidth="1000px" margin="0 auto">
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#0A1929' }}>
-                Broadcast Center
-            </Typography>
+        <Box maxWidth="1400px" margin="0 auto" sx={{ px: 2 }}>
+            {/* Header Section */}
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: '#0A1929', mb: 2 }}>
+                    Command Center
+                </Typography>
+                <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+                    Real-time broadcast system for all 19 government organizations
+                </Typography>
+                
+                {/* Stats Overview */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #1e4fb115 0%, #1e4fb105 100%)', borderLeft: '4px solid #1e4fb1' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#1e4fb1', mr: 2 }}>
+                                    <GroupIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#1e4fb1">
+                                        2,847
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Active Users
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={85} sx={{ bgcolor: 'rgba(30, 79, 177, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #4caf5015 0%, #4caf5005 100%)', borderLeft: '4px solid #4caf50' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#4caf50', mr: 2 }}>
+                                    <BellIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#4caf50">
+                                        {history.length}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Messages Sent
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={92} sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #ff980015 0%, #ff980005 100%)', borderLeft: '4px solid #ff9800' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#ff9800', mr: 2 }}>
+                                    <ScheduleIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#ff9800">
+                                        24/7
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        System Availability
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={100} sx={{ bgcolor: 'rgba(255, 152, 0, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 3, background: 'linear-gradient(135deg, #0061f215 0%, #0061f205 100%)', borderLeft: '4px solid #0061f2' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Avatar sx={{ bgcolor: '#0061f2', mr: 2 }}>
+                                    <TrendingIcon />
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="h5" fontWeight="bold" color="#0061f2">
+                                        99.2%
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Delivery Rate
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            <LinearProgress variant="determinate" value={99.2} sx={{ bgcolor: 'rgba(0, 97, 242, 0.1)' }} />
+                        </Card>
+                    </Grid>
+                </Grid>
+            </Box>
 
             <Grid container spacing={4}>
                 {/* Compose Form */}

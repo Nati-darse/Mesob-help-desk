@@ -72,6 +72,7 @@ const Navbar = () => {
                             )}
                             <Button color="primary" component={RouterLink} to="/redirect" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Dashboard</Button>
                             <Button color="primary" component={RouterLink} to="/tickets" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Tickets</Button>
+                            <Button color="primary" component={RouterLink} to="/profile" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Profile</Button>
                             <Button variant="outlined" color="primary" onClick={handleLogout} sx={{ ml: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Logout</Button>
                         </>
                     ) : (

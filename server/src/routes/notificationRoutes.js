@@ -6,6 +6,6 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.use(protect);
 
 router.get('/', getMyNotifications);
-router.post('/broadcast', authorize('System Admin'), broadcastMessage);
+router.post('/broadcast', authorize('System Admin', 'Super Admin'), broadcastMessage);
 
 module.exports = router;

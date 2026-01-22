@@ -59,7 +59,32 @@ exports.getAdminStats = async (req, res) => {
         if (cached) {
             return res.json(cached);
         }
-        // Tickets by company
+
+        // 1. Basic Counts
+        const totalTickets = await Ticket.countDocuments({});
+        const openTickets = await Ticket.countDocuments({ status: { $ne: 'Closed' } });
+        
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const resolvedToday = await Ticket.countDocuments({
+            status: 'Resolved',
+            updatedAt: { $gte: startOfToday }
+        });
+
+        // 2. Average Resolution Time & Total Downtime
+        const resolvedTickets = await Ticket.find({ status: 'Resolved' });
+        let totalResolutionHours = 0;
+        resolvedTickets.forEach(ticket => {
+            if (ticket.updatedAt && ticket.createdAt) {
+                const hours = (new Date(ticket.updatedAt) - new Date(ticket.createdAt)) / (1000 * 60 * 60);
+                totalResolutionHours += hours;
+            }
+        });
+        const avgResolutionTime = resolvedTickets.length > 0 
+            ? (totalResolutionHours / resolvedTickets.length).toFixed(1) 
+            : 0;
+
+        // 3. Tickets by Company
         const ticketsByCompany = await Ticket.aggregate([
             {
                 $group: {
@@ -70,41 +95,72 @@ exports.getAdminStats = async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
-        // Active technicians
-        const activeTechnicians = await User.countDocuments({
-            role: 'Technician',
-            isAvailable: true
-        });
-
-        // Calculate total downtime (sum of resolution times)
-        const resolvedTickets = await Ticket.find({ status: 'Resolved' });
-        let totalDowntime = 0;
-        resolvedTickets.forEach(ticket => {
-            if (ticket.updatedAt && ticket.createdAt) {
-                const hours = (new Date(ticket.updatedAt) - new Date(ticket.createdAt)) / (1000 * 60 * 60);
-                totalDowntime += hours;
-            }
-        });
-
-        // Calculate longest response time
-        let longestResponseTime = 0;
-        const allTickets = await Ticket.find({ comments: { $exists: true, $ne: [] } });
-        allTickets.forEach(ticket => {
-            if (ticket.comments.length > 0) {
-                const firstResponse = ticket.comments[0].createdAt;
-                const responseTime = (new Date(firstResponse) - new Date(ticket.createdAt)) / (1000 * 60 * 60);
-                if (responseTime > longestResponseTime) {
-                    longestResponseTime = responseTime;
+        // 4. Tickets by Priority
+        const ticketsByPriority = await Ticket.aggregate([
+            {
+                $group: {
+                    _id: '$priority',
+                    count: { $sum: 1 }
                 }
             }
+        ]).then(items => {
+            // Map colors to priority
+            const colors = { 'Critical': '#f44336', 'High': '#ff9800', 'Medium': '#2196f3', 'Low': '#4caf50' };
+            return items.map(item => ({
+                priority: item._id,
+                count: item.count,
+                color: colors[item._id] || '#9e9e9e'
+            }));
         });
 
+        // 5. Technician Performance
+        // This is complex. We'll aggregate resolved tickets by technician
+        const technicianPerformance = await Ticket.aggregate([
+            { $match: { status: 'Resolved', technician: { $exists: true } } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'technician',
+                    foreignField: '_id',
+                    as: 'techInfo'
+                }
+            },
+            { $unwind: '$techInfo' },
+            {
+                $project: {
+                    techName: '$techInfo.name',
+                    resolutionTime: {
+                        $divide: [{ $subtract: ['$updatedAt', '$createdAt'] }, 1000 * 60 * 60] // in hours
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: '$techName',
+                    resolved: { $sum: 1 },
+                    avgTime: { $avg: '$resolutionTime' }
+                }
+            },
+            {
+                $project: {
+                    name: '$_id',
+                    resolved: 1,
+                    avgTime: { $round: ['$avgTime', 1] },
+                    _id: 0
+                }
+            }
+        ]);
+
         const result = {
+            totalTickets,
+            openTickets,
+            resolvedToday,
+            avgResolutionTime: Number(avgResolutionTime),
             ticketsByCompany,
-            activeTechnicians,
-            totalDowntime: Math.round(totalDowntime * 10) / 10,
-            longestResponseTime: Math.round(longestResponseTime * 10) / 10
+            ticketsByPriority,
+            technicianPerformance
         };
+
         await cache.set(cacheKey, result, 60);
         res.json(result);
     } catch (error) {

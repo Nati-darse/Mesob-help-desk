@@ -18,6 +18,7 @@ export const COMPANIES = [
     { id: 17, name: "comercial bank of ethiopia", initials: "CBE" },
     { id: 18, name: "ethio post", initials: "POST" },
     { id: 19, name: "ethio telecom", initials: "TELE" },
+    { id: 20, name: "Digitalization Bureau", initials: "DB" },
 ];
 
 export const getCompanyById = (id) => COMPANIES.find(c => c.id === parseInt(id)) || COMPANIES[0];

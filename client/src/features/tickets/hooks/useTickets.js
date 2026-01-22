@@ -10,5 +10,6 @@ export const useTickets = () => {
     return useQuery({
         queryKey: ['tickets'],
         queryFn: fetchTickets,
+        refetchInterval: 10000, // Poll for updates every 10 seconds
     });
 };

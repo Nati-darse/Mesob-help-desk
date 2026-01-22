@@ -35,3 +35,4 @@ const checkMaintenance = async (req, res, next) => {
 };
 
 module.exports = checkMaintenance;
+module.exports.enforceMaintenance = checkMaintenance;

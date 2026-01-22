@@ -1,10 +1,11 @@
-import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, Avatar, Divider, IconButton, useTheme } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Divider, IconButton, useTheme } from '@mui/material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SecurityIcon from '@mui/icons-material/Security';
+import PersonIcon from '@mui/icons-material/Person';
 import AvailabilityToggle from '../../../components/AvailabilityToggle';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ROLES } from '../../../constants/roles';
@@ -32,6 +33,7 @@ const SystemAdminLayout = () => {
         { text: 'Audit Logs', icon: <SecurityIcon />, path: '/sys-admin/audit-logs' },
         { text: 'Broadcast Center', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>📡</Typography>, path: '/sys-admin/broadcast' },
         { text: 'Global Settings', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>⚙️</Typography>, path: '/sys-admin/settings' },
+        { text: 'My Profile', icon: <PersonIcon />, path: '/profile' },
     ];
 
     const handleLogout = () => {
@@ -82,30 +84,30 @@ const SystemAdminLayout = () => {
                     {menuItems.map((item) => {
                         const active = location.pathname === item.path;
                         return (
-                            <ListItem
-                                button
-                                key={item.text}
-                                onClick={() => navigate(item.path)}
-                                sx={{
-                                    mb: 1,
-                                    borderRadius: 1,
-                                    borderLeft: active ? `4px solid ${ACCENT_BLUE}` : '4px solid transparent',
-                                    bgcolor: active ? 'rgba(0, 97, 242, 0.12)' : 'transparent',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(255, 255, 255, 0.05)',
-                                    }
-                                }}
-                            >
-                                <ListItemIcon sx={{ color: active ? ACCENT_BLUE : 'rgba(255,255,255,0.7)' }}>
-                                    {item.icon}
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={item.text}
-                                    primaryTypographyProps={{
-                                        fontWeight: active ? 600 : 400,
-                                        color: active ? 'white' : 'rgba(255,255,255,0.7)'
+                            <ListItem key={item.text} disablePadding>
+                                <ListItemButton
+                                    onClick={() => navigate(item.path)}
+                                    sx={{
+                                        mb: 1,
+                                        borderRadius: 1,
+                                        borderLeft: active ? `4px solid ${ACCENT_BLUE}` : '4px solid transparent',
+                                        bgcolor: active ? 'rgba(0, 97, 242, 0.12)' : 'transparent',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                        }
                                     }}
-                                />
+                                >
+                                    <ListItemIcon sx={{ color: active ? ACCENT_BLUE : 'rgba(255,255,255,0.7)' }}>
+                                        {item.icon}
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={item.text}
+                                        primaryTypographyProps={{
+                                            fontWeight: active ? 600 : 400,
+                                            color: active ? 'white' : 'rgba(255,255,255,0.7)'
+                                        }}
+                                    />
+                                </ListItemButton>
                             </ListItem>
                         );
                     })}

@@ -32,7 +32,7 @@ const RoleBasedRedirect = () => {
         navigate('/tech');
         break;
       case ROLES.TEAM_LEAD:
-        navigate('/tech');
+        navigate('/team-lead');
         break;
       case ROLES.EMPLOYEE:
       case ROLES.WORKER:

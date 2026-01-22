@@ -45,8 +45,8 @@ app.use(compression());
 if (process.env.NODE_ENV !== 'production') {
     app.use(morgan('tiny'));
 }
-app.use(express.json({ limit: '50kb' }));
-app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use((req, res, next) => {
     const h = req.headers['x-tenant-id'];
     if (h) {

@@ -8,7 +8,7 @@ router.use(protect);
 router.use(enforceMaintenance);
 router.get('/technicians', authorize('Team Lead', 'Admin', 'System Admin'), getTechnicians);
 router.put('/availability', updateAvailability);
-router.get('/global', authorize('System Admin'), getAllUsers);
-router.put('/:id/role', authorize('System Admin'), updateUserRole);
+router.get('/global', authorize('System Admin', 'Super Admin'), getAllUsers);
+router.put('/:id/role', authorize('System Admin', 'Super Admin'), updateUserRole);
 
 module.exports = router;

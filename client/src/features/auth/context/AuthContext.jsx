@@ -10,8 +10,8 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Restore user from localStorage on app load
-        const storedUser = localStorage.getItem('mesob_user');
+        // Restore user from sessionStorage on app load
+        const storedUser = sessionStorage.getItem('mesob_user');
         if (storedUser) {
             try {
                 const parsedUser = JSON.parse(storedUser);
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
                 axios.defaults.headers.common['x-tenant-id'] = String(parsedUser.companyId || '');
             } catch (e) {
                 console.error('Failed to parse stored user');
-                localStorage.removeItem('mesob_user');
+                sessionStorage.removeItem('mesob_user');
             }
         }
         setLoading(false);
@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await axios.post('/api/auth/login', { email, password });
             setUser(res.data);
-            localStorage.setItem('mesob_user', JSON.stringify(res.data));
+            sessionStorage.setItem('mesob_user', JSON.stringify(res.data));
             axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
             axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
             return { success: true, user: res.data };
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await axios.post('/api/auth/register', userData);
             setUser(res.data);
-            localStorage.setItem('mesob_user', JSON.stringify(res.data));
+            sessionStorage.setItem('mesob_user', JSON.stringify(res.data));
             axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
             axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
             return { success: true, user: res.data };
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         setUser(null);
-        localStorage.removeItem('mesob_user');
+        sessionStorage.removeItem('mesob_user');
         delete axios.defaults.headers.common['Authorization'];
         delete axios.defaults.headers.common['x-tenant-id'];
     };
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
             await axios.put('/api/users/availability', { isAvailable });
             const updatedUser = { ...user, isAvailable };
             setUser(updatedUser);
-            localStorage.setItem('mesob_user', JSON.stringify(updatedUser));
+            sessionStorage.setItem('mesob_user', JSON.stringify(updatedUser));
             return { success: true };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Failed to update availability' };

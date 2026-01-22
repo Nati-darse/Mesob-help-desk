@@ -80,28 +80,24 @@
 
 ## Testing Routes
 
-### Super Admin Routes
-- `/admin` - Super Admin Dashboard
-- `/admin/dashboard` - Analytics Dashboard
+### Admin Routes (Consolidated)
+- `/admin` - Admin Command Center (Standard Admin Access)
+- `/admin/dashboard` - Analytics & Pulse Dashboard
 - `/admin/assign` - Smart Assignment Center
-- `/admin/companies` - Company Directory
+- `/admin/companies` - Organization Registry
+- `/admin/users` - Global User Directory (Register Staff)
+- `/admin/broadcast` - Broadcast Center (Unified)
+- `/admin/settings` - Global Settings (Unified)
 
-### System Admin Routes
-- `/sys-admin` - Global Dashboard
-- `/sys-admin/companies` - Company Registry
-- `/sys-admin/users` - Master User Table
-- `/sys-admin/audit-logs` - Audit Logs
-- `/sys-admin/settings` - Global Settings
-- `/sys-admin/broadcast` - Broadcast Center
+### Team Lead Routes
+- `/team-lead` - Team Leader Portal
+- `/team-lead` - Real-time Request Tracking & History
+- `/team-lead` - Integrated "Raise Request" Form
 
-### Technician Routes
-- `/tech` - Technician Dashboard
-- `/tech/tickets/:id` - Ticket Action
-
-### Employee Routes
-- `/portal` - User Dashboard
-- `/portal/new-ticket` - Create Ticket
-- `/portal/tickets/:id` - View Ticket
+### Shared Routes
+- `/profile` - User Profile Management (Password & Photo)
+- `/tickets` - General Ticket List
+- `/tickets/:id` - Ticket Details
 
 ## Quick Test Steps
 
@@ -117,15 +113,21 @@
    - Test user management
    - View audit logs
 
-3. **Login as Technician** (tech@mesob.com / tech123)
-   - Navigate to `/tech`
-   - View assigned tickets
-   - Update ticket status
+3. **Login as Team Lead** (lead@mesob.com / lead123)
+   - Navigate to `/team-lead`
+   - Test "Raise Request" with floor number
+   - Wait for tech assignment (real-time tracking)
+   - Test "I Got Service" feedback button on resolved tickets
 
-4. **Login as Employee** (example: ermias@eeu.com / emp123)
-   - Navigate to `/portal`
-   - Create new ticket
-   - View ticket history
+4. **Login as Technician** (tech@mesob.com / tech123)
+   - Navigate to `/tech`
+   - View assigned tickets from Team Leads
+   - Update ticket status to "Resolved"
+
+5. **Profile Management (All Users)**
+   - Navigate to `/profile`
+   - Update profile picture URL
+   - Change password and verify
 
 ## Theme Testing
 - **System Admin**: Gold accent (#FFD700) theme

@@ -88,6 +88,7 @@ const GlobalSettings = () => {
                                 <TextField
                                     fullWidth label="SMTP Host"
                                     value={emailSettings.host}
+                                    onChange={(e) => setEmailSettings({...emailSettings, host: e.target.value})}
                                     size="small"
                                 />
                             </Grid>
@@ -95,6 +96,7 @@ const GlobalSettings = () => {
                                 <TextField
                                     fullWidth label="Port"
                                     value={emailSettings.port}
+                                    onChange={(e) => setEmailSettings({...emailSettings, port: e.target.value})}
                                     size="small"
                                 />
                             </Grid>
@@ -102,6 +104,7 @@ const GlobalSettings = () => {
                                 <TextField
                                     fullWidth label="Username"
                                     value={emailSettings.user}
+                                    onChange={(e) => setEmailSettings({...emailSettings, user: e.target.value})}
                                     size="small"
                                 />
                             </Grid>
@@ -109,6 +112,7 @@ const GlobalSettings = () => {
                                 <TextField
                                     fullWidth label="Password"
                                     value={emailSettings.pass}
+                                    onChange={(e) => setEmailSettings({...emailSettings, pass: e.target.value})}
                                     type="password"
                                     size="small"
                                 />
@@ -117,36 +121,39 @@ const GlobalSettings = () => {
                     </Paper>
                 </Grid>
 
-                {/* API Keys */}
+                {/* API Keys Section */}
                 <Grid item xs={12} md={6}>
                     <Paper sx={{ p: 3, height: '100%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                             <KeyIcon color="primary" />
-                            <Typography variant="h6">API Keys</Typography>
+                            <Typography variant="h6">Essential API Keys</Typography>
                         </Box>
                         <Divider sx={{ mb: 3 }} />
 
-                        <Typography variant="subtitle2" gutterBottom>Stripe Secret Key</Typography>
+                        <Typography variant="subtitle2" gutterBottom>JWT Secret</Typography>
                         <TextField
                             fullWidth
-                            value="sk_test_51Mz..."
+                            value={process.env.JWT_SECRET || 'Configure in server environment'}
                             disabled
                             size="small"
                             type="password"
                             sx={{ mb: 2 }}
+                            placeholder="jwt_secret_key_2024"
                         />
 
-                        <Typography variant="subtitle2" gutterBottom>Google Maps API</Typography>
+                        <Typography variant="subtitle2" gutterBottom>Database Connection</Typography>
                         <TextField
                             fullWidth
-                            value="AIzaSyA..."
+                            value={process.env.MONGODB_URI || 'Configure in server environment'}
                             disabled
                             size="small"
                             type="password"
+                            sx={{ mb: 2 }}
+                            placeholder="mongodb://localhost:27017/helpdesk_db"
                         />
 
                         <Button variant="outlined" sx={{ mt: 2 }} fullWidth>
-                            Rotate Keys
+                            Rotate Security Keys
                         </Button>
                     </Paper>
                 </Grid>
