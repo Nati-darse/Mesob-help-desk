@@ -127,7 +127,14 @@ const Landing = () => {
                                     variant="contained"
                                     size="large"
                                     component={RouterLink}
-                                    to={user.role === 'Technician' || user.role === 'TECHNICIAN' ? '/tech' : '/redirect'}
+                                    to={
+                                        user.role === 'System Admin' ? '/sys-admin' :
+                                        user.role === 'Super Admin' ? '/admin' :
+                                        user.role === 'Technician' || user.role === 'TECHNICIAN' ? '/tech' :
+                                        user.role === 'Team Lead' ? '/dashboard' :
+                                        user.role === 'Worker' || user.role === 'Employee' ? '/portal' :
+                                        '/dashboard'
+                                    }
                                     sx={{
                                         px: 4,
                                         py: 2,

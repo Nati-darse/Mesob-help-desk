@@ -37,10 +37,13 @@ const Login = () => {
             case 'Employee':
                 console.log('Redirecting to /portal');
                 return '/portal';
+            case 'Team Lead':
+                console.log('Redirecting to /dashboard');
+                return '/dashboard';
             default:
-                console.log('No role match, redirecting to /redirect');
-                console.log('Available roles: System Admin, Super Admin, Technician, TECHNICIAN, Worker, Employee');
-                return '/redirect';
+                console.log('No role match, redirecting to /dashboard');
+                console.log('Available roles: System Admin, Super Admin, Technician, TECHNICIAN, Worker, Employee, Team Lead');
+                return '/dashboard';
         }
     };
 

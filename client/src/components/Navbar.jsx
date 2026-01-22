@@ -17,7 +17,7 @@ const Navbar = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
+        navigate('/');
     };
 
     return (
@@ -78,7 +78,14 @@ const Navbar = () => {
                             <Button 
                                 color="primary" 
                                 component={RouterLink} 
-                                to={user.role === 'Technician' || user.role === 'TECHNICIAN' ? '/tech' : '/redirect'} 
+                                to={
+                                    user.role === 'System Admin' ? '/sys-admin' :
+                                    user.role === 'Super Admin' ? '/admin' :
+                                    user.role === 'Technician' || user.role === 'TECHNICIAN' ? '/tech' :
+                                    user.role === 'Team Lead' ? '/dashboard' :
+                                    user.role === 'Worker' || user.role === 'Employee' ? '/portal' :
+                                    '/dashboard'
+                                } 
                                 sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                             >
                                 Dashboard
