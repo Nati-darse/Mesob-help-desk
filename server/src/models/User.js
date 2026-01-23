@@ -28,7 +28,8 @@ const userSchema = new mongoose.Schema({
     },
     department: {
         type: String,
-        required: [true, 'Please add a department'],
+        required: false,
+        default: '',
     },
     companyId: {
         type: Number,

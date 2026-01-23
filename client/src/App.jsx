@@ -66,7 +66,7 @@ const AppContent = () => {
       }
       return;
     }
-    const s = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
+    const s = io(import.meta.env.VITE_SERVER_URL || 'https://mesob-help-desk.onrender.com', {
       transports: ['websocket'],
       auth: { companyId: user.companyId },
       extraHeaders: { 'x-tenant-id': String(user.companyId || '') }

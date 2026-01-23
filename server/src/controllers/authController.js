@@ -188,7 +188,7 @@ exports.updateProfile = async (req, res) => {
 // @access  Private (Admin)
 exports.registerUser = async (req, res) => {
     try {
-        const { name, email, role, department, companyId } = req.body;
+        const { name, email, role, companyId } = req.body;
 
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -199,7 +199,6 @@ exports.registerUser = async (req, res) => {
             name,
             email,
             password: 'Mesob@123',
-            department,
             role: role || 'Worker',
             companyId: companyId || 1,
         });
