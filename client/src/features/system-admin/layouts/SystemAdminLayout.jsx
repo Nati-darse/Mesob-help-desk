@@ -6,6 +6,12 @@ import PeopleIcon from '@mui/icons-material/People';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SecurityIcon from '@mui/icons-material/Security';
 import PersonIcon from '@mui/icons-material/Person';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import SearchIcon from '@mui/icons-material/Search';
+import MonitorIcon from '@mui/icons-material/Monitor';
+import CleanupIcon from '@mui/icons-material/DeleteSweep';
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
+import TableViewIcon from '@mui/icons-material/TableView';
 import AvailabilityToggle from '../../../components/AvailabilityToggle';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ROLES } from '../../../constants/roles';
@@ -27,13 +33,19 @@ const SystemAdminLayout = () => {
     }
 
     const menuItems = [
-        { text: 'Global Dashboard', icon: <DashboardIcon />, path: '/sys-admin' },
+        { text: 'System Overview', icon: <DashboardIcon />, path: '/sys-admin' },
+        { text: 'Global Dashboard', icon: <AnalyticsIcon />, path: '/sys-admin/dashboard' },
         { text: 'Company Registry', icon: <BusinessIcon />, path: '/sys-admin/companies' },
-        { text: 'Master User List', icon: <PeopleIcon />, path: '/sys-admin/users' },
+        { text: 'User Management', icon: <PeopleIcon />, path: '/sys-admin/users' },
+        { text: 'Master User Table', icon: <TableViewIcon />, path: '/sys-admin/master-users' },
+        { text: 'Account Management', icon: <AccountBoxIcon />, path: '/sys-admin/accounts' },
+        { text: 'Global Ticket Search', icon: <SearchIcon />, path: '/sys-admin/tickets' },
+        { text: 'Cross-Tenant Analytics', icon: <AnalyticsIcon />, path: '/sys-admin/analytics' },
+        { text: 'System Monitor', icon: <MonitorIcon />, path: '/sys-admin/monitor' },
+        { text: 'Bulk Data Cleanup', icon: <CleanupIcon />, path: '/sys-admin/cleanup' },
         { text: 'Audit Logs', icon: <SecurityIcon />, path: '/sys-admin/audit-logs' },
         { text: 'Broadcast Center', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>📡</Typography>, path: '/sys-admin/broadcast' },
         { text: 'Global Settings', icon: <Typography variant="h6" sx={{ fontSize: 20 }}>⚙️</Typography>, path: '/sys-admin/settings' },
-        { text: 'My Profile', icon: <PersonIcon />, path: '/profile' },
     ];
 
     const handleLogout = () => {

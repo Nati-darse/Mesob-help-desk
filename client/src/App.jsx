@@ -30,6 +30,14 @@ import CompanyRegistry from './features/system-admin/pages/CompanyRegistry';
 import AuditLogs from './features/system-admin/pages/AuditLogs';
 import GlobalSettings from './features/system-admin/pages/GlobalSettings';
 import BroadcastCenter from './features/system-admin/pages/BroadcastCenter';
+// Adding back all new system admin pages
+import AccountManagement from './features/system-admin/pages/AccountManagement';
+import BulkDataCleanup from './features/system-admin/pages/BulkDataCleanup';
+import CrossTenantAnalytics from './features/system-admin/pages/CrossTenantAnalytics';
+import GlobalDashboard from './features/system-admin/pages/GlobalDashboard';
+import GlobalTicketSearch from './features/system-admin/pages/GlobalTicketSearch';
+import MasterUserTable from './features/system-admin/pages/MasterUserTable';
+import SystemMonitor from './features/system-admin/pages/SystemMonitor';
 import TechDashboard from './features/technician/pages/TechDashboard';
 import TicketAction from './features/technician/pages/ResolutionPage';
 import UserDashboard from './features/employee/pages/UserDashboard';
@@ -124,11 +132,19 @@ const AppContent = () => {
 
               {/* System Admin Routes */}
               {/* System Admin Routes (God Mode) */}
+              {/* All system admin routes restored */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.SYSTEM_ADMIN]} />}>
                 <Route element={<SystemAdminLayout />}>
                   <Route path="/sys-admin" element={<SysDashboard />} />
+                  <Route path="/sys-admin/dashboard" element={<GlobalDashboard />} />
                   <Route path="/sys-admin/companies" element={<CompanyRegistry />} />
                   <Route path="/sys-admin/users" element={<GlobalUserEditor />} />
+                  <Route path="/sys-admin/master-users" element={<MasterUserTable />} />
+                  <Route path="/sys-admin/accounts" element={<AccountManagement />} />
+                  <Route path="/sys-admin/tickets" element={<GlobalTicketSearch />} />
+                  <Route path="/sys-admin/analytics" element={<CrossTenantAnalytics />} />
+                  <Route path="/sys-admin/monitor" element={<SystemMonitor />} />
+                  <Route path="/sys-admin/cleanup" element={<BulkDataCleanup />} />
                   <Route path="/sys-admin/audit-logs" element={<AuditLogs />} />
                   <Route path="/sys-admin/settings" element={<GlobalSettings />} />
                   <Route path="/sys-admin/broadcast" element={<BroadcastCenter />} />
