@@ -16,3 +16,13 @@ export const ROLE_LABELS = {
     'Team Lead': 'Team Leader',
     'Worker': 'Employee',
 };
+
+export const ROLE_ROUTES = {
+    [ROLES.SYSTEM_ADMIN]: '/sys-admin',
+    [ROLES.SUPER_ADMIN]: '/admin',
+    [ROLES.ADMIN]: '/admin',
+    [ROLES.TECHNICIAN]: '/tech',
+    [ROLES.TEAM_LEAD]: '/team-lead',
+    [ROLES.WORKER]: '/portal',
+    [ROLES.EMPLOYEE]: '/portal',
+};

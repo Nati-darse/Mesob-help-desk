@@ -115,8 +115,8 @@ const RequestPage = () => {
         }
     };
 
-    const getPriorityColor = (priority) => {
-        const priority = priorities.find(p => p.value === priority);
+    const getPriorityColor = (priorityValue) => {
+        const priority = priorities.find(p => p.value === priorityValue);
         return priority ? priority.color : 'default';
     };
 
