@@ -8,7 +8,7 @@ import { getTheme } from './styles/theme';
 import Navbar from './components/Navbar';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 import Landing from './pages/Landing';
-import Dashboard from './pages/Dashboard';
+import RequestPage from './pages/RequestPage';
 import Login from './features/auth/pages/Login';
 import Register from './features/auth/pages/Register';
 import TicketList from './features/tickets/pages/TicketList';
@@ -169,7 +169,7 @@ const AppContent = () => {
               {/* Legacy/General Protected Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard" element={<RequestPage />} />
                 <Route path="/tickets" element={<TicketList />} />
                 <Route path="/tickets/new" element={<CreateTicket />} />
                 <Route path="/tickets/:id" element={<TicketDetails />} />
