@@ -37,7 +37,8 @@ const ticketSchema = new mongoose.Schema({
     },
     department: {
         type: String,
-        required: true,
+        required: false,
+        default: 'General',
     },
     companyId: {
         type: Number,
