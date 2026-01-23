@@ -268,8 +268,7 @@ const GlobalUserEditor = () => {
                             >
                                 <MenuItem value={ROLES.ADMIN}>Administrator</MenuItem>
                                 <MenuItem value={ROLES.TECHNICIAN}>IT Technician</MenuItem>
-                                <MenuItem value={ROLES.TEAM_LEAD}>Team Leader (User)</MenuItem>
-                                <MenuItem value={ROLES.WORKER}>Employee / Worker</MenuItem>
+                                <MenuItem value={ROLES.TEAM_LEAD}>Team Lead</MenuItem>
                             </Select>
                         </FormControl>
                         {regFormData.role === ROLES.ADMIN || regFormData.role === ROLES.TECHNICIAN ? (
