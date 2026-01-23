@@ -28,7 +28,8 @@ const userSchema = new mongoose.Schema({
     },
     department: {
         type: String,
-        required: [true, 'Please add a department'],
+        required: false,
+        default: '',
     },
     companyId: {
         type: Number,
@@ -38,6 +39,10 @@ const userSchema = new mongoose.Schema({
     isAvailable: {
         type: Boolean,
         default: true,
+    },
+    profilePic: {
+        type: String,
+        default: '',
     },
     createdAt: {
         type: Date,

@@ -13,10 +13,10 @@ exports.getAssignedTickets = async (req, res) => {
                 { assignedTeam: req.user.department }
             ]
         })
-        .populate('requester', 'name email')
-        .populate('assignedTo', 'name email')
-        .populate('company', 'name initials')
-        .sort({ createdAt: -1 });
+            .populate('requester', 'name email')
+            .populate('assignedTo', 'name email')
+            .populate('company', 'name initials')
+            .sort({ createdAt: -1 });
 
         // Add mock timeline data
         const ticketsWithTimeline = tickets.map(ticket => ({
@@ -63,15 +63,15 @@ exports.getTicketById = async (req, res) => {
 exports.updateTicket = async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
-        
+
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found' });
         }
 
         // Update ticket
         const updatedTicket = await Ticket.findByIdAndUpdate(
-            req.params.id, 
-            req.body, 
+            req.params.id,
+            req.body,
             { new: true }
         );
 
@@ -96,7 +96,7 @@ exports.updateTicket = async (req, res) => {
 exports.addInternalNotes = async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
-        
+
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found' });
         }
@@ -116,7 +116,7 @@ exports.addInternalNotes = async (req, res) => {
 exports.addCustomerUpdate = async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
-        
+
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found' });
         }
@@ -147,7 +147,7 @@ exports.addCustomerUpdate = async (req, res) => {
 exports.resolveTicket = async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
-        
+
         if (!ticket) {
             return res.status(404).json({ message: 'Ticket not found' });
         }
@@ -166,8 +166,8 @@ exports.resolveTicket = async (req, res) => {
         };
 
         const resolvedTicket = await Ticket.findByIdAndUpdate(
-            req.params.id, 
-            resolutionData, 
+            req.params.id,
+            resolutionData,
             { new: true }
         );
 

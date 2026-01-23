@@ -82,16 +82,16 @@ const SysDashboard = () => {
             {/* Metrics Row */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="Total Users" value="1,240" icon={<PeopleIcon />} color="#2196F3" />
+                    <MetricCard title="Total Users" value="1,240" icon={<PeopleIcon />} color="#1e4fb1" />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="Active Sockets" value="84" icon={<HubIcon />} color="#4CAF50" />
+                    <MetricCard title="Active Sockets" value="84" icon={<HubIcon />} color="#0061f2" />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="Companies" value="24" icon={<BusinessIcon />} color="#9C27B0" />
+                    <MetricCard title="Companies" value="24" icon={<BusinessIcon />} color="#3f51b5" />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="System Uptime" value="99.9%" icon={<TimerIcon />} color="#FF9800" />
+                    <MetricCard title="System Uptime" value="99.9%" icon={<TimerIcon />} color="#00bcd4" />
                 </Grid>
             </Grid>
 
@@ -107,8 +107,8 @@ const SysDashboard = () => {
                             <AreaChart data={data}>
                                 <defs>
                                     <linearGradient id="colorLatency" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#1e4fb1" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#1e4fb1" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <XAxis dataKey="time" />
@@ -118,7 +118,7 @@ const SysDashboard = () => {
                                 <Area
                                     type="monotone"
                                     dataKey="latency"
-                                    stroke="#8884d8"
+                                    stroke="#1e4fb1"
                                     fillOpacity={1}
                                     fill="url(#colorLatency)"
                                 />
@@ -126,15 +126,15 @@ const SysDashboard = () => {
                         </ResponsiveContainer>
                     </Paper>
 
-                    <Paper sx={{ p: 3, bgcolor: '#fff3e0' }}>
+                    <Paper sx={{ p: 3, bgcolor: '#e3f2fd', borderRadius: 4 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                            <WarningIcon color="warning" />
-                            <Typography variant="h6" fontWeight="bold">
-                                Emergency Broadcast System
+                            <InfoIcon color="primary" />
+                            <Typography variant="h6" fontWeight="bold" color="primary">
+                                System-Wide Broadcast
                             </Typography>
                         </Box>
                         <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                            Sending a message here will trigger a toast notification for ALL active users across 24 companies. Use with caution.
+                            Sending a message here will trigger a toast notification for ALL active users across the platform.
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             <TextField
@@ -144,11 +144,11 @@ const SysDashboard = () => {
                                 size="small"
                                 value={broadcastMsg}
                                 onChange={(e) => setBroadcastMsg(e.target.value)}
-                                sx={{ bgcolor: 'white' }}
+                                sx={{ bgcolor: 'white', borderRadius: 1 }}
                             />
                             <Button
                                 variant="contained"
-                                color="warning"
+                                color="primary"
                                 endIcon={<SendIcon />}
                                 onClick={handleBroadcast}
                             >

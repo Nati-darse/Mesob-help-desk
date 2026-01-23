@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Container, Typography, Box, Grid, Paper, List, ListItem, ListItemText, Button, 
-    Chip, Avatar, Stack, Divider, Dialog, DialogTitle, DialogContent, DialogActions, 
+import {
+    Container, Typography, Box, Grid, Paper, List, ListItem, ListItemText, Button,
+    Chip, Avatar, Stack, Divider, Dialog, DialogTitle, DialogContent, DialogActions,
     Alert, CircularProgress, IconButton, Tooltip, Badge, LinearProgress, Card, CardContent
 } from '@mui/material';
-import { 
-    CheckCircle as CheckIcon, 
-    Person as PersonIcon, 
+import {
+    CheckCircle as CheckIcon,
+    Person as PersonIcon,
     Assignment as AssignmentIcon,
     SmartToy as AIIcon,
     Speed as SpeedIcon,
@@ -77,7 +77,7 @@ const ManualAssignment = () => {
 
     const generateAISuggestions = (ticketsList, techsList) => {
         const suggestions = {};
-        
+
         ticketsList.forEach(ticket => {
             // AI scoring algorithm based on multiple factors
             const scoredTechs = techsList.map(tech => {
@@ -116,7 +116,7 @@ const ManualAssignment = () => {
 
             // Sort by AI score
             scoredTechs.sort((a, b) => b.aiScore - a.aiScore);
-            
+
             suggestions[ticket._id] = scoredTechs.slice(0, 3); // Top 3 suggestions
         });
 
@@ -155,8 +155,8 @@ const ManualAssignment = () => {
     };
 
     const getAvailabilityBadge = (tech) => {
-        return tech.isAvailable ? 
-            <Chip label="Available" color="success" size="small" /> : 
+        return tech.isAvailable ?
+            <Chip label="Available" color="success" size="small" /> :
             <Chip label="Busy" color="default" size="small" />;
     };
 
@@ -231,13 +231,13 @@ const ManualAssignment = () => {
                                                         {getCompanyById(ticket.companyId)?.name || 'Unknown Company'}
                                                     </Typography>
                                                     <Stack direction="row" spacing={1}>
-                                                        <Chip 
-                                                            label={ticket.priority} 
+                                                        <Chip
+                                                            label={ticket.priority}
                                                             color={getPriorityColor(ticket.priority)}
                                                             size="small"
                                                         />
-                                                        <Chip 
-                                                            label={ticket.category} 
+                                                        <Chip
+                                                            label={ticket.category}
                                                             variant="outlined"
                                                             size="small"
                                                         />
@@ -251,8 +251,8 @@ const ManualAssignment = () => {
                                                     </Typography>
                                                     <Box sx={{ mt: 1 }}>
                                                         {aiSuggestions[ticket._id] && (
-                                                            <Badge 
-                                                                badgeContent="AI" 
+                                                            <Badge
+                                                                badgeContent="AI"
                                                                 color="primary"
                                                                 sx={{ '& .MuiBadge-badge': { fontSize: 9 } }}
                                                             >
@@ -327,11 +327,11 @@ const ManualAssignment = () => {
                                                     {tech.currentTickets} tickets
                                                 </Typography>
                                             </Box>
-                                            <LinearProgress 
-                                                variant="determinate" 
+                                            <LinearProgress
+                                                variant="determinate"
                                                 value={Math.min((tech.currentTickets / 10) * 100, 100)}
-                                                sx={{ 
-                                                    height: 6, 
+                                                sx={{
+                                                    height: 6,
                                                     borderRadius: 3,
                                                     bgcolor: 'grey.200'
                                                 }}
@@ -340,10 +340,10 @@ const ManualAssignment = () => {
 
                                         {index === 0 && (
                                             <Box sx={{ mt: 1 }}>
-                                                <Chip 
+                                                <Chip
                                                     icon={<TrendIcon />}
-                                                    label="Top Performer" 
-                                                    color="primary" 
+                                                    label="Top Performer"
+                                                    color="primary"
                                                     size="small"
                                                 />
                                             </Box>
@@ -357,8 +357,8 @@ const ManualAssignment = () => {
             </Grid>
 
             {/* Assignment Dialog with AI Suggestions */}
-            <Dialog 
-                open={assignDialogOpen} 
+            <Dialog
+                open={assignDialogOpen}
                 onClose={() => setAssignDialogOpen(false)}
                 maxWidth="md"
                 fullWidth
@@ -384,10 +384,10 @@ const ManualAssignment = () => {
                             </Typography>
 
                             {aiSuggestions[selectedTicket._id]?.map((tech, index) => (
-                                <Card 
+                                <Card
                                     key={tech._id}
-                                    sx={{ 
-                                        mb: 2, 
+                                    sx={{
+                                        mb: 2,
                                         cursor: 'pointer',
                                         border: selectedTech?._id === tech._id ? '2px solid' : '1px solid',
                                         borderColor: selectedTech?._id === tech._id ? 'primary.main' : 'divider'
@@ -405,8 +405,8 @@ const ManualAssignment = () => {
                                                 </Typography>
                                                 <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
                                                     {getAvailabilityBadge(tech)}
-                                                    <Chip 
-                                                        label={`${tech.currentTickets} tickets`} 
+                                                    <Chip
+                                                        label={`${tech.currentTickets} tickets`}
                                                         variant="outlined"
                                                         size="small"
                                                     />
@@ -423,9 +423,9 @@ const ManualAssignment = () => {
                                         </Box>
                                         <Stack direction="row" spacing={0.5} flexWrap="wrap">
                                             {tech.aiReasons.map((reason, i) => (
-                                                <Chip 
+                                                <Chip
                                                     key={i}
-                                                    label={reason} 
+                                                    label={reason}
                                                     size="small"
                                                     variant="outlined"
                                                     sx={{ fontSize: '0.7rem', height: 20 }}
@@ -442,7 +442,7 @@ const ManualAssignment = () => {
                     <Button onClick={() => setAssignDialogOpen(false)}>
                         Cancel
                     </Button>
-                    <Button 
+                    <Button
                         onClick={handleAssign}
                         variant="contained"
                         disabled={!selectedTech || assigning}

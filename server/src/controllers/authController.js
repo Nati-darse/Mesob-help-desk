@@ -78,8 +78,8 @@ exports.login = async (req, res) => {
         }
 
         const settings = require('../state/settings');
-        if (settings.getMaintenance() && user.role !== 'System Admin') {
-            return res.status(403).json({ message: 'Maintenance mode active: only System Admins can login' });
+        if (settings.getMaintenance() && user.role !== 'System Admin' && user.role !== 'Super Admin') {
+            return res.status(403).json({ message: 'Maintenance mode active: only Admins can login' });
         }
 
         res.json({
@@ -89,6 +89,7 @@ exports.login = async (req, res) => {
             role: user.role,
             department: user.department,
             companyId: user.companyId,
+            profilePic: user.profilePic,
             token: generateToken(user._id),
             refreshToken: generateRefreshToken(user._id),
         });
@@ -111,6 +112,7 @@ exports.getMe = async (req, res) => {
                 role: user.role,
                 department: user.department,
                 companyId: user.companyId,
+                profilePic: user.profilePic,
             });
         } else {
             res.status(404).json({ message: 'User not found' });
@@ -143,6 +145,65 @@ exports.impersonateUser = async (req, res) => {
             token: generateToken(user._id),
             refreshToken: generateRefreshToken(user._id),
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+exports.updateProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('+password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const { name, email, password, profilePic } = req.body;
+
+        if (name) user.name = name;
+        if (email) user.email = email;
+        if (profilePic) user.profilePic = profilePic;
+        if (password) user.password = password;
+
+        await user.save();
+
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            companyId: user.companyId,
+            profilePic: user.profilePic,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Register user (Admin only)
+// @route   POST /api/auth/register-user
+// @access  Private (Admin)
+exports.registerUser = async (req, res) => {
+    try {
+        const { name, email, role, companyId } = req.body;
+
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        const user = await User.create({
+            name,
+            email,
+            password: 'Mesob@123',
+            role: role || 'Worker',
+            companyId: companyId || 1,
+        });
+
+        res.status(201).json(user);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

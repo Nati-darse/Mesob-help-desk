@@ -9,11 +9,6 @@ import RoleBasedRedirect from '../components/RoleBasedRedirect';
 const Landing = () => {
     const { user } = useAuth();
 
-    // If user is logged in, redirect to role-based dashboard
-    if (user) {
-        return <RoleBasedRedirect />;
-    }
-
     return (
         <Box
             sx={{
@@ -129,47 +124,51 @@ const Landing = () => {
                         </Typography>
 
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} justifyContent="center" sx={{ width: '100%', maxWidth: '500px', mx: 'auto' }}>
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                size="large"
-                                component={RouterLink}
-                                to="/login"
-                                sx={{
-                                    px: 6,
-                                    py: 2.5,
-                                    fontSize: '1.2rem',
-                                    borderRadius: '16px',
-                                    boxShadow: (theme) => theme.palette.mode === 'light'
-                                        ? '0 15px 30px rgba(30, 79, 177, 0.25)'
-                                        : '0 15px 30px rgba(0, 0, 0, 0.4)',
-                                    textTransform: 'none',
-                                    fontWeight: 700
-                                }}
-                            >
-                                Member Login
-                            </Button>
-                            <Button
-                                fullWidth
-                                variant="outlined"
-                                size="large"
-                                component={RouterLink}
-                                to="/register"
-                                sx={{
-                                    px: 6,
-                                    py: 2.5,
-                                    fontSize: '1.2rem',
-                                    borderRadius: '16px',
-                                    textTransform: 'none',
-                                    fontWeight: 700,
-                                    borderWidth: '2px',
-                                    '&:hover': {
-                                        borderWidth: '2px'
-                                    }
-                                }}
-                            >
-                                Register
-                            </Button>
+                            {user ? (
+                                <Button
+                                    fullWidth
+                                    variant="contained"
+                                    size="large"
+                                    component={RouterLink}
+                                    to="/redirect"
+                                    sx={{
+                                        px: 6,
+                                        py: 2.5,
+                                        fontSize: '1.2rem',
+                                        borderRadius: '16px',
+                                        boxShadow: (theme) => theme.palette.mode === 'light'
+                                            ? '0 15px 30px rgba(30, 79, 177, 0.25)'
+                                            : '0 15px 30px rgba(0, 0, 0, 0.4)',
+                                        textTransform: 'none',
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    Go to Dashboard
+                                </Button>
+                            ) : (
+                                <>
+                                    <Button
+                                        fullWidth
+                                        variant="contained"
+                                        size="large"
+                                        component={RouterLink}
+                                        to="/login"
+                                        sx={{
+                                            px: 10,
+                                            py: 2.5,
+                                            fontSize: '1.2rem',
+                                            borderRadius: '16px',
+                                            boxShadow: (theme) => theme.palette.mode === 'light'
+                                                ? '0 15px 30px rgba(30, 79, 177, 0.25)'
+                                                : '0 15px 30px rgba(0, 0, 0, 0.4)',
+                                            textTransform: 'none',
+                                            fontWeight: 700
+                                        }}
+                                    >
+                                        Member Login
+                                    </Button>
+                                </>
+                            )}
                         </Stack>
                     </Box>
 

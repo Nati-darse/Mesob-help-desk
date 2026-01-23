@@ -7,6 +7,6 @@ const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
 router.use(protect);
 router.use(enforceMaintenance);
 router.get('/stats', getStats);
-router.get('/admin-stats', authorize('Admin', 'Super Admin'), getAdminStats);
+router.get('/admin-stats', authorize('Admin', 'Super Admin', 'System Admin'), getAdminStats);
 
 module.exports = router;

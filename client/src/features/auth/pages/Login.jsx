@@ -92,12 +92,9 @@ const Login = () => {
                     </Button>
                 </form>
 
-                <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2">
-                        Don't have an account?{' '}
-                        <Link component={RouterLink} to="/register" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                            Register here
-                        </Link>
+                <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary">
+                        Secure Access Portal • Managed by Mesob Admin
                     </Typography>
                 </Box>
             </Paper>

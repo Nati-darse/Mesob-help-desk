@@ -15,6 +15,7 @@ import TicketList from './features/tickets/pages/TicketList';
 import CreateTicket from './features/tickets/pages/CreateTicket';
 import TicketDetails from './features/tickets/pages/TicketDetails';
 import { AuthProvider, useAuth } from './features/auth/context/AuthContext';
+import MaintenancePage from './pages/MaintenancePage';
 
 import { ROLES } from './constants/roles';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -26,7 +27,6 @@ import CompanyDirectory from './features/admin/pages/CompanyDirectory';
 import SysDashboard from './features/system-admin/pages/SysDashboard';
 import SystemAdminLayout from './features/system-admin/layouts/SystemAdminLayout';
 import CompanyRegistry from './features/system-admin/pages/CompanyRegistry';
-import MasterUserTable from './features/system-admin/pages/MasterUserTable';
 import AuditLogs from './features/system-admin/pages/AuditLogs';
 import GlobalSettings from './features/system-admin/pages/GlobalSettings';
 import BroadcastCenter from './features/system-admin/pages/BroadcastCenter';
@@ -35,8 +35,10 @@ import TicketAction from './features/technician/pages/ResolutionPage';
 import UserDashboard from './features/employee/pages/UserDashboard';
 import TicketWizard from './features/employee/pages/TicketWizard';
 import UserTicketView from './features/employee/pages/UserTicketView';
-import GlobalDashboard from './features/system-admin/pages/GlobalDashboard';
 import SuperAdminLayout from './features/admin/layouts/SuperAdminLayout';
+import GlobalUserEditor from './features/system-admin/pages/GlobalUserEditor';
+import Profile from './pages/Profile';
+import TeamLeadDashboard from './features/employee/pages/TeamLeadDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,7 +66,7 @@ const AppContent = () => {
       }
       return;
     }
-    const s = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
+    const s = io(import.meta.env.VITE_SERVER_URL || 'https://mesob-help-desk.onrender.com', {
       transports: ['websocket'],
       auth: { companyId: user.companyId },
       extraHeaders: { 'x-tenant-id': String(user.companyId || '') }
@@ -83,6 +85,22 @@ const AppContent = () => {
         return [ticket, ...prev];
       });
     });
+
+    s.on('broadcast_message', (notification) => {
+      // Filter if relevant to me
+      let isRelevant = false;
+      if (notification.targetType === 'all') isRelevant = true;
+      if (notification.targetType === 'company' && String(user.companyId) === String(notification.targetValue)) isRelevant = true;
+      if (notification.targetType === 'role' && user.role === notification.targetValue) isRelevant = true;
+
+      if (isRelevant) {
+        qc.setQueryData(['notifications'], (prev) => {
+          const list = Array.isArray(prev) ? prev : [];
+          // data might come from API with _id, ensure structure
+          return [notification, ...list];
+        });
+      }
+    });
     return () => {
       s.disconnect();
       socketRef.current = null;
@@ -100,17 +118,17 @@ const AppContent = () => {
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/redirect" element={<RoleBasedRedirect />} />
+              <Route path="/maintenance" element={<MaintenancePage />} />
 
               {/* System Admin Routes */}
               {/* System Admin Routes (God Mode) */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.SYSTEM_ADMIN]} />}>
                 <Route element={<SystemAdminLayout />}>
-                  <Route path="/sys-admin" element={<GlobalDashboard />} />
+                  <Route path="/sys-admin" element={<SysDashboard />} />
                   <Route path="/sys-admin/companies" element={<CompanyRegistry />} />
-                  <Route path="/sys-admin/users" element={<MasterUserTable />} />
+                  <Route path="/sys-admin/users" element={<GlobalUserEditor />} />
                   <Route path="/sys-admin/audit-logs" element={<AuditLogs />} />
                   <Route path="/sys-admin/settings" element={<GlobalSettings />} />
                   <Route path="/sys-admin/broadcast" element={<BroadcastCenter />} />
@@ -124,7 +142,15 @@ const AppContent = () => {
                   <Route path="/admin/dashboard" element={<BossDashboard />} />
                   <Route path="/admin/assign" element={<ManualAssignment />} />
                   <Route path="/admin/companies" element={<CompanyDirectory />} />
+                  <Route path="/admin/users" element={<GlobalUserEditor />} />
+                  <Route path="/admin/broadcast" element={<BroadcastCenter />} />
+                  <Route path="/admin/settings" element={<GlobalSettings />} />
                 </Route>
+              </Route>
+
+              {/* Team Lead Routes */}
+              <Route element={<ProtectedRoute allowedRoles={[ROLES.TEAM_LEAD]} />}>
+                <Route path="/team-lead" element={<TeamLeadDashboard />} />
               </Route>
 
               {/* Technician Routes */}
@@ -142,6 +168,7 @@ const AppContent = () => {
 
               {/* Legacy/General Protected Routes */}
               <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/tickets" element={<TicketList />} />
                 <Route path="/tickets/new" element={<CreateTicket />} />

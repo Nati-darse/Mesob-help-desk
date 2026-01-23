@@ -1,9 +1,9 @@
 markdown
-# 🖥️ Mesob IT Help Desk System
+# 🖥️ Mesob IT Help Desk System 
 
 A comprehensive digital help desk solution for internal IT support, built with the MERN stack (MongoDB, Express.js, React, Node.js).
 
-## ✨ Features
+## ✨ Features Included 
 
 ### 👥 **User Roles & Authentication**
 - **Four distinct roles**: Worker, Technician, Team Lead, Admin

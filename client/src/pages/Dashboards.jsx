@@ -10,14 +10,7 @@ import CompanyDirectory from '../features/admin/pages/CompanyDirectory';
 export const SysAdminDashboard = () => <Container><Box sx={{ mt: 4 }}><Typography variant="h4">System Admin Dashboard</Typography></Box></Container>;
 
 export const SuperAdminDashboard = () => {
-    return (
-        <Routes>
-            <Route index element={<AdminHome />} />
-            <Route path="dashboard" element={<BossDashboard />} />
-            <Route path="assign" element={<ManualAssignment />} />
-            <Route path="companies" element={<CompanyDirectory />} />
-        </Routes>
-    );
+    return <AdminHome />;
 };
 
 const AdminHome = () => {
@@ -73,7 +66,7 @@ const AdminHome = () => {
                             borderRadius: 4,
                             textAlign: 'center',
                             transition: 'transform 0.2s',
-                            '&:hover': { transform: 'translateY(-4px)', borderColor: 'primary.main' }
+                            '&:hover': { transform: 'translateY(-4px)', borderColor: 'success.main' }
                         }}
                     >
                         <AssignmentIcon sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
@@ -81,7 +74,7 @@ const AdminHome = () => {
                             Manual Assignment
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Smart ticket distribution with AI-powered technician suggestions
+                            Smart ticket distribution with suggesting technicians
                         </Typography>
                         <Button
                             variant="contained"
@@ -106,7 +99,7 @@ const AdminHome = () => {
                             borderRadius: 4,
                             textAlign: 'center',
                             transition: 'transform 0.2s',
-                            '&:hover': { transform: 'translateY(-4px)', borderColor: 'primary.main' }
+                            '&:hover': { transform: 'translateY(-4px)', borderColor: 'warning.main' }
                         }}
                     >
                         <BusinessIcon sx={{ fontSize: 60, color: 'warning.main', mb: 2 }} />
@@ -114,7 +107,7 @@ const AdminHome = () => {
                             Company Directory
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            View all 19 bureaus with ticket status and critical alerts
+                            View all 19 bureaus with ticket status and alerts
                         </Typography>
                         <Button
                             variant="contained"
@@ -125,6 +118,103 @@ const AdminHome = () => {
                             sx={{ borderRadius: 2, fontWeight: 700 }}
                         >
                             Browse Directory
+                        </Button>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 4,
+                            border: '2px solid',
+                            borderColor: 'divider',
+                            borderRadius: 4,
+                            textAlign: 'center',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)', borderColor: '#0061f2' }
+                        }}
+                    >
+                        <Box sx={{ fontSize: 60, mb: 2 }}>👥</Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+                            User Directory
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            Register new staff (Team Leads, Techs) and manage roles
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            component={RouterLink}
+                            to="/admin/users"
+                            fullWidth
+                            sx={{ borderRadius: 2, fontWeight: 700, bgcolor: '#0061f2' }}
+                        >
+                            Open Directory
+                        </Button>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 4,
+                            border: '2px solid',
+                            borderColor: 'divider',
+                            borderRadius: 4,
+                            textAlign: 'center',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)', borderColor: 'secondary.main' }
+                        }}
+                    >
+                        <Box sx={{ fontSize: 60, mb: 2 }}>📡</Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+                            Broadcast
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            Send real-time alerts and announcements to all users
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            component={RouterLink}
+                            to="/admin/broadcast"
+                            fullWidth
+                            color="secondary"
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
+                        >
+                            Start Broadcast
+                        </Button>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 4,
+                            border: '2px solid',
+                            borderColor: 'divider',
+                            borderRadius: 4,
+                            textAlign: 'center',
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)', borderColor: 'grey.700' }
+                        }}
+                    >
+                        <Box sx={{ fontSize: 60, mb: 2 }}>⚙️</Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+                            Settings
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            Toggle maintenance mode and manage system configurations
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            component={RouterLink}
+                            to="/admin/settings"
+                            fullWidth
+                            sx={{ borderRadius: 2, fontWeight: 700, bgcolor: 'grey.700', '&:hover': { bgcolor: 'grey.800' } }}
+                        >
+                            System Settings
                         </Button>
                     </Paper>
                 </Grid>
