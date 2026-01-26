@@ -36,10 +36,12 @@ const Register = () => {
                 return '/admin';
             case ROLES.TECHNICIAN:
                 return '/tech';
+            case ROLES.TEAM_LEAD:
+                return '/teamleaderdashboard';
             case ROLES.EMPLOYEE:
                 return '/portal';
             default:
-                return '/dashboard';
+                return '/profile';
         }
     };
 

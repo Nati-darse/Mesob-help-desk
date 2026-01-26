@@ -39,8 +39,8 @@ const RoleBasedRedirect = () => {
         navigate('/portal');
         break;
       default:
-        console.log('No specific match, going to generic dashboard');
-        navigate('/dashboard');
+        console.log('No specific match, redirecting to profile');
+        navigate('/profile');
     }
   }, [user, navigate]);
 

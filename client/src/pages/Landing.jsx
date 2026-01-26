@@ -128,7 +128,7 @@ const Landing = () => {
                                     variant="contained"
                                     size="large"
                                     component={RouterLink}
-                                    to={ROLE_ROUTES[user.role] || '/dashboard'}
+                                    to={ROLE_ROUTES[user.role] || '/profile'}
                                     sx={{
                                         px: 4,
                                         py: 2,

@@ -27,7 +27,7 @@ const Login = () => {
             case ROLES.EMPLOYEE:
                 return '/portal';
             default:
-                return '/dashboard';
+                return '/profile';
         }
     };
 

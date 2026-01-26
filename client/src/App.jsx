@@ -185,7 +185,6 @@ const AppContent = () => {
               {/* Legacy/General Protected Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/dashboard" element={<RequestPage />} />
                 <Route path="/tickets" element={<TicketList />} />
                 <Route path="/tickets/new" element={<CreateTicket />} />
                 <Route path="/tickets/:id" element={<TicketDetails />} />
