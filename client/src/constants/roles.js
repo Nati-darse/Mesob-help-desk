@@ -22,7 +22,7 @@ export const ROLE_ROUTES = {
     [ROLES.SUPER_ADMIN]: '/admin',
     [ROLES.ADMIN]: '/admin',
     [ROLES.TECHNICIAN]: '/tech',
-    [ROLES.TEAM_LEAD]: '/team-lead',
+    [ROLES.TEAM_LEAD]: '/teamleaderdashboard',
     [ROLES.WORKER]: '/portal',
     [ROLES.EMPLOYEE]: '/portal',
 };

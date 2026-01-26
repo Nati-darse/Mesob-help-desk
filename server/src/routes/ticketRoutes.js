@@ -14,6 +14,11 @@ const {
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
 
+// Test endpoint
+router.get('/test', (req, res) => {
+    res.json({ message: 'Ticket routes are working', timestamp: new Date() });
+});
+
 router.use(protect); // All ticket routes are protected
 router.use(enforceMaintenance);
 

@@ -38,7 +38,7 @@ import UserTicketView from './features/employee/pages/UserTicketView';
 import SuperAdminLayout from './features/admin/layouts/SuperAdminLayout';
 import GlobalUserEditor from './features/system-admin/pages/GlobalUserEditor';
 import Profile from './pages/Profile';
-import TeamLeadDashboard from './features/employee/pages/TeamLeadDashboard';
+import TeamLeaderDashboard from './features/employee/pages/TeamLeaderDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -148,9 +148,9 @@ const AppContent = () => {
                 </Route>
               </Route>
 
-              {/* Team Lead Routes */}
+              {/* Team Leader Routes */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.TEAM_LEAD]} />}>
-                <Route path="/team-lead" element={<TeamLeadDashboard />} />
+                <Route path="/teamleaderdashboard" element={<TeamLeaderDashboard />} />
               </Route>
 
               {/* Technician Routes */}

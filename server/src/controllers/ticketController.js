@@ -18,32 +18,56 @@ const emitUpdate = (req, event, data) => {
 // @access  Private (Worker)
 exports.createTicket = async (req, res) => {
     try {
+        console.log('=== TICKET CREATION DEBUG ===');
+        console.log('Request body:', req.body);
+        console.log('User info:', req.user);
+        console.log('Headers:', req.headers);
+        
         const { title, description, category, priority, buildingWing, companyId } = req.body;
 
-        const ticket = await Ticket.create({
-            title,
-            description,
-            category,
-            priority,
-            buildingWing,
-            companyId: companyId || req.tenantId || req.user.companyId || 1,
-            requester: req.user._id,
-            department: req.user.department,
+        // Basic validation
+        if (!title || !description) {
+            return res.status(400).json({ message: 'Title and description are required' });
+        }
+
+        // Create ticket with minimal required fields
+        const ticketData = {
+            title: title.trim(),
+            description: description.trim(),
+            category: category || 'Other',
+            priority: priority || 'Medium',
+            buildingWing: buildingWing || '',
+            companyId: companyId || req.user?.companyId || 1,
+            requester: req.user?._id,
+            department: req.user?.department || 'General',
+        };
+
+        console.log('Ticket data to create:', ticketData);
+
+        const ticket = await Ticket.create(ticketData);
+
+        console.log('Ticket created successfully:', ticket._id);
+
+        // Skip email for now to isolate the issue
+        console.log('Skipping email for debugging');
+
+        // Skip socket.io for now to isolate the issue
+        console.log('Skipping socket.io for debugging');
+
+        res.status(201).json({
+            success: true,
+            message: 'Ticket created successfully',
+            data: ticket
         });
-
-        // Send confirmation to requester
-        await sendEmail(
-            req.user.email,
-            `Ticket Created: ${ticket.title}`,
-            `Your ticket has been created with ID: ${ticket._id}. Priority: ${ticket.priority}.`,
-            `<h2>Ticket Confirmation</h2><p>Your ticket <b>${ticket.title}</b> has been created.</p><p>Priority: <b>${ticket.priority}</b></p>`
-        );
-
-        emitUpdate(req, 'ticket_created', ticket);
-
-        res.status(201).json(ticket);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('=== TICKET CREATION ERROR ===');
+        console.error('Error details:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false,
+            message: error.message,
+            details: error.stack 
+        });
     }
 };
 
