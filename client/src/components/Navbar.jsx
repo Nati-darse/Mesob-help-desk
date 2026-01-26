@@ -1,17 +1,13 @@
-import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Brightness4 as DarkIcon, Brightness7 as LightIcon } from '@mui/icons-material';
 import { useAuth } from '../features/auth/context/AuthContext';
-import { useColorMode } from '../context/ColorModeContext';
 import { getCompanyById } from '../utils/companies';
 import TruncatedText from './TruncatedText';
-import AvailabilityToggle from './AvailabilityToggle';
 import logo from '../assets/logo.png';
 import { ROLES } from '../constants/roles';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
-    const { mode, toggleColorMode } = useColorMode();
     const navigate = useNavigate();
 
     const company = user?.companyId ? getCompanyById(user.companyId) : null;
@@ -58,12 +54,8 @@ const Navbar = () => {
                     </Box>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
-                    <IconButton onClick={toggleColorMode} color="inherit">
-                        {mode === 'dark' ? <LightIcon /> : <DarkIcon />}
-                    </IconButton>
                     {user ? (
                         <>
-                            <AvailabilityToggle />
                             {user.role === ROLES.SYSTEM_ADMIN && (
                                 <Button color="primary" component={RouterLink} to="/sys-admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SysAdmin</Button>
                             )}

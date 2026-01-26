@@ -29,6 +29,9 @@ const RoleBasedRedirect = () => {
         navigate('/admin');
         break;
       case ROLES.TECHNICIAN:
+      case 'TECHNICIAN': // Handle all caps version
+      case 'Technician': // Handle proper case version
+        console.log('Match: TECHNICIAN');
         navigate('/tech');
         break;
       case ROLES.TEAM_LEAD:

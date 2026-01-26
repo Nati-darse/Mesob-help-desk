@@ -5,7 +5,7 @@ import './index.css';
 import axios from 'axios';
 
 // Configure axios base URL for production
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
+axios.defaults.baseURL = import.meta.env.VITE_SERVER_URL || 'https://mesob-helpdesk-backend.onrender.com';
 
 // Add global interceptor for Maintenance Mode
 axios.interceptors.response.use(

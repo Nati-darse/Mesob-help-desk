@@ -15,16 +15,24 @@ const Login = () => {
     const navigate = useNavigate();
 
     const getRedirectPath = (role) => {
+        console.log('Login redirect for role:', role);
         switch (role) {
             case ROLES.SYSTEM_ADMIN:
                 return '/sys-admin';
             case ROLES.SUPER_ADMIN:
                 return '/admin';
             case ROLES.TECHNICIAN:
+            case 'TECHNICIAN': // Handle all caps version
+            case 'Technician': // Handle proper case version
+                console.log('Redirecting technician to /tech');
                 return '/tech';
+            case ROLES.TEAM_LEAD:
+                return '/team-lead';
             case ROLES.EMPLOYEE:
+            case ROLES.WORKER:
                 return '/portal';
             default:
+                console.log('Default redirect to /dashboard for role:', role);
                 return '/dashboard';
         }
     };
@@ -36,7 +44,9 @@ const Login = () => {
 
         const result = await login(email, password);
         if (result.success) {
+            console.log('Login successful, user role:', result.user.role);
             const redirectPath = getRedirectPath(result.user.role);
+            console.log('Redirecting to:', redirectPath);
             navigate(redirectPath);
         } else {
             setError(result.message);

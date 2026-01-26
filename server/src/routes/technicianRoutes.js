@@ -6,7 +6,9 @@ const {
     updateTicket, 
     addInternalNotes, 
     addCustomerUpdate, 
-    resolveTicket 
+    resolveTicket,
+    updateDutyStatus,
+    getPerformanceMetrics
 } = require('../controllers/technicianController');
 const { protect } = require('../middleware/authMiddleware');
 const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
@@ -14,6 +16,12 @@ const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
 // Protect all routes
 router.use(protect);
 router.use(enforceMaintenance);
+
+// Update duty status
+router.put('/duty-status', updateDutyStatus);
+
+// Get performance metrics
+router.get('/performance', getPerformanceMetrics);
 
 // Get assigned tickets
 router.get('/assigned', getAssignedTickets);

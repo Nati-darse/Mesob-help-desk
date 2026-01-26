@@ -172,6 +172,7 @@ const AppContent = () => {
               {/* Technician Routes */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.TECHNICIAN]} />}>
                 <Route path="/tech" element={<TechDashboard />} />
+                <Route path="/tech/mission-control" element={<TechDashboard />} />
                 <Route path="/tech/tickets/:id" element={<TicketAction />} />
               </Route>
 

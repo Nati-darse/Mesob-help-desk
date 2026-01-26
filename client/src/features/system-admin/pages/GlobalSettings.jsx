@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     Box, Typography, Paper, Grid, Switch, FormControlLabel, TextField, Button, 
-    Divider, Alert, Chip, Card, CardContent, Dialog, DialogTitle, DialogContent, 
-    DialogActions, Snackbar, IconButton, Tooltip, List, ListItem, ListItemText,
-    ListItemIcon, Avatar, LinearProgress, Tab, Tabs
+    Divider, Alert, Dialog, DialogTitle, DialogContent, 
+    DialogActions, Snackbar, List, ListItem, ListItemText,
+    ListItemIcon, MenuItem
 } from '@mui/material';
 import { 
     Save as SaveIcon, VpnKey as KeyIcon, Email as EmailIcon, Construction as BuildIcon,
-    Security as SecurityIcon, Notifications as NotificationIcon, Storage as StorageIcon,
-    Refresh as RefreshIcon, Delete as DeleteIcon, Add as AddIcon, Edit as EditIcon,
-    Backup as BackupIcon, CloudUpload as CloudUploadIcon, Settings as SettingsIcon,
-    Warning as WarningIcon, CheckCircle as CheckCircleIcon, Info as InfoIcon,
+    Notifications as NotificationIcon, 
+    Delete as DeleteIcon, 
+    Backup as BackupIcon, 
+    Warning as WarningIcon, CheckCircle as CheckCircleIcon,
     Send as SendIcon, Restore as RestoreIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 
 const GlobalSettings = () => {
-    const [activeTab, setActiveTab] = useState(0);
     const [loading, setLoading] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     
@@ -77,7 +76,7 @@ const GlobalSettings = () => {
     });
 
     // Environment variables (mock for client-side)
-    const [envSettings, setEnvSettings] = useState({
+    const [envSettings] = useState({
         jwtSecret: '••••••••••••••••••••••••••••••••',
         mongoUri: '••••••••••••••••••••••••••••••••',
         serverUrl: 'https://mesob-help-desk.onrender.com',
@@ -221,6 +220,22 @@ const GlobalSettings = () => {
         setDialogs(prev => ({ ...prev, [dialogName]: false }));
     };
 
+    const resetSystem = async () => {
+        setLoading(true);
+        try {
+            // Simulate system reset
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            localStorage.removeItem('globalSettings');
+            loadSettings();
+            showSnackbar('System settings reset to defaults!');
+            setDialogs(prev => ({ ...prev, resetSystem: false }));
+        } catch (error) {
+            showSnackbar('Failed to reset system', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <Box maxWidth="1000px" margin="0 auto">
             <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#0A1929' }}>
@@ -354,6 +369,71 @@ const GlobalSettings = () => {
                     </Paper>
                 </Grid>
 
+                {/* System Performance Settings */}
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 3, height: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <NotificationIcon color="primary" />
+                            <Typography variant="h6">Performance Settings</Typography>
+                        </Box>
+                        <Divider sx={{ mb: 3 }} />
+
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Max File Upload Size (MB)"
+                                    value={systemSettings.maxFileSize}
+                                    onChange={(e) => setSystemSettings({...systemSettings, maxFileSize: e.target.value})}
+                                    size="small"
+                                    type="number"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Session Timeout (minutes)"
+                                    value={systemSettings.sessionTimeout}
+                                    onChange={(e) => setSystemSettings({...systemSettings, sessionTimeout: e.target.value})}
+                                    size="small"
+                                    type="number"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Max Login Attempts"
+                                    value={systemSettings.maxLoginAttempts}
+                                    onChange={(e) => setSystemSettings({...systemSettings, maxLoginAttempts: e.target.value})}
+                                    size="small"
+                                    type="number"
+                                />
+                            </Grid>
+                        </Grid>
+
+                        <Box sx={{ mt: 2 }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={systemSettings.rateLimiting}
+                                        onChange={(e) => setSystemSettings({...systemSettings, rateLimiting: e.target.checked})}
+                                    />
+                                }
+                                label="Enable Rate Limiting"
+                            />
+                        </Box>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={systemSettings.debugMode}
+                                    onChange={(e) => setSystemSettings({...systemSettings, debugMode: e.target.checked})}
+                                />
+                            }
+                            label="Debug Mode"
+                        />
+                    </Paper>
+                </Grid>
+
                 {/* Email Testing and Additional Settings */}
                 <Grid item xs={12} md={6}>
                     <Paper sx={{ p: 3, height: '100%' }}>
@@ -395,6 +475,62 @@ const GlobalSettings = () => {
                     </Paper>
                 </Grid>
 
+                {/* Security Settings */}
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 3, height: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <KeyIcon color="primary" />
+                            <Typography variant="h6">Security Configuration</Typography>
+                        </Box>
+                        <Divider sx={{ mb: 3 }} />
+
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="JWT Token Expiry"
+                                    value={securitySettings.jwtExpiry}
+                                    onChange={(e) => setSecuritySettings({...securitySettings, jwtExpiry: e.target.value})}
+                                    size="small"
+                                    helperText="e.g., 24h, 7d, 30m"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Minimum Password Length"
+                                    value={securitySettings.passwordMinLength}
+                                    onChange={(e) => setSecuritySettings({...securitySettings, passwordMinLength: e.target.value})}
+                                    size="small"
+                                    type="number"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Allowed Domains (comma separated)"
+                                    value={securitySettings.allowedDomains.join(', ')}
+                                    onChange={(e) => setSecuritySettings({...securitySettings, allowedDomains: e.target.value.split(', ')})}
+                                    size="small"
+                                    helperText="e.g., gov.et, mesob.com"
+                                />
+                            </Grid>
+                        </Grid>
+
+                        <Box sx={{ mt: 2 }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={securitySettings.requireTwoFactor}
+                                        onChange={(e) => setSecuritySettings({...securitySettings, requireTwoFactor: e.target.checked})}
+                                    />
+                                }
+                                label="Require Two-Factor Authentication"
+                            />
+                        </Box>
+                    </Paper>
+                </Grid>
+
                 {/* System Backup */}
                 <Grid item xs={12} md={6}>
                     <Paper sx={{ p: 3, height: '100%' }}>
@@ -430,6 +566,68 @@ const GlobalSettings = () => {
                     </Paper>
                 </Grid>
 
+                {/* Notification Settings */}
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 3, height: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <NotificationIcon color="primary" />
+                            <Typography variant="h6">Notification Preferences</Typography>
+                        </Box>
+                        <Divider sx={{ mb: 3 }} />
+
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={notificationSettings.emailNotifications}
+                                            onChange={(e) => setNotificationSettings({...notificationSettings, emailNotifications: e.target.checked})}
+                                        />
+                                    }
+                                    label="Email Notifications"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={notificationSettings.pushNotifications}
+                                            onChange={(e) => setNotificationSettings({...notificationSettings, pushNotifications: e.target.checked})}
+                                        />
+                                    }
+                                    label="Push Notifications"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={notificationSettings.criticalAlerts}
+                                            onChange={(e) => setNotificationSettings({...notificationSettings, criticalAlerts: e.target.checked})}
+                                        />
+                                    }
+                                    label="Critical System Alerts"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    select
+                                    label="Digest Frequency"
+                                    value={notificationSettings.digestFrequency}
+                                    onChange={(e) => setNotificationSettings({...notificationSettings, digestFrequency: e.target.value})}
+                                    size="small"
+                                >
+                                    <MenuItem value="hourly">Hourly</MenuItem>
+                                    <MenuItem value="daily">Daily</MenuItem>
+                                    <MenuItem value="weekly">Weekly</MenuItem>
+                                    <MenuItem value="never">Never</MenuItem>
+                                </TextField>
+                            </Grid>
+                        </Grid>
+                    </Paper>
+                </Grid>
+
                 {/* System Actions */}
                 <Grid item xs={12}>
                     <Paper sx={{ p: 3 }}>
@@ -461,6 +659,11 @@ const GlobalSettings = () => {
                                     color="error"
                                     fullWidth
                                     startIcon={<DeleteIcon />}
+                                    onClick={() => {
+                                        if (window.confirm('Are you sure you want to clear all data? This action cannot be undone!')) {
+                                            showSnackbar('Data clearing initiated... (This is a demo)', 'warning');
+                                        }
+                                    }}
                                 >
                                     Clear All Data
                                 </Button>
@@ -594,23 +797,6 @@ const GlobalSettings = () => {
             />
         </Box>
     );
-
-    // Add the missing resetSystem function
-    const resetSystem = async () => {
-        setLoading(true);
-        try {
-            // Simulate system reset
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            localStorage.removeItem('globalSettings');
-            loadSettings();
-            showSnackbar('System settings reset to defaults!');
-            setDialogs(prev => ({ ...prev, resetSystem: false }));
-        } catch (error) {
-            showSnackbar('Failed to reset system', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
 };
 
 export default GlobalSettings;

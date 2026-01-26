@@ -40,6 +40,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    dutyStatus: {
+        type: String,
+        enum: ['Online', 'On-Site', 'Break', 'Offline'],
+        default: 'Online',
+    },
     profilePic: {
         type: String,
         default: '',
