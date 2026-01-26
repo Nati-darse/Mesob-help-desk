@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Typography, Chip, IconButton, TextField, InputAdornment, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Card, CardContent, LinearProgress } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
+import { Box, Typography, Chip, IconButton, TextField, InputAdornment, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Card, CardContent, LinearProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+// Temporarily commenting out DataGrid to fix white page issue
+// import { DataGrid } from '@mui/x-data-grid';
 import { Search as SearchIcon, Edit as EditIcon, Circle as CircleIcon, Add as AddIcon, CloudUpload as UploadIcon, Business as BusinessIcon, TrendingUp as TrendingIcon, People as PeopleIcon } from '@mui/icons-material';
 import { COMPANIES } from '../../../utils/companies';
 
@@ -41,37 +42,6 @@ const CompanyRegistry = () => {
         alert('Company Saved (Mock Action)');
         setOpenModal(false);
     };
-
-    // Columns
-    const columns = [
-        { field: 'id', headerName: 'ID', width: 70 },
-        {
-            field: 'initials',
-            headerName: 'Code',
-            width: 100,
-            renderCell: (params) => (
-                <Chip label={params.value} variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
-            )
-        },
-        { field: 'name', headerName: 'Organization Name', flex: 1 },
-        {
-            field: 'status',
-            headerName: 'Status',
-            width: 120,
-            renderCell: () => <Chip icon={<CircleIcon sx={{ fontSize: 10 }} />} label="Active" color="success" size="small" variant="outlined" />
-        },
-        {
-            field: 'actions',
-            headerName: 'Actions',
-            width: 100,
-            sortable: false,
-            renderCell: (params) => (
-                <IconButton color="primary" size="small" onClick={() => handleOpenEdit(params.row)}>
-                    <EditIcon />
-                </IconButton>
-            ),
-        },
-    ];
 
     const filteredRows = companies.filter((row) =>
         row.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -193,15 +163,37 @@ const CompanyRegistry = () => {
                 />
             </Paper>
 
-            <Paper sx={{ height: 700, width: '100%' }}>
-                <DataGrid
-                    rows={filteredRows}
-                    columns={columns}
-                    pageSize={10}
-                    rowsPerPageOptions={[10, 25, 50]}
-                    disableSelectionOnClick
-                    sx={{ border: 0 }}
-                />
+            <Paper sx={{ width: '100%' }}>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Code</TableCell>
+                                <TableCell>Organization Name</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredRows.map((row) => (
+                                <TableRow key={row.id} hover>
+                                    <TableCell>
+                                        <Chip label={row.initials} variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
+                                    </TableCell>
+                                    <TableCell>{row.name}</TableCell>
+                                    <TableCell>
+                                        <Chip icon={<CircleIcon sx={{ fontSize: 10 }} />} label="Active" color="success" size="small" variant="outlined" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <IconButton color="primary" size="small" onClick={() => handleOpenEdit(row)}>
+                                            <EditIcon />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             </Paper>
 
             {/* Add/Edit Modal */}
