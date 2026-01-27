@@ -81,14 +81,12 @@ app.use('/api/auth', authRoutes); // Auth is always public
 // But maintenance mode should block even if you HAVE a token (unless you are admin).
 
 // So, for protected routes:
-const checkMaint = [protect, maintenanceMiddleware];
-
-app.use('/api/tickets', checkMaint, ticketRoutes);
-app.use('/api/users', checkMaint, userRoutes);
-app.use('/api/dashboard', checkMaint, dashboardRoutes);
-app.use('/api/technician', checkMaint, technicianRoutes);
-app.use('/api/settings', checkMaint, settingsRoutes);
-app.use('/api/notifications', checkMaint, require('./routes/notificationRoutes'));
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/technician', technicianRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Socket.io connection
 io.on('connection', (socket) => {

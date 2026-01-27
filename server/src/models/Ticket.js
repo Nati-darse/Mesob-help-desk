@@ -13,7 +13,7 @@ const ticketSchema = new mongoose.Schema({
     category: {
         type: String,
         required: [true, 'Please add a category'],
-        enum: ['Software', 'Hardware', 'Network', 'Account', 'Building', 'Other'],
+        enum: ['Software', 'Hardware', 'Network', 'Account', 'Building', 'Other', 'Technical Support'],
     },
     priority: {
         type: String,
@@ -23,7 +23,7 @@ const ticketSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['New', 'Assigned', 'In Progress', 'Resolved', 'Closed'],
+        enum: ['New', 'Pending', 'Assigned', 'In Progress', 'Resolved', 'Closed'],
         default: 'New',
     },
     requester: {

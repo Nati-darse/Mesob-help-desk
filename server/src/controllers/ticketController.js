@@ -22,7 +22,7 @@ exports.createTicket = async (req, res) => {
         console.log('Request body:', req.body);
         console.log('User info:', req.user);
         console.log('Headers:', req.headers);
-        
+
         const { title, description, category, priority, buildingWing, companyId } = req.body;
 
         // Basic validation
@@ -40,6 +40,7 @@ exports.createTicket = async (req, res) => {
             companyId: companyId || req.user?.companyId || 1,
             requester: req.user?._id,
             department: req.user?.department || 'General',
+            status: req.body.status || 'New',
         };
 
         console.log('Ticket data to create:', ticketData);
@@ -62,11 +63,20 @@ exports.createTicket = async (req, res) => {
     } catch (error) {
         console.error('=== TICKET CREATION ERROR ===');
         console.error('Error details:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ 
+
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({
+                success: false,
+                message: messages.join(', '),
+                details: error.errors
+            });
+        }
+
+        res.status(500).json({
             success: false,
             message: error.message,
-            details: error.stack 
+            details: error.stack
         });
     }
 };
