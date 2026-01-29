@@ -43,6 +43,7 @@ app.set('io', io);
 // Middleware
 const allowedOrigins = [
     'https://mesob-help-desk.vercel.app',
+    'https://mesob-helpdesk-backend.onrender.com',
     'http://localhost:5173',
     'http://localhost:5000'
 ];
