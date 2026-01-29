@@ -1,24 +1,41 @@
-import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Avatar, Menu, MenuItem, Divider as MuiDivider, IconButton, Tooltip } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Brightness4 as DarkIcon, Brightness7 as LightIcon } from '@mui/icons-material';
+import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { useColorMode } from '../context/ColorModeContext';
 import { getCompanyById } from '../utils/companies';
 import TruncatedText from './TruncatedText';
-import AvailabilityToggle from './AvailabilityToggle';
+import LanguageSelector from './LanguageSelector';
 import logo from '../assets/logo.png';
 import { ROLES } from '../constants/roles';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
     const { mode, toggleColorMode } = useColorMode();
     const navigate = useNavigate();
+    const [anchorEl, setAnchorEl] = useState(null);
+    const { t } = useTranslation();
 
     const company = user?.companyId ? getCompanyById(user.companyId) : null;
 
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const handleMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleProfileClick = () => {
+        handleMenuClose();
+        navigate('/profile');
     };
 
     return (
@@ -58,26 +75,98 @@ const Navbar = () => {
                     </Box>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
-                    <IconButton onClick={toggleColorMode} color="inherit">
-                        {mode === 'dark' ? <LightIcon /> : <DarkIcon />}
-                    </IconButton>
                     {user ? (
                         <>
-                            <AvailabilityToggle />
                             {user.role === ROLES.SYSTEM_ADMIN && (
                                 <Button color="primary" component={RouterLink} to="/sys-admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SysAdmin</Button>
                             )}
                             {user.role === ROLES.SUPER_ADMIN && (
                                 <Button color="secondary" component={RouterLink} to="/admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SuperAdmin</Button>
                             )}
-                            <Button color="primary" component={RouterLink} to="/redirect" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Dashboard</Button>
-                            <Button color="primary" component={RouterLink} to="/tickets" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Tickets</Button>
-                            <Button color="primary" component={RouterLink} to="/profile" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Profile</Button>
-                            <Button variant="outlined" color="primary" onClick={handleLogout} sx={{ ml: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Logout</Button>
+                            <Button color="primary" component={RouterLink} to="/redirect" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{t('nav.dashboard')}</Button>
+                            <Button color="primary" component={RouterLink} to="/tickets" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{t('nav.tickets')}</Button>
+                            
+                            {/* Dark Mode Toggle */}
+                            <Tooltip title={mode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
+                                <IconButton onClick={toggleColorMode} color="inherit" sx={{ ml: 0.5 }}>
+                                    {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                                </IconButton>
+                            </Tooltip>
+                            
+                            {/* Language Selector */}
+                            <LanguageSelector />
+                            
+                            {/* Profile Avatar with Dropdown */}
+                            <Avatar
+                                src={user.profilePic}
+                                alt={user.name}
+                                onClick={handleMenuOpen}
+                                sx={{
+                                    width: 36,
+                                    height: 36,
+                                    cursor: 'pointer',
+                                    bgcolor: 'primary.main',
+                                    border: '2px solid',
+                                    borderColor: 'background.paper',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                        transform: 'scale(1.1)',
+                                        boxShadow: 2
+                                    }
+                                }}
+                            >
+                                {!user.profilePic && user.name?.charAt(0)}
+                            </Avatar>
+                            
+                            <Menu
+                                anchorEl={anchorEl}
+                                open={Boolean(anchorEl)}
+                                onClose={handleMenuClose}
+                                anchorOrigin={{
+                                    vertical: 'bottom',
+                                    horizontal: 'right',
+                                }}
+                                transformOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'right',
+                                }}
+                                PaperProps={{
+                                    sx: {
+                                        mt: 1.5,
+                                        minWidth: 200,
+                                        borderRadius: 2,
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                                    }
+                                }}
+                            >
+                                <Box sx={{ px: 2, py: 1.5 }}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        {user.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {user.role}
+                                    </Typography>
+                                </Box>
+                                <MuiDivider />
+                                <MenuItem onClick={handleProfileClick} sx={{ py: 1.5 }}>
+                                    {t('nav.myProfile')}
+                                </MenuItem>
+                                <MuiDivider />
+                                <MenuItem onClick={() => { handleMenuClose(); handleLogout(); }} sx={{ py: 1.5, color: 'error.main' }}>
+                                    {t('auth.logout')}
+                                </MenuItem>
+                            </Menu>
                         </>
                     ) : (
                         <>
-                            <Button variant="contained" color="primary" component={RouterLink} to="/login" sx={{ px: { xs: 2, sm: 4 } }}>Login</Button>
+                            {/* Dark Mode Toggle for logged out users */}
+                            <Tooltip title={mode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
+                                <IconButton onClick={toggleColorMode} color="inherit" sx={{ ml: 0.5 }}>
+                                    {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                                </IconButton>
+                            </Tooltip>
+                            <LanguageSelector />
+                            <Button variant="contained" color="primary" component={RouterLink} to="/login" sx={{ px: { xs: 2, sm: 4 } }}>{t('auth.login')}</Button>
                         </>
                     )}
                 </Box>

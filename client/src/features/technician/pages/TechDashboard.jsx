@@ -1,280 +1,204 @@
-import React, { useState, useEffect } from 'react';
-import { 
-    Container, Typography, Box, Button, Card, CardContent, FormControl, InputLabel, Select, MenuItem, Chip,
-    Avatar, IconButton, Tooltip, Paper, CircularProgress, Alert, Tabs, Tab, Grid, Divider,
-    Dialog, DialogTitle, DialogContent, DialogActions, TextField, Stepper, Step, StepLabel
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    Container, Typography, Box, Button, Card, CardContent, FormControl, Select, MenuItem,
+    CircularProgress, Grid, Chip, Alert, Snackbar, Badge, Tooltip, Dialog, DialogTitle,
+    DialogContent, DialogActions, TextField, Paper, Divider
 } from '@mui/material';
 import {
-    Assignment as TaskIcon,
-    CheckCircle as AcceptIcon,
-    AccessTime as TimeIcon,
-    Place as LocationIcon,
-    Visibility as ViewIcon,
-    Work as WorkIcon,
-    Schedule as PendingIcon,
-    Build as BuildIcon,
-    PlayArrow as StartIcon,
-    Stop as FinishIcon,
-    Feedback as FeedbackIcon,
-    Note as NoteIcon,
-    Close as CloseIcon
+    Refresh as RefreshIcon,
+    Assignment as AssignmentIcon,
+    Dashboard as DashboardIcon,
+    Notifications as NotificationsIcon,
+    Download as DownloadIcon,
+    Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../auth/context/AuthContext';
-import { ROLES } from '../../../constants/roles';
 import axios from 'axios';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { exportToExcel, exportToCSV, formatDate, formatDuration, calculateStats } from '../../../utils/excelExport';
+import { useTranslation } from 'react-i18next';
 
 const TechDashboard = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
+    const navigate = useNavigate();
+    const { t } = useTranslation();
     const [dutyStatus, setDutyStatus] = useState('Online');
-    const [performance, setPerformance] = useState(null);
-    const [activeTab, setActiveTab] = useState(0);
-    const [newlyAssignedTickets, setNewlyAssignedTickets] = useState([]);
-    const [allTickets, setAllTickets] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedTicket, setSelectedTicket] = useState(null);
-    const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
-    const [workflowStep, setWorkflowStep] = useState(0);
-    const [noteText, setNoteText] = useState('');
-    const [noteDialogOpen, setNoteDialogOpen] = useState(false);
-    const [acceptStartDialogOpen, setAcceptStartDialogOpen] = useState(false);
-    const [finishDialogOpen, setFinishDialogOpen] = useState(false);
-    const [initialNote, setInitialNote] = useState('');
-    const [completionNote, setCompletionNote] = useState('');
     const [statusUpdating, setStatusUpdating] = useState(false);
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+    const [reportDialog, setReportDialog] = useState(false);
+    const [reportDateRange, setReportDateRange] = useState({
+        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0]
+    });
+    const [generatingReport, setGeneratingReport] = useState(false);
+
+    // React Query for Real-time Data
+    const { data: assignedTickets = [], isLoading: ticketsLoading } = useQuery({
+        queryKey: ['tickets'],
+        queryFn: async () => {
+            const { data } = await axios.get('/api/technician/assigned');
+            return data;
+        },
+        refetchInterval: 15000 // Fallback polling
+    });
+
+    const { data: performance, isLoading: perfLoading } = useQuery({
+        queryKey: ['tech-performance'],
+        queryFn: async () => {
+            const { data } = await axios.get('/api/technician/performance');
+            return data;
+        },
+        refetchInterval: 60000
+    });
+
+    const loading = ticketsLoading || perfLoading;
 
     useEffect(() => {
         if (user) {
-            console.log('=== TECH DASHBOARD INITIALIZATION ===');
-            console.log('User data:', user);
-            console.log('User duty status:', user.dutyStatus);
-            console.log('User role:', user.role);
-            console.log('Setting initial duty status to:', user.dutyStatus || 'Online');
-            
             setDutyStatus(user.dutyStatus || 'Online');
-            fetchPerformanceMetrics();
-            fetchTickets();
         }
     }, [user]);
 
-    const fetchPerformanceMetrics = async () => {
-        try {
-            const res = await axios.get('/api/technician/performance');
-            setPerformance(res.data);
-        } catch (error) {
-            console.error('Error fetching performance:', error);
-        }
+    const showNotification = (message, severity = 'success') => {
+        setNotification({ open: true, message, severity });
     };
 
-    const fetchTickets = async () => {
-        try {
-            const res = await axios.get('/api/technician/assigned');
-            const allTickets = res.data;
-            
-            // Filter for newly assigned tickets (assigned but not yet accepted)
-            const newlyAssigned = allTickets.filter(ticket => 
-                (ticket.status === 'Assigned' || ticket.status === 'New') && 
-                !ticket.acceptedAt
-            );
-            
-            setNewlyAssignedTickets(newlyAssigned);
-            setAllTickets(allTickets);
-        } catch (error) {
-            console.error('Error fetching tickets:', error);
-            setError('Failed to fetch tickets');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleAcceptAndStartTicket = async (ticketId) => {
-        setSelectedTicket(allTickets.find(t => t._id === ticketId));
-        setAcceptStartDialogOpen(true);
-    };
-
-    const handleConfirmAcceptAndStart = async () => {
-        try {
-            const response = await axios.put(`/api/technician/${selectedTicket._id}/accept-and-start`, {
-                initialNote: initialNote.trim() || undefined
-            });
-            
-            setAcceptStartDialogOpen(false);
-            setInitialNote('');
-            fetchTickets();
-            alert('Ticket accepted and work started successfully!');
-        } catch (error) {
-            console.error('Error accepting and starting ticket:', error);
-            alert(`Failed to accept and start ticket: ${error.response?.data?.message || error.message}`);
-        }
-    };
-
-    const handleFinishAndRequestFeedback = async (ticket) => {
-        setSelectedTicket(ticket);
-        setFinishDialogOpen(true);
-    };
-
-    const handleConfirmFinishAndRequestFeedback = async () => {
-        try {
-            await axios.put(`/api/technician/${selectedTicket._id}/finish-and-request-feedback`, {
-                completionNote: completionNote.trim() || undefined
-            });
-            setFinishDialogOpen(false);
-            setCompletionNote('');
-            fetchTickets();
-            alert('Work finished and feedback requested from team leader!');
-        } catch (error) {
-            console.error('Error finishing and requesting feedback:', error);
-            alert('Failed to finish work and request feedback');
-        }
-    };
-
-    const handleAcceptTicket = async (ticketId) => {
-        try {
-            await axios.put(`/api/technician/${ticketId}/accept`);
-            // Refresh tickets after accepting
-            fetchTickets();
-        } catch (error) {
-            console.error('Error accepting ticket:', error);
-        }
-    };
-
-    const handleViewTicket = (ticket) => {
-        setSelectedTicket(ticket);
-        setTicketDialogOpen(true);
-        
-        // Determine workflow step based on ticket status
-        if (!ticket.acceptedAt) {
-            setWorkflowStep(0); // Not accepted
-        } else if (!ticket.startedAt) {
-            setWorkflowStep(1); // Accepted, not started
-        } else if (!ticket.finishedAt) {
-            setWorkflowStep(2); // Started, not finished
-        } else if (ticket.feedbackRequestedAt) {
-            setWorkflowStep(4); // Complete (feedback requested)
-        } else {
-            setWorkflowStep(3); // Finished, but no feedback requested (legacy state)
-        }
-    };
-
-    const handleStartTicket = async () => {
-        try {
-            await axios.put(`/api/technician/${selectedTicket._id}/start`);
-            fetchTickets();
-            // Update selected ticket
-            setSelectedTicket({...selectedTicket, startedAt: new Date(), status: 'In Progress'});
-            setWorkflowStep(2);
-        } catch (error) {
-            console.error('Error starting ticket:', error);
-        }
-    };
-
-    const handleFinishTicket = async () => {
-        try {
-            await axios.put(`/api/technician/${selectedTicket._id}/finish`);
-            fetchTickets();
-            // Update selected ticket
-            setSelectedTicket({...selectedTicket, finishedAt: new Date(), status: 'Completed'});
-            setWorkflowStep(3);
-        } catch (error) {
-            console.error('Error finishing ticket:', error);
-        }
-    };
-
-    const handleRequestFeedback = async () => {
-        try {
-            await axios.put(`/api/technician/${selectedTicket._id}/request-feedback`);
-            fetchTickets();
-            // Update selected ticket
-            setSelectedTicket({...selectedTicket, feedbackRequestedAt: new Date(), status: 'Pending Feedback'});
-            setWorkflowStep(4);
-        } catch (error) {
-            console.error('Error requesting feedback:', error);
-        }
-    };
-
-    const handleAddNote = async () => {
-        if (!noteText.trim()) return;
-        
-        try {
-            await axios.post(`/api/technician/${selectedTicket._id}/notes`, { note: noteText });
-            setNoteText('');
-            setNoteDialogOpen(false);
-            // Refresh ticket data if needed
-        } catch (error) {
-            console.error('Error adding note:', error);
-        }
+    const handleCloseNotification = () => {
+        setNotification({ ...notification, open: false });
     };
 
     const handleDutyStatusChange = async (newStatus) => {
         setStatusUpdating(true);
-        console.log('=== DUTY STATUS UPDATE DEBUG ===');
-        console.log('Current user:', user);
-        console.log('Current dutyStatus state:', dutyStatus);
-        console.log('New status to set:', newStatus);
-        console.log('User token exists:', !!user?.token);
-        console.log('Authorization header:', axios.defaults.headers.common['Authorization']);
-        
         try {
-            console.log('Making API request to update duty status...');
             const response = await axios.put('/api/technician/duty-status', { dutyStatus: newStatus });
-            console.log('API response:', response.data);
-            
-            // Update local state
             setDutyStatus(newStatus);
-            console.log('Local state updated to:', newStatus);
-            
-            // Also update the user context if possible
-            // This ensures the status is synced across the app
+
+            // Update user in global context and sessionStorage
             if (user) {
-                const updatedUser = { ...user, dutyStatus: newStatus };
-                localStorage.setItem('mesob_user', JSON.stringify(updatedUser));
-                console.log('LocalStorage updated with new user data');
+                updateUser({ dutyStatus: newStatus });
             }
-            
-            console.log('Duty status successfully updated to:', newStatus);
-            alert('Duty status updated successfully!'); // Temporary success feedback
+
+            showNotification(t('techDashboard.dutyStatusUpdated', { status: newStatus }), 'success');
         } catch (error) {
-            console.error('=== DUTY STATUS UPDATE ERROR ===');
             console.error('Error updating duty status:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
-            console.error('Error headers:', error.response?.headers);
-            
-            // The global axios interceptor will handle 401 errors (token expiration)
-            // So we only need to handle other types of errors here
             if (error.response?.status !== 401) {
-                alert(`Failed to update duty status: ${error.response?.data?.message || error.message}`);
+                showNotification(t('techDashboard.failedToUpdateStatus', { error: error.response?.data?.message || error.message }), 'error');
             }
         } finally {
             setStatusUpdating(false);
-            console.log('=== DUTY STATUS UPDATE COMPLETE ===');
         }
     };
 
-    const getPriorityColor = (priority, createdAt) => {
-        const now = new Date();
-        const created = new Date(createdAt);
-        const hoursElapsed = (now - created) / (1000 * 60 * 60);
-
-        if (priority === 'Critical') {
-            return hoursElapsed > 1 ? '#0a192f' : '#153b8a';
-        } else if (priority === 'High') {
-            return hoursElapsed > 4 ? '#1e4fb1' : '#0061f2';
-        }
-        return '#42a5f5';
+    const handleOpenMissionControl = () => {
+        navigate('/tech/mission-control');
     };
 
-    const getSLABadge = (priority, createdAt) => {
-        const now = new Date();
-        const created = new Date(createdAt);
-        const hoursElapsed = (now - created) / (1000 * 60 * 60);
+    const handleViewAllTickets = () => {
+        navigate('/tickets');
+    };
 
-        if (priority === 'Critical') {
-            return hoursElapsed <= 1 ? 'SLA OK' : 'SLA BREACH';
-        } else if (priority === 'High') {
-            return hoursElapsed <= 4 ? 'SLA OK' : 'SLA BREACH';
+    const handleRefreshDashboard = () => {
+        // Invalidate queries to force refetch
+        qc.invalidateQueries({ queryKey: ['tickets'] });
+        qc.invalidateQueries({ queryKey: ['tech-performance'] });
+        showNotification(t('techDashboard.dashboardRefreshing'), 'info');
+    };
+
+    const qc = useQueryClient();
+
+    // Report Generation Functions
+    const handleOpenReportDialog = () => {
+        setReportDialog(true);
+    };
+
+    const handleCloseReportDialog = () => {
+        setReportDialog(false);
+    };
+
+    const generateReport = async (format) => {
+        setGeneratingReport(true);
+        try {
+            // Fetch all tickets for the date range
+            const response = await axios.get('/api/technician/assigned', {
+                params: {
+                    startDate: reportDateRange.startDate,
+                    endDate: reportDateRange.endDate,
+                    includeResolved: true
+                }
+            });
+
+            const tickets = response.data;
+
+            if (tickets.length === 0) {
+                showNotification(t('techDashboard.noTicketsFound'), 'warning');
+                setGeneratingReport(false);
+                return;
+            }
+
+            // Calculate statistics
+            const stats = calculateStats(tickets);
+
+            // Prepare data for export
+            const exportData = tickets.map((ticket, index) => ({
+                '#': index + 1,
+                'Ticket ID': ticket._id.slice(-8).toUpperCase(),
+                'Title': ticket.title,
+                'Category': ticket.category,
+                'Priority': ticket.priority,
+                'Status': ticket.status,
+                'Company': ticket.companyId,
+                'Department': ticket.department,
+                'Created': formatDate(ticket.createdAt),
+                'Updated': formatDate(ticket.updatedAt),
+                'Duration': formatDuration(ticket.createdAt, ticket.updatedAt),
+                'Rating': ticket.rating || 'N/A'
+            }));
+
+            const headers = [
+                { key: '#', label: '#' },
+                { key: 'Ticket ID', label: 'Ticket ID' },
+                { key: 'Title', label: 'Title' },
+                { key: 'Category', label: 'Category' },
+                { key: 'Priority', label: 'Priority' },
+                { key: 'Status', label: 'Status' },
+                { key: 'Company', label: 'Company' },
+                { key: 'Department', label: 'Department' },
+                { key: 'Created', label: 'Created Date' },
+                { key: 'Updated', label: 'Last Updated' },
+                { key: 'Duration', label: 'Duration' },
+                { key: 'Rating', label: 'Rating' }
+            ];
+
+            const metadata = {
+                'Technician': user?.name || 'Unknown',
+                'Report Period': `${reportDateRange.startDate} to ${reportDateRange.endDate}`,
+                'Generated On': new Date().toLocaleString(),
+                'Total Tickets': stats.total,
+                'Resolved': stats.resolved,
+                'In Progress': stats.inProgress,
+                'Pending': stats.pending,
+                'Avg Resolution Time': `${stats.avgResolutionTime} hours`,
+                'Resolution Rate': `${stats.resolutionRate}%`
+            };
+
+            const title = `Technician_Report_${user?.name?.replace(/\s+/g, '_')}`;
+
+            if (format === 'excel') {
+                exportToExcel(exportData, headers, title, metadata);
+                showNotification(t('techDashboard.excelReportGenerated'), 'success');
+            } else {
+                exportToCSV(exportData, headers, title);
+                showNotification(t('techDashboard.csvReportGenerated'), 'success');
+            }
+
+            handleCloseReportDialog();
+        } catch (error) {
+            console.error('Error generating report:', error);
+            showNotification(t('techDashboard.failedToGenerateReport', { error: error.message }), 'error');
+        } finally {
+            setGeneratingReport(false);
         }
-        return 'Normal';
     };
 
     const getStatusColor = (status) => {
@@ -287,125 +211,16 @@ const TechDashboard = () => {
         }
     };
 
-    const getStatusLabel = (status) => {
-        switch (status) {
-            case 'Online': return 'Online (Available)';
-            case 'On-Site': return 'On-Site (Busy)';
-            case 'Break': return 'Break (Unavailable)';
-            case 'Offline': return 'Offline';
-            default: return status;
-        }
+    const getUrgentTicketsCount = () => {
+        return assignedTickets.filter(ticket =>
+            ticket.priority === 'High' || ticket.priority === 'Critical'
+        ).length;
     };
 
-    const TicketCard = ({ ticket, showAcceptButton = false }) => {
-        const priorityColor = getPriorityColor(ticket.priority, ticket.createdAt);
-        const slaStatus = getSLABadge(ticket.priority, ticket.createdAt);
-        const isSLABreach = slaStatus === 'SLA BREACH';
-
-        return (
-            <Card
-                sx={{
-                    mb: 2,
-                    border: isSLABreach ? `2px solid ${priorityColor}` : '1px solid #e0e0e0',
-                    borderRadius: 2,
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: 3
-                    }
-                }}
-            >
-                <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                            <Avatar sx={{ bgcolor: priorityColor, color: 'white', mr: 2, width: 40, height: 40 }}>
-                                <TaskIcon />
-                            </Avatar>
-                            <Box sx={{ flex: 1 }}>
-                                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                                    {ticket.title}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                    {ticket.companyDisplayName || ticket.company?.name || 'Unknown Company'}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    {ticket.companyDisplayInitials || ticket.company?.initials || 'UNK'} • 
-                                    Ticket #{ticket._id?.slice(-6)} • 
-                                    {ticket.location || 'No location'}
-                                </Typography>
-                            </Box>
-                        </Box>
-                        <Box sx={{ textAlign: 'right', minWidth: 120 }}>
-                            <Chip
-                                label={slaStatus}
-                                color={isSLABreach ? 'error' : 'success'}
-                                size="small"
-                                sx={{ mb: 1 }}
-                            />
-                            <Typography variant="caption" color="text.secondary" display="block">
-                                {new Date(ticket.createdAt).toLocaleString()}
-                            </Typography>
-                        </Box>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Chip
-                                label={ticket.priority}
-                                size="small"
-                                sx={{
-                                    bgcolor: priorityColor,
-                                    color: 'white',
-                                    fontWeight: 'bold'
-                                }}
-                            />
-                            <Chip
-                                label={ticket.status}
-                                size="small"
-                                variant="outlined"
-                                color="primary"
-                            />
-                        </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            {showAcceptButton && (
-                                <Tooltip title="Accept & Start Work">
-                                    <Button
-                                        variant="contained"
-                                        color="success"
-                                        size="small"
-                                        startIcon={<AcceptIcon />}
-                                        onClick={() => handleAcceptAndStartTicket(ticket._id)}
-                                    >
-                                        Accept & Start
-                                    </Button>
-                                </Tooltip>
-                            )}
-                            {ticket.status === 'In Progress' && (
-                                <Tooltip title="Finish & Request Feedback">
-                                    <Button
-                                        variant="contained"
-                                        color="warning"
-                                        size="small"
-                                        startIcon={<FeedbackIcon />}
-                                        onClick={() => handleFinishAndRequestFeedback(ticket)}
-                                    >
-                                        Finish Work
-                                    </Button>
-                                </Tooltip>
-                            )}
-                            <Tooltip title="View Details">
-                                <IconButton
-                                    onClick={() => handleViewTicket(ticket)}
-                                    color="primary"
-                                >
-                                    <ViewIcon />
-                                </IconButton>
-                            </Tooltip>
-                        </Box>
-                    </Box>
-                </CardContent>
-            </Card>
-        );
+    const getPendingTicketsCount = () => {
+        return assignedTickets.filter(ticket =>
+            ticket.status === 'Open' || ticket.status === 'In Progress'
+        ).length;
     };
 
     if (loading) {
@@ -417,69 +232,99 @@ const TechDashboard = () => {
     }
 
     return (
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
-
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: 3 }}>
+            {/* Header */}
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-                    MESOB Technician Workspace
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: '#0A1929' }}>
+                    {t('techDashboard.workspace')}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                    Welcome, {user?.name || 'Technician'}. MESOB IT Support Team for all client companies.
+                    {t('techDashboard.welcome', { name: user?.name || t('roles.technician') })}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    {t('techDashboard.liveUpdatesActive')}
                 </Typography>
             </Box>
 
-            {/* Duty Status Toggle - Matching Screenshot */}
-            <Card sx={{ mb: 4, background: 'linear-gradient(135deg, #0a192f 0%, #1a237e 100%)', color: 'white' }}>
-                <CardContent>
+            {/* Current Duty Status Card - Enhanced */}
+            <Card sx={{
+                mb: 4,
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                color: 'white',
+                borderRadius: 3,
+                position: 'relative',
+                overflow: 'visible'
+            }}>
+                <CardContent sx={{ py: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box>
-                            <Typography variant="h6" gutterBottom>
-                                Current Duty Status
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                                {t('techDashboard.currentDutyStatus')}
                             </Typography>
-                            <Chip 
-                                label={dutyStatus}
-                                color={getStatusColor(dutyStatus)}
-                                size="large"
-                                sx={{ fontWeight: 'bold', fontSize: '1rem' }}
-                            />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Chip
+                                    label={dutyStatus}
+                                    color={getStatusColor(dutyStatus)}
+                                    size="large"
+                                    sx={{
+                                        fontWeight: 'bold',
+                                        fontSize: '1rem',
+                                        px: 2,
+                                        py: 1
+                                    }}
+                                />
+                                {getPendingTicketsCount() > 0 && (
+                                    <Badge
+                                        badgeContent={getPendingTicketsCount()}
+                                        color="error"
+                                        sx={{ ml: 2 }}
+                                    >
+                                        <Chip
+                                            icon={<NotificationsIcon />}
+                                            label={t('techDashboard.pendingTickets', { count: getPendingTicketsCount() })}
+                                            variant="outlined"
+                                            sx={{
+                                                color: 'white',
+                                                borderColor: 'rgba(255,255,255,0.5)',
+                                                '& .MuiChip-icon': { color: 'white' }
+                                            }}
+                                        />
+                                    </Badge>
+                                )}
+                            </Box>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                                Change Status:
+                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                                {t('techDashboard.changeStatus')}
                             </Typography>
                             <FormControl size="small" sx={{ minWidth: 180 }}>
                                 <Select
                                     value={dutyStatus}
                                     onChange={(e) => handleDutyStatusChange(e.target.value)}
                                     disabled={statusUpdating}
-                                    sx={{ 
+                                    sx={{
                                         color: 'white',
                                         '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.5)' },
                                         '& .MuiSvgIcon-root': { color: 'white' },
                                         '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
                                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                                        '&.Mui-disabled': { 
+                                        '&.Mui-disabled': {
                                             color: 'rgba(255,255,255,0.6)',
                                             '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' }
                                         }
                                     }}
                                     displayEmpty
                                 >
-                                    <MenuItem value="Online">Online (Available)</MenuItem>
-                                    <MenuItem value="On-Site">On-Site (Busy)</MenuItem>
-                                    <MenuItem value="Break">Break (Unavailable)</MenuItem>
-                                    <MenuItem value="Offline">Offline</MenuItem>
+                                    <MenuItem value="Online">{t('techDashboard.onlineAvailable')}</MenuItem>
+                                    <MenuItem value="On-Site">{t('techDashboard.onSiteBusy')}</MenuItem>
+                                    <MenuItem value="Break">{t('techDashboard.breakUnavailable')}</MenuItem>
+                                    <MenuItem value="Offline">{t('techDashboard.offline')}</MenuItem>
                                 </Select>
                                 {statusUpdating && (
                                     <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                                         <CircularProgress size={16} sx={{ color: 'white', mr: 1 }} />
                                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                                            Updating status...
+                                            {t('techDashboard.updatingStatus')}
                                         </Typography>
                                     </Box>
                                 )}
@@ -489,398 +334,287 @@ const TechDashboard = () => {
                 </CardContent>
             </Card>
 
-            {/* Performance Metrics - Matching Screenshot */}
-            {performance && (
-                <Card sx={{ mb: 4 }}>
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                            My Efficiency Dashboard
-                        </Typography>
-                        <Box sx={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                            gap: 4,
-                            mt: 2
-                        }}>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h3" color="primary" fontWeight="bold">
-                                    {performance.avgResponseTime}h
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" fontWeight="500">
-                                    Avg. Response Time
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    ({performance.responseTimeCount} tickets)
-                                </Typography>
-                            </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h3" color="success.main" fontWeight="bold">
-                                    {performance.avgResolutionTime}h
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" fontWeight="500">
-                                    Avg. Resolution Time
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    ({performance.resolutionTimeCount} tickets)
-                                </Typography>
-                            </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h3" color="warning.main" fontWeight="bold">
-                                    {performance.todayResolved}
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" fontWeight="500">
-                                    Resolved Today
-                                </Typography>
-                            </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                                <Typography variant="h3" color="info.main" fontWeight="bold">
-                                    {performance.totalResolved}/{performance.totalAssigned}
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" fontWeight="500">
-                                    Total Resolved
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </CardContent>
-                </Card>
-            )}
+            {/* My Efficiency Dashboard - Enhanced */}
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+                    {t('techDashboard.myEfficiencyDashboard')}
+                </Typography>
 
-            {/* Tickets Section with Tabs */}
-            <Card>
-                <CardContent>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-                            <Tab 
-                                label={`Newly Assigned (${newlyAssignedTickets.length})`} 
-                                icon={<PendingIcon />}
-                                iconPosition="start"
-                            />
-                            <Tab 
-                                label={`All My Tickets (${allTickets.length})`} 
-                                icon={<WorkIcon />}
-                                iconPosition="start"
-                            />
-                        </Tabs>
-                    </Box>
+                <Grid container spacing={4}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                            <Typography variant="h2" sx={{ fontWeight: 700, color: '#1976d2', mb: 1 }}>
+                                {performance?.avgResponseTime || '0'}h
+                            </Typography>
+                            <Typography variant="body1" color="text.secondary" fontWeight="500">
+                                {t('techDashboard.avgResponseTime')}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                ({performance?.responseTimeCount || 0} {t('tickets.tickets')})
+                            </Typography>
+                        </Card>
+                    </Grid>
 
-                    {/* Newly Assigned Tickets Tab */}
-                    {activeTab === 0 && (
-                        <Box>
-                            <Typography variant="h6" gutterBottom>
-                                Tickets Waiting for Acceptance
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                            <Typography variant="h2" sx={{ fontWeight: 700, color: '#2e7d32', mb: 1 }}>
+                                {performance?.avgResolutionTime || '0'}h
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                These tickets have been assigned to you and need to be accepted to start working.
+                            <Typography variant="body1" color="text.secondary" fontWeight="500">
+                                {t('techDashboard.avgResolutionTime')}
                             </Typography>
-                             
-                            {newlyAssignedTickets.length === 0 ? (
-                                <Paper sx={{ p: 4, textAlign: 'center' }}>
-                                    <TaskIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                                        No Newly Assigned Tickets
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        All your assigned tickets have been accepted. Great job!
-                                    </Typography>
-                                </Paper>
-                            ) : (
-                                <Box>
-                                    {newlyAssignedTickets.map(ticket => (
-                                        <TicketCard key={ticket._id} ticket={ticket} showAcceptButton={true} />
-                                    ))}
-                                </Box>
-                            )}
-                        </Box>
-                    )}
+                            <Typography variant="caption" color="text.secondary">
+                                ({performance?.resolutionTimeCount || 0} {t('tickets.tickets')})
+                            </Typography>
+                        </Card>
+                    </Grid>
 
-                    {/* All Tickets Tab */}
-                    {activeTab === 1 && (
-                        <Box>
-                            <Typography variant="h6" gutterBottom>
-                                All My Assigned Tickets
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                            <Typography variant="h2" sx={{ fontWeight: 700, color: '#ed6c02', mb: 1 }}>
+                                {performance?.todayResolved || 0}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                Complete overview of all tickets assigned to you across all companies.
+                            <Typography variant="body1" color="text.secondary" fontWeight="500">
+                                {t('techDashboard.resolvedToday')}
                             </Typography>
-                             
-                            {allTickets.length === 0 ? (
-                                <Paper sx={{ p: 4, textAlign: 'center' }}>
-                                    <TaskIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                                        No Tickets Assigned
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        You don't have any tickets assigned at the moment.
-                                    </Typography>
-                                </Paper>
-                            ) : (
-                                <Box>
-                                    {allTickets.map(ticket => (
-                                        <TicketCard key={ticket._id} ticket={ticket} showAcceptButton={false} />
-                                    ))}
-                                </Box>
-                            )}
-                        </Box>
-                    )}
-                </CardContent>
-            </Card>
+                            <Typography variant="caption" color="text.secondary">
+                                {t('techDashboard.greatWork')}
+                            </Typography>
+                        </Card>
+                    </Grid>
 
-            {/* Quick Actions */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', mt: 4 }}>
-                <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => {
-                        fetchTickets();
-                        fetchPerformanceMetrics();
-                    }}
-                    size="large"
-                    sx={{ px: 4, py: 1.5 }}
-                >
-                    Refresh Dashboard
-                </Button>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                            <Typography variant="h2" sx={{ fontWeight: 700, color: '#0288d1', mb: 1 }}>
+                                {performance?.totalResolved || 0}/{performance?.totalAssigned || 0}
+                            </Typography>
+                            <Typography variant="body1" color="text.secondary" fontWeight="500">
+                                {t('techDashboard.totalResolved')}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {performance?.totalAssigned > 0 ?
+                                    t('techDashboard.completion', { percent: Math.round((performance?.totalResolved || 0) / performance?.totalAssigned * 100) }) :
+                                    t('techDashboard.noTicketsAssigned')
+                                }
+                            </Typography>
+                        </Card>
+                    </Grid>
+                </Grid>
             </Box>
 
-            {/* Ticket Details Dialog */}
-            <Dialog 
-                open={ticketDialogOpen} 
-                onClose={() => setTicketDialogOpen(false)}
-                maxWidth="md"
-                fullWidth
-            >
-                {selectedTicket && (
-                    <>
-                        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box>
-                                <Typography variant="h6">{selectedTicket.title}</Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    Ticket #{selectedTicket._id?.slice(-6)} • {selectedTicket.companyDisplayName}
+            {/* Quick Stats */}
+            {assignedTickets.length > 0 && (
+                <Box sx={{ mb: 4 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                        {t('techDashboard.quickOverview')}
+                    </Typography>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={4}>
+                            <Alert
+                                severity={getUrgentTicketsCount() > 0 ? "error" : "success"}
+                                sx={{ height: '100%' }}
+                            >
+                                <Typography variant="body2" fontWeight="600">
+                                    {t('techDashboard.urgentTickets', { count: getUrgentTicketsCount() })}
                                 </Typography>
-                            </Box>
-                            <IconButton onClick={() => setTicketDialogOpen(false)}>
-                                <CloseIcon />
-                            </IconButton>
-                        </DialogTitle>
-                        
-                        <DialogContent>
-                            {/* Workflow Stepper */}
-                            <Stepper activeStep={workflowStep} sx={{ mb: 4 }}>
-                                <Step>
-                                    <StepLabel>Accept Ticket</StepLabel>
-                                </Step>
-                                <Step>
-                                    <StepLabel>Start Work</StepLabel>
-                                </Step>
-                                <Step>
-                                    <StepLabel>Finish Work</StepLabel>
-                                </Step>
-                                <Step>
-                                    <StepLabel>Request Feedback</StepLabel>
-                                </Step>
-                                <Step>
-                                    <StepLabel>Complete</StepLabel>
-                                </Step>
-                            </Stepper>
+                                <Typography variant="caption">
+                                    {getUrgentTicketsCount() > 0 ? t('techDashboard.requiresAttention') : t('techDashboard.allCaughtUp')}
+                                </Typography>
+                            </Alert>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <Alert severity="info" sx={{ height: '100%' }}>
+                                <Typography variant="body2" fontWeight="600">
+                                    {t('techDashboard.pendingTickets', { count: getPendingTicketsCount() })}
+                                </Typography>
+                                <Typography variant="caption">
+                                    {t('techDashboard.activeWorkInProgress')}
+                                </Typography>
+                            </Alert>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <Alert severity="warning" sx={{ height: '100%' }}>
+                                <Typography variant="body2" fontWeight="600">
+                                    {t('status.status')}: {dutyStatus}
+                                </Typography>
+                                <Typography variant="caption">
+                                    {t('techDashboard.currentAvailability')}
+                                </Typography>
+                            </Alert>
+                        </Grid>
+                    </Grid>
+                </Box>
+            )}
 
-                            {/* Ticket Details */}
-                            <Card sx={{ mb: 3 }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>Ticket Details</Typography>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} md={6}>
-                                            <Typography variant="body2" color="text.secondary">Description:</Typography>
-                                            <Typography variant="body1" sx={{ mb: 2 }}>{selectedTicket.description}</Typography>
-                                        </Grid>
-                                        <Grid item xs={12} md={6}>
-                                            <Typography variant="body2" color="text.secondary">Priority:</Typography>
-                                            <Chip 
-                                                label={selectedTicket.priority} 
-                                                color={selectedTicket.priority === 'Critical' ? 'error' : 'primary'}
-                                                sx={{ mb: 2 }}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} md={6}>
-                                            <Typography variant="body2" color="text.secondary">Location:</Typography>
-                                            <Typography variant="body1">{selectedTicket.location || 'Not specified'}</Typography>
-                                        </Grid>
-                                        <Grid item xs={12} md={6}>
-                                            <Typography variant="body2" color="text.secondary">Status:</Typography>
-                                            <Chip label={selectedTicket.status} variant="outlined" />
-                                        </Grid>
-                                    </Grid>
-                                </CardContent>
-                            </Card>
-
-                            {/* Workflow Actions */}
-                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-                                {workflowStep === 1 && (
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        startIcon={<StartIcon />}
-                                        onClick={handleStartTicket}
-                                    >
-                                        Start Work
-                                    </Button>
-                                )}
-                                
-                                {workflowStep === 2 && (
-                                    <Button
-                                        variant="contained"
-                                        color="warning"
-                                        startIcon={<FeedbackIcon />}
-                                        onClick={() => handleFinishAndRequestFeedback(selectedTicket)}
-                                    >
-                                        Finish & Request Feedback
-                                    </Button>
-                                )}
-                                
-                                {workflowStep === 3 && (
-                                    <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>
-                                        ✓ Work completed and feedback requested from team leader
-                                    </Typography>
-                                )}
-
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<NoteIcon />}
-                                    onClick={() => setNoteDialogOpen(true)}
-                                >
-                                    Add Note
-                                </Button>
-                            </Box>
-
-                            {/* Timeline */}
-                            {selectedTicket.timeline && (
-                                <Card>
-                                    <CardContent>
-                                        <Typography variant="h6" gutterBottom>Timeline</Typography>
-                                        {selectedTicket.timeline.map((event, index) => (
-                                            <Box key={index} sx={{ mb: 2, pb: 2, borderBottom: index < selectedTicket.timeline.length - 1 ? '1px solid #eee' : 'none' }}>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {new Date(event.timestamp).toLocaleString()}
-                                                </Typography>
-                                                <Typography variant="body1">
-                                                    <strong>{event.user}:</strong> {event.content}
-                                                </Typography>
-                                            </Box>
-                                        ))}
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </DialogContent>
-                        
-                        <DialogActions>
-                            <Button onClick={() => setTicketDialogOpen(false)}>Close</Button>
-                        </DialogActions>
-                    </>
-                )}
-            </Dialog>
-
-            {/* Note Dialog */}
-            <Dialog open={noteDialogOpen} onClose={() => setNoteDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Add Technician Note</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        placeholder="Enter your note (max 500 characters)..."
-                        inputProps={{ maxLength: 500 }}
-                        helperText={`${noteText.length}/500 characters`}
-                        sx={{ mt: 2 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
-                    <Button 
-                        onClick={handleAddNote}
+            {/* Action Buttons - Enhanced */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap', mt: 4 }}>
+                <Tooltip title={t('techDashboard.accessAdvancedTools')}>
+                    <Button
                         variant="contained"
-                        disabled={!noteText.trim()}
+                        size="large"
+                        onClick={handleOpenMissionControl}
+                        startIcon={<DashboardIcon />}
+                        sx={{
+                            px: 4,
+                            py: 1.5,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            minWidth: 200
+                        }}
                     >
-                        Add Note
+                        {t('techDashboard.openMissionControl')}
                     </Button>
-                </DialogActions>
-            </Dialog>
+                </Tooltip>
 
-            {/* Accept & Start Dialog */}
-            <Dialog open={acceptStartDialogOpen} onClose={() => setAcceptStartDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <AcceptIcon color="success" />
-                        Accept & Start Work
-                    </Box>
-                </DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        You're about to accept this ticket and start working on it immediately. 
-                        You can optionally add an initial note about your approach or findings.
-                    </Typography>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={initialNote}
-                        onChange={(e) => setInitialNote(e.target.value)}
-                        placeholder="Optional: Add initial note about your approach or findings (max 500 characters)..."
-                        inputProps={{ maxLength: 500 }}
-                        helperText={`${initialNote.length}/500 characters`}
-                        sx={{ mt: 1 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAcceptStartDialogOpen(false)}>Cancel</Button>
-                    <Button 
-                        onClick={handleConfirmAcceptAndStart}
+                <Tooltip title={t('techDashboard.viewAllAssignedTickets')}>
+                    <Button
+                        variant="outlined"
+                        size="large"
+                        onClick={handleViewAllTickets}
+                        startIcon={<AssignmentIcon />}
+                        sx={{
+                            px: 4,
+                            py: 1.5,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            minWidth: 200
+                        }}
+                    >
+                        {t('techDashboard.viewAllTickets')}
+                    </Button>
+                </Tooltip>
+
+                <Tooltip title={t('techDashboard.refreshDashboardData')}>
+                    <Button
+                        variant="outlined"
+                        size="large"
+                        onClick={handleRefreshDashboard}
+                        startIcon={<RefreshIcon />}
+                        disabled={loading}
+                        sx={{
+                            px: 4,
+                            py: 1.5,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            minWidth: 200
+                        }}
+                    >
+                        {loading ? t('techDashboard.refreshing') : t('techDashboard.refreshDashboard')}
+                    </Button>
+                </Tooltip>
+
+                <Tooltip title={t('techDashboard.generateExportReports')}>
+                    <Button
                         variant="contained"
+                        size="large"
+                        onClick={handleOpenReportDialog}
+                        startIcon={<AssessmentIcon />}
                         color="success"
-                        startIcon={<AcceptIcon />}
+                        sx={{
+                            px: 4,
+                            py: 1.5,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            minWidth: 200
+                        }}
                     >
-                        Accept & Start Work
+                        {t('techDashboard.generateReport')}
+                    </Button>
+                </Tooltip>
+            </Box>
+
+            {/* Report Generation Dialog */}
+            <Dialog open={reportDialog} onClose={handleCloseReportDialog} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white', fontWeight: 'bold' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <AssessmentIcon />
+                        {t('techDashboard.generatePerformanceReport')}
+                    </Box>
+                </DialogTitle>
+                <DialogContent sx={{ mt: 3 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        {t('techDashboard.selectDateRange')}
+                    </Typography>
+
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label={t('reports.startDate')}
+                                type="date"
+                                value={reportDateRange.startDate}
+                                onChange={(e) => setReportDateRange({ ...reportDateRange, startDate: e.target.value })}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label={t('reports.endDate')}
+                                type="date"
+                                value={reportDateRange.endDate}
+                                onChange={(e) => setReportDateRange({ ...reportDateRange, endDate: e.target.value })}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                        </Grid>
+                    </Grid>
+
+                    <Paper elevation={0} sx={{ mt: 3, p: 2, bgcolor: 'grey.50', border: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                            {t('techDashboard.reportWillInclude')}
+                        </Typography>
+                        <Box component="ul" sx={{ mt: 1, pl: 2 }}>
+                            <Typography component="li" variant="body2">{t('techDashboard.allTicketsAssigned')}</Typography>
+                            <Typography component="li" variant="body2">{t('techDashboard.performanceMetrics')}</Typography>
+                            <Typography component="li" variant="body2">{t('techDashboard.resolutionTimes')}</Typography>
+                            <Typography component="li" variant="body2">{t('techDashboard.priorityBreakdown')}</Typography>
+                        </Box>
+                    </Paper>
+                </DialogContent>
+                <Divider />
+                <DialogActions sx={{ p: 2, gap: 1 }}>
+                    <Button onClick={handleCloseReportDialog} disabled={generatingReport}>
+                        {t('common.cancel')}
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        onClick={() => generateReport('csv')}
+                        startIcon={<DownloadIcon />}
+                        disabled={generatingReport}
+                    >
+                        {t('techDashboard.exportCSV')}
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={() => generateReport('excel')}
+                        startIcon={<DownloadIcon />}
+                        disabled={generatingReport}
+                        color="success"
+                    >
+                        {generatingReport ? t('techDashboard.generating') : t('techDashboard.exportExcel')}
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Finish & Request Feedback Dialog */}
-            <Dialog open={finishDialogOpen} onClose={() => setFinishDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <FeedbackIcon color="warning" />
-                        Finish Work & Request Feedback
-                    </Box>
-                </DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        You're about to mark this work as finished and automatically request feedback 
-                        from the team leader who created this ticket. You can add a completion note 
-                        describing what was done.
-                    </Typography>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        value={completionNote}
-                        onChange={(e) => setCompletionNote(e.target.value)}
-                        placeholder="Optional: Add completion note describing what was done (max 500 characters)..."
-                        inputProps={{ maxLength: 500 }}
-                        helperText={`${completionNote.length}/500 characters`}
-                        sx={{ mt: 1 }}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setFinishDialogOpen(false)}>Cancel</Button>
-                    <Button 
-                        onClick={handleConfirmFinishAndRequestFeedback}
-                        variant="contained"
-                        color="warning"
-                        startIcon={<FeedbackIcon />}
-                    >
-                        Finish & Request Feedback
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {/* Notification Snackbar */}
+            <Snackbar
+                open={notification.open}
+                autoHideDuration={4000}
+                onClose={handleCloseNotification}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={handleCloseNotification}
+                    severity={notification.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {notification.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Container, Typography, Box, Paper, Grid, Chip, Stepper, Step, StepLabel, Divider, Button, Avatar, List, ListItem, ListItemText, TextField } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowBack as BackIcon, Send as SendIcon } from '@mui/icons-material';
+import { ArrowBack as BackIcon, Send as SendIcon, Star as StarIcon, StarOutline as StarOutlineIcon } from '@mui/icons-material';
+import { Stack, IconButton, Alert } from '@mui/material';
 import axios from 'axios';
 import { useAuth } from '../../auth/context/AuthContext';
 import { getCompanyById } from '../../../utils/companies';
@@ -15,6 +16,9 @@ const UserTicketView = () => {
     const [ticket, setTicket] = useState(null);
     const [comment, setComment] = useState('');
     const [loading, setLoading] = useState(true);
+    const [rating, setRating] = useState(0);
+    const [feedback, setFeedback] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchTicket = async () => {
@@ -40,6 +44,20 @@ const UserTicketView = () => {
             setTicket(res.data);
         } catch (err) {
             console.error('Failed to add comment');
+        }
+    };
+
+    const handleSubmitFeedback = async () => {
+        if (!rating) return;
+        setSubmitting(true);
+        try {
+            await axios.put(`/api/tickets/${id}/rate`, { rating, feedback });
+            const res = await axios.get(`/api/tickets/${id}`);
+            setTicket(res.data);
+        } catch (err) {
+            console.error('Failed to submit feedback');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -106,6 +124,61 @@ const UserTicketView = () => {
                     </Grid>
                 </Grid>
             </Paper>
+
+            {/* Feedback Section for Resolved Tickets */}
+            {ticket.status === 'Resolved' && ticket.reviewStatus === 'None' && (
+                <Paper elevation={0} sx={{ p: 4, border: '1px solid', borderColor: 'primary.light', borderRadius: 4, mb: 4, bgcolor: 'primary.50' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, mb: 1, color: 'primary.dark' }}>Resolution Feedback</Typography>
+                    <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+                        The technician has marked this as resolved. Please provide your feedback to finalize the ticket.
+                    </Typography>
+
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>How would you rate the resolution?</Typography>
+                        <Stack direction="row" spacing={1}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <IconButton
+                                    key={star}
+                                    onClick={() => setRating(star)}
+                                    color={rating >= star ? "primary" : "default"}
+                                >
+                                    {rating >= star ? <StarIcon /> : <StarOutlineIcon />}
+                                </IconButton>
+                            ))}
+                        </Stack>
+                    </Box>
+
+                    <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        placeholder="Additional feedback for the administrator..."
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                        sx={{ bgcolor: 'background.paper', borderRadius: 2, mb: 3 }}
+                    />
+
+                    <Button
+                        variant="contained"
+                        fullWidth
+                        size="large"
+                        disabled={!rating || submitting}
+                        onClick={handleSubmitFeedback}
+                        sx={{ py: 1.5, borderRadius: 2, fontWeight: 700 }}
+                    >
+                        {submitting ? 'Submitting...' : 'Submit Feedback & Close Request'}
+                    </Button>
+                </Paper>
+            )}
+
+            {ticket.reviewStatus !== 'None' && (
+                <Alert severity={ticket.reviewStatus === 'Approved' ? 'success' : 'info'} sx={{ mb: 4, borderRadius: 3 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        Review Status: {ticket.reviewStatus}
+                    </Typography>
+                    {ticket.reviewNotes && <Typography variant="body2">{ticket.reviewNotes}</Typography>}
+                </Alert>
+            )}
 
             {/* Conversation Section */}
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>Conversation</Typography>

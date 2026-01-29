@@ -2,13 +2,14 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Box, ThemeProvider, CssBaseline } from '@mui/material';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { io } from 'socket.io-client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ColorModeProvider, useColorMode } from './context/ColorModeContext';
 import { getTheme } from './styles/theme';
 import Navbar from './components/Navbar';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 import Landing from './pages/Landing';
-import RequestPage from './pages/RequestPage';
+import ChangePasswordDialog from './components/ChangePasswordDialog';
+
 import Login from './features/auth/pages/Login';
 import Register from './features/auth/pages/Register';
 import TicketList from './features/tickets/pages/TicketList';
@@ -39,6 +40,7 @@ import GlobalTicketSearch from './features/system-admin/pages/GlobalTicketSearch
 import MasterUserTable from './features/system-admin/pages/MasterUserTable';
 import SystemMonitor from './features/system-admin/pages/SystemMonitor';
 import TechDashboard from './features/technician/pages/TechDashboard';
+import TechWorkspace from './features/technician/pages/TechWorkspace';
 import TicketAction from './features/technician/pages/ResolutionPage';
 import UserDashboard from './features/employee/pages/UserDashboard';
 import TicketWizard from './features/employee/pages/TicketWizard';
@@ -46,7 +48,11 @@ import UserTicketView from './features/employee/pages/UserTicketView';
 import SuperAdminLayout from './features/admin/layouts/SuperAdminLayout';
 import GlobalUserEditor from './features/system-admin/pages/GlobalUserEditor';
 import Profile from './pages/Profile';
-import TeamLeaderDashboard from './features/employee/pages/TeamLeaderDashboard';
+import TeamLeadDashboard from './features/employee/pages/TeamLeadDashboard';
+import TicketReviews from './features/admin/pages/TicketReviews';
+import AdminCommandCenter from './features/admin/pages/AdminCommandCenter';
+import LoginDebug from './pages/LoginDebug';
+import AdminReports from './features/admin/pages/AdminReports';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,12 +65,26 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const { mode } = useColorMode();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const isSystemAdmin = user?.role === ROLES.SYSTEM_ADMIN;
   const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
   const theme = getTheme(mode, isSystemAdmin, isSuperAdmin);
   const qc = useQueryClient();
   const socketRef = useRef(null);
+
+  // Check if user needs to change password on first login
+  useEffect(() => {
+    if (user && user.isFirstLogin === true) {
+      setShowPasswordDialog(true);
+    }
+  }, [user]);
+
+  const handlePasswordChangeSuccess = () => {
+    setShowPasswordDialog(false);
+    // Update user context to reflect password change
+    updateUser({ isFirstLogin: false });
+  };
 
   useEffect(() => {
     if (!user) {
@@ -82,16 +102,10 @@ const AppContent = () => {
     socketRef.current = s;
     s.emit('join_company', user.companyId);
     s.on('ticket_updated', (ticket) => {
-      qc.setQueryData(['tickets'], (prev) => {
-        if (!prev || !Array.isArray(prev)) return prev;
-        return prev.map(t => (t._id === ticket._id ? { ...t, ...ticket } : t));
-      });
+      qc.invalidateQueries({ queryKey: ['tickets'] });
     });
     s.on('ticket_created', (ticket) => {
-      qc.setQueryData(['tickets'], (prev) => {
-        if (!prev || !Array.isArray(prev)) return prev;
-        return [ticket, ...prev];
-      });
+      qc.invalidateQueries({ queryKey: ['tickets'] });
     });
 
     s.on('broadcast_message', (notification) => {
@@ -126,6 +140,7 @@ const AppContent = () => {
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/login-debug" element={<LoginDebug />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/redirect" element={<RoleBasedRedirect />} />
               <Route path="/maintenance" element={<MaintenancePage />} />
@@ -148,19 +163,23 @@ const AppContent = () => {
                   <Route path="/sys-admin/audit-logs" element={<AuditLogs />} />
                   <Route path="/sys-admin/settings" element={<GlobalSettings />} />
                   <Route path="/sys-admin/broadcast" element={<BroadcastCenter />} />
+                  <Route path="/sys-admin/reviews" element={<TicketReviews />} />
+                  <Route path="/sys-admin/reports" element={<AdminReports />} />
                 </Route>
               </Route>
 
               {/* Super Admin Routes */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN]} />}>
                 <Route element={<SuperAdminLayout />}>
-                  <Route path="/admin" element={<SuperAdminDashboard />} />
+                  <Route path="/admin" element={<AdminCommandCenter />} />
                   <Route path="/admin/dashboard" element={<BossDashboard />} />
                   <Route path="/admin/assign" element={<ManualAssignment />} />
                   <Route path="/admin/companies" element={<CompanyDirectory />} />
                   <Route path="/admin/users" element={<GlobalUserEditor />} />
                   <Route path="/admin/broadcast" element={<BroadcastCenter />} />
                   <Route path="/admin/settings" element={<GlobalSettings />} />
+                  <Route path="/admin/reviews" element={<TicketReviews />} />
+                  <Route path="/admin/reports" element={<AdminReports />} />
                 </Route>
               </Route>
 
@@ -172,6 +191,7 @@ const AppContent = () => {
               {/* Technician Routes */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.TECHNICIAN]} />}>
                 <Route path="/tech" element={<TechDashboard />} />
+                <Route path="/tech/mission-control" element={<TechWorkspace />} />
                 <Route path="/tech/tickets/:id" element={<TicketAction />} />
               </Route>
 
@@ -181,6 +201,9 @@ const AppContent = () => {
                 <Route path="/portal/new-ticket" element={<TicketWizard />} />
                 <Route path="/portal/tickets/:id" element={<UserTicketView />} />
               </Route>
+
+              {/* Catch-all Dashboard Redirect */}
+              <Route path="/dashboard" element={<RoleBasedRedirect />} />
 
               {/* Legacy/General Protected Routes */}
               <Route element={<ProtectedRoute />}>
@@ -192,6 +215,14 @@ const AppContent = () => {
             </Routes>
           </Box>
         </Box>
+        {/* First Login Password Change Dialog */}
+        {user && (
+          <ChangePasswordDialog
+            open={showPasswordDialog}
+            onClose={() => {}} // Prevent closing
+            onSuccess={handlePasswordChangeSuccess}
+          />
+        )}
       </Router>
     </ThemeProvider>
   );

@@ -13,7 +13,16 @@ exports.getStats = async (req, res) => {
             return res.json(cached);
         }
         const query = {};
-        if (req.user.role !== 'Admin' && req.user.role !== 'Super Admin' && req.user.role !== 'System Admin') {
+        const isMesobWorkforce = req.user.companyId === 20;
+        const globalRoles = ['Admin', 'Super Admin', 'System Admin'];
+
+        if (globalRoles.includes(req.user.role) && isMesobWorkforce) {
+            // Global admins see everything
+        } else if (req.user.role === 'Technician' && isMesobWorkforce) {
+            // Techs see everything assigned to them across all companies
+            query.technician = req.user._id;
+        } else {
+            // Client employees see only their company's tickets
             query.companyId = req.user.companyId;
         }
 
@@ -63,7 +72,7 @@ exports.getAdminStats = async (req, res) => {
         // 1. Basic Counts
         const totalTickets = await Ticket.countDocuments({});
         const openTickets = await Ticket.countDocuments({ status: { $ne: 'Closed' } });
-        
+
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
         const resolvedToday = await Ticket.countDocuments({
@@ -80,8 +89,8 @@ exports.getAdminStats = async (req, res) => {
                 totalResolutionHours += hours;
             }
         });
-        const avgResolutionTime = resolvedTickets.length > 0 
-            ? (totalResolutionHours / resolvedTickets.length).toFixed(1) 
+        const avgResolutionTime = resolvedTickets.length > 0
+            ? (totalResolutionHours / resolvedTickets.length).toFixed(1)
             : 0;
 
         // 3. Tickets by Company
@@ -151,14 +160,33 @@ exports.getAdminStats = async (req, res) => {
             }
         ]);
 
+        // 6. Unassigned Tickets
+        const unassignedTickets = await Ticket.countDocuments({ status: 'New', technician: { $exists: false } });
+
+        // 7. Technician Availability
+        const techAvailability = await User.find({ role: 'Technician' })
+            .select('name isAvailable department')
+            .lean();
+
+        // 8. Recent Activity (Latest 10 tickets)
+        const recentTickets = await Ticket.find({})
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .populate('requester', 'name')
+            .populate('technician', 'name')
+            .lean();
+
         const result = {
             totalTickets,
             openTickets,
             resolvedToday,
+            unassignedTickets,
             avgResolutionTime: Number(avgResolutionTime),
             ticketsByCompany,
             ticketsByPriority,
-            technicianPerformance
+            technicianPerformance,
+            technicians: techAvailability,
+            recentActivity: recentTickets
         };
 
         await cache.set(cacheKey, result, 60);

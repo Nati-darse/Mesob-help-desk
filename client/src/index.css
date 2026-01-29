@@ -1,6 +1,9 @@
+/* Import Ethiopic font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 /* Neutralize defaults to allow MUI to handle the layout */
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Noto Sans Ethiopic', 'Nyala', system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -13,4 +16,16 @@ body {
 #root {
   width: 100%;
   min-height: 100vh;
+}
+
+/* Ensure Amharic text renders properly */
+[lang="am"], .amharic-text {
+  font-family: 'Noto Sans Ethiopic', 'Nyala', sans-serif;
+  font-feature-settings: "liga" 1;
+}
+
+/* Prevent text overflow for longer Amharic words */
+.MuiButton-root, .MuiMenuItem-root, .MuiTypography-root {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }

@@ -9,8 +9,10 @@ import {
     Warning as WarningIcon,
     Info as InfoIcon,
     CheckCircle as CheckCircleIcon,
-    Send as SendIcon
+    Send as SendIcon,
+    Assessment as AssessmentIcon
 } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
 
 // Mock Data for Chart
 const data = [
@@ -63,9 +65,24 @@ const SysDashboard = () => {
 
     return (
         <Box maxWidth="1600px" margin="0 auto">
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#0A1929' }}>
-                System Overview
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#0A1929' }}>
+                    System Overview
+                </Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<AssessmentIcon />}
+                    component={RouterLink}
+                    to="/sys-admin/reports"
+                    sx={{ 
+                        bgcolor: '#1e4fb1',
+                        '&:hover': { bgcolor: '#1a3d8f' },
+                        fontWeight: 700
+                    }}
+                >
+                    📊 Reports & Analytics
+                </Button>
+            </Box>
 
             {/* Maintenance Mode Alert */}
             <Alert severity="warning" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>

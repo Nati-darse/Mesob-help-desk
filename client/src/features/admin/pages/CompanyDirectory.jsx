@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Container, Typography, Box, Grid, Card, CardContent, TextField, InputAdornment, 
-    Chip, Avatar, Tooltip, ToggleButtonGroup, ToggleButton, CircularProgress, 
+import {
+    Container, Typography, Box, Grid, Card, CardContent, TextField, InputAdornment,
+    Chip, Avatar, Tooltip, ToggleButtonGroup, ToggleButton, CircularProgress,
     LinearProgress, IconButton, Badge, Alert, Paper
 } from '@mui/material';
-import { 
-    Search as SearchIcon, 
-    Warning as WarningIcon, 
+import {
+    Search as SearchIcon,
+    Warning as WarningIcon,
     Business as BusinessIcon,
     TrendingUp as TrendingIcon,
     Speed as SpeedIcon,
@@ -41,19 +41,40 @@ const CompanyDirectory = () => {
 
     const getTicketStats = (companyId) => {
         const companyTickets = tickets.filter(t => t.companyId === companyId);
+        const resolved = companyTickets.filter(t => t.status === 'Resolved' || t.status === 'Closed');
+
+        // Real Resolution Time Calculation
+        let totalTime = 0;
+        let ratedCount = 0;
+        let totalRating = 0;
+
+        resolved.forEach(t => {
+            if (t.updatedAt && t.createdAt) {
+                totalTime += (new Date(t.updatedAt) - new Date(t.createdAt)) / (1000 * 60 * 60);
+            }
+            if (t.rating) {
+                totalRating += t.rating;
+                ratedCount++;
+            }
+        });
+
+        const avgResTime = resolved.length > 0 ? (totalTime / resolved.length).toFixed(1) : 0;
+        const satRate = ratedCount > 0 ? Math.round((totalRating / (ratedCount * 5)) * 100) : 100;
+
         return {
             total: companyTickets.length,
             open: companyTickets.filter(t => t.status !== 'Closed' && t.status !== 'Resolved').length,
             critical: companyTickets.filter(t => t.priority === 'Critical' && t.status !== 'Closed' && t.status !== 'Resolved').length,
-            resolved: companyTickets.filter(t => t.status === 'Resolved').length,
-            avgResolutionTime: 2.5 // Mock data
+            resolved: resolved.length,
+            avgResolutionTime: avgResTime,
+            satisfactionRate: satRate
         };
     };
 
     const getHealthStatus = (stats) => {
         if (stats.open === 0) return { status: 'healthy', color: 'success', label: 'All Clear' };
         if (stats.critical > 0) return { status: 'critical', color: 'error', label: 'Critical' };
-        if (stats.open > 10) return { status: 'warning', color: 'warning', label: 'High Load' };
+        if (stats.open > 5) return { status: 'warning', color: 'warning', label: 'High Load' };
         return { status: 'normal', color: 'info', label: 'Active' };
     };
 
@@ -184,11 +205,11 @@ const CompanyDirectory = () => {
                 {filteredCompanies.map((company) => {
                     const stats = getTicketStats(company.id);
                     const health = getHealthStatus(stats);
-                    
+
                     return (
                         <Grid item xs={12} sm={6} md={4} lg={3} key={company.id}>
-                            <Card 
-                                sx={{ 
+                            <Card
+                                sx={{
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
                                     '&:hover': {
@@ -200,8 +221,8 @@ const CompanyDirectory = () => {
                             >
                                 <CardContent sx={{ p: 3 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <Avatar sx={{ 
-                                            bgcolor: health.color + '20', 
+                                        <Avatar sx={{
+                                            bgcolor: health.color + '20',
                                             color: health.color,
                                             mr: 2,
                                             width: 48,
@@ -217,7 +238,7 @@ const CompanyDirectory = () => {
                                                 {company.name}
                                             </Typography>
                                         </Box>
-                                        <Chip 
+                                        <Chip
                                             label={health.label}
                                             color={health.color}
                                             size="small"
@@ -233,11 +254,11 @@ const CompanyDirectory = () => {
                                                 {stats.open}
                                             </Typography>
                                         </Box>
-                                        <LinearProgress 
-                                            variant="determinate" 
+                                        <LinearProgress
+                                            variant="determinate"
                                             value={Math.min((stats.open / 20) * 100, 100)}
-                                            sx={{ 
-                                                height: 6, 
+                                            sx={{
+                                                height: 6,
                                                 borderRadius: 3,
                                                 bgcolor: 'grey.200'
                                             }}
@@ -269,13 +290,14 @@ const CompanyDirectory = () => {
                                 </CardContent>
                             </Card>
                         </Grid>
-                    )}
+                    )
+                }
                 )}
             </Grid>
 
             {/* Company Details Dialog */}
             {selectedCompany && (
-                <Paper sx={{ 
+                <Paper sx={{
                     position: 'fixed',
                     top: '50%',
                     left: '50%',
@@ -298,8 +320,8 @@ const CompanyDirectory = () => {
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={6}>
                             <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2 }}>
-                                <Avatar sx={{ 
-                                    bgcolor: 'primary.main', 
+                                <Avatar sx={{
+                                    bgcolor: 'primary.main',
                                     color: 'white',
                                     width: 64,
                                     height: 64,
@@ -333,7 +355,7 @@ const CompanyDirectory = () => {
                                 </Box>
                                 <Box sx={{ mb: 1 }}>
                                     <Typography variant="body2" color="text.secondary">
-                                        Satisfaction Rate: 94%
+                                        Satisfaction Rate: {getTicketStats(selectedCompany.id).satisfactionRate}%
                                     </Typography>
                                 </Box>
                             </Box>
@@ -344,8 +366,8 @@ const CompanyDirectory = () => {
 
             {/* Overlay for dialog */}
             {detailsOpen && (
-                <Box 
-                    sx={{ 
+                <Box
+                    sx={{
                         position: 'fixed',
                         top: 0,
                         left: 0,

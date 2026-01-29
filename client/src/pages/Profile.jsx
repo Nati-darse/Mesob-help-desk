@@ -8,7 +8,7 @@ import { useAuth } from '../features/auth/context/AuthContext';
 import axios from 'axios';
 
 const Profile = () => {
-    const { user, login } = useAuth();
+    const { user, updateUser } = useAuth();
     const [formData, setFormData] = useState({
         name: user?.name || '',
         email: user?.email || '',
@@ -55,12 +55,10 @@ const Profile = () => {
 
             const res = await axios.put('/api/auth/profile', payload);
 
-            // Update auth context
-            const storedUser = JSON.parse(sessionStorage.getItem('mesob_user') || '{}');
-            const updatedUser = { ...storedUser, ...res.data };
-            sessionStorage.setItem('mesob_user', JSON.stringify(updatedUser));
+            // Update auth context with new user data including profilePic
+            updateUser(res.data);
 
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            setMessage({ type: 'success', text: 'Profile updated successfully! Your profile picture will appear across the platform.' });
             setFormData({ ...formData, password: '', confirmPassword: '' });
         } catch (error) {
             setMessage({ type: 'error', text: error.response?.data?.message || 'Update failed' });

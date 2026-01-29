@@ -197,6 +197,39 @@ const AdminHome = () => {
                             borderRadius: 4,
                             textAlign: 'center',
                             transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-4px)', borderColor: 'info.main' }
+                        }}
+                    >
+                        <AssignmentIcon sx={{ fontSize: 60, color: 'info.main', mb: 2 }} />
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+                            Resolution Review
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            Audit and finalize resolved tickets waiting for closure
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            component={RouterLink}
+                            to="/admin/reviews"
+                            fullWidth
+                            color="info"
+                            sx={{ borderRadius: 2, fontWeight: 700 }}
+                        >
+                            Open Review Queue
+                        </Button>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 4,
+                            border: '2px solid',
+                            borderColor: 'divider',
+                            borderRadius: 4,
+                            textAlign: 'center',
+                            transition: 'transform 0.2s',
                             '&:hover': { transform: 'translateY(-4px)', borderColor: 'grey.700' }
                         }}
                     >

@@ -10,6 +10,7 @@ const {
     resolveTicket,
     rateTicket,
     addWorkLog,
+    reviewTicket,
 } = require('../controllers/ticketController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
@@ -30,10 +31,11 @@ router.route('/:id')
     .get(getTicket)
     .put(updateTicket);
 
-router.put('/:id/assign', authorize('Team Lead', 'Admin'), assignTicket);
+router.put('/:id/assign', authorize('Team Lead', 'Admin', 'Super Admin', 'System Admin'), assignTicket);
 router.post('/:id/comment', addComment);
-router.put('/:id/resolve', authorize('Technician', 'Admin'), resolveTicket);
+router.put('/:id/resolve', authorize('TECHNICIAN', 'Admin', 'Super Admin', 'System Admin'), resolveTicket);
 router.put('/:id/rate', rateTicket);
-router.post('/:id/worklog', authorize('Technician', 'Admin'), addWorkLog);
+router.post('/:id/worklog', authorize('TECHNICIAN', 'Admin', 'Super Admin', 'System Admin'), addWorkLog);
+router.put('/:id/review', authorize('Admin', 'Super Admin', 'System Admin'), reviewTicket);
 
 module.exports = router;

@@ -155,9 +155,9 @@ const BossDashboard = () => {
                     </Typography>
                 </Box>
                 <Tooltip title="Refresh Data">
-                    <IconButton 
+                    <IconButton
                         onClick={() => window.location.reload()}
-                        sx={{ 
+                        sx={{
                             bgcolor: 'background.paper',
                             border: '1px solid',
                             borderColor: 'divider',
@@ -169,7 +169,6 @@ const BossDashboard = () => {
                 </Tooltip>
             </Box>
 
-            {/* Key Metrics */}
             <Grid container spacing={3} sx={{ mb: 4, px: 2 }}>
                 <Grid item xs={12} sm={6} md={3}>
                     <StatCard
@@ -178,7 +177,6 @@ const BossDashboard = () => {
                         subtitle="All time across all entities"
                         icon={<TicketIcon />}
                         color="#1e4fb1"
-                        trend={12}
                     />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
@@ -188,7 +186,6 @@ const BossDashboard = () => {
                         subtitle="Awaiting resolution"
                         icon={<WarningIcon />}
                         color="#ff9800"
-                        trend={-5}
                     />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
@@ -198,7 +195,6 @@ const BossDashboard = () => {
                         subtitle="Completed in last 24h"
                         icon={<CheckIcon />}
                         color="#4caf50"
-                        trend={8}
                     />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
@@ -208,7 +204,6 @@ const BossDashboard = () => {
                         subtitle="Across all technicians"
                         icon={<TimeIcon />}
                         color="#0061f2"
-                        trend={-15}
                     />
                 </Grid>
             </Grid>
@@ -225,8 +220,8 @@ const BossDashboard = () => {
                         <ResponsiveContainer width="100%" height={430}>
                             <BarChart data={chartData} margin={{ top: 10, right: 30, left: 30, bottom: 60 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="name" 
+                                <XAxis
+                                    dataKey="name"
                                     angle={-45}
                                     textAnchor="end"
                                     height={100}
@@ -261,44 +256,49 @@ const BossDashboard = () => {
                 </Box>
             </Box>
 
-            {/* Row 2 - Real-time Activity (90% width, centered) */}
+            {/* Row 2 - Recent Activity (90% width, centered) */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                 <Box sx={{ width: '90%', maxWidth: '100%' }}>
-                    <Paper sx={{ height: 350, overflow: 'hidden' }}>
-                        <Box sx={{ px: 3, py: 2 }}>
-                            <Typography variant="h6" fontWeight="bold">
-                                Real-time Activity
-                            </Typography>
+                    <Paper sx={{ p: 3 }}>
+                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                            Recent Operational Activity
+                        </Typography>
+                        <Box sx={{ height: 300, overflowY: 'auto' }}>
+                            {stats?.recentActivity?.length > 0 ? (
+                                stats.recentActivity.map((activity, idx) => (
+                                    <Box key={idx} sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        p: 2,
+                                        mb: 1,
+                                        bgcolor: '#f8fafd',
+                                        borderRadius: 2,
+                                        borderLeft: '4px solid',
+                                        borderColor: activity.status === 'Critical' ? 'error.main' : 'primary.main'
+                                    }}>
+                                        <Box>
+                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                {activity.title}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {activity.requester?.name || 'Unknown'} • {new Date(activity.createdAt).toLocaleString()}
+                                            </Typography>
+                                        </Box>
+                                        <Chip
+                                            label={activity.status}
+                                            size="small"
+                                            color={activity.status === 'Resolved' ? 'success' : 'primary'}
+                                            variant="outlined"
+                                        />
+                                    </Box>
+                                ))
+                            ) : (
+                                <Box sx={{ textAlign: 'center', py: 8 }}>
+                                    <Typography variant="body2" color="text.secondary">No recent activity detected.</Typography>
+                                </Box>
+                            )}
                         </Box>
-                        <ResponsiveContainer width="100%" height={290}>
-                            <AreaChart data={realTimeData} margin={{ top: 10, right: 30, left: 30, bottom: 60 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="time"
-                                    angle={-45}
-                                    textAnchor="end"
-                                    height={100}
-                                />
-                                <YAxis />
-                                <RechartsTooltip />
-                                <Area
-                                    type="monotone"
-                                    dataKey="requests"
-                                    stroke="#1e4fb1"
-                                    fill="#1e4fb1"
-                                    fillOpacity={0.3}
-                                    name="API Requests"
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="activeUsers"
-                                    stroke="#4caf50"
-                                    fill="#4caf50"
-                                    fillOpacity={0.3}
-                                    name="Active Users"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
                     </Paper>
                 </Box>
             </Box>

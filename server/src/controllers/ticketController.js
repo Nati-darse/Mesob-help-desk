@@ -3,13 +3,23 @@ const User = require('../models/User');
 const { sendEmail, sendSMS } = require('../services/notificationService');
 
 const emitUpdate = (req, event, data) => {
-    const io = req.app.get('io');
-    if (!io) return;
-    const cid = (data && data.companyId) || req.tenantId || (req.user && req.user.companyId);
-    if (cid) {
-        io.to(`company:${cid}`).emit(event, data);
-    } else {
-        io.emit(event, data);
+    try {
+        const io = req.app.get('io');
+        if (!io) return;
+        const cid = (data && data.companyId) || req.tenantId || (req.user && req.user.companyId);
+        if (cid) {
+            io.to(`company:${cid}`).emit(event, data);
+
+            // Also notify Mesob Digitalization Team (Company 20) for all ticket events
+            // as they are the global workforce managing these tickets.
+            if (String(cid) !== '20') {
+                io.to('company:20').emit(event, data);
+            }
+        } else {
+            io.emit(event, data);
+        }
+    } catch (err) {
+        console.error('Socket Emit Error:', err.message);
     }
 };
 
@@ -25,59 +35,36 @@ exports.createTicket = async (req, res) => {
 
         const { title, description, category, priority, buildingWing, companyId } = req.body;
 
-        // Basic validation
-        if (!title || !description) {
-            return res.status(400).json({ message: 'Title and description are required' });
+        const ticket = await Ticket.create({
+            title,
+            description,
+            category,
+            priority,
+            buildingWing,
+            companyId: companyId || req.tenantId || req.user.companyId || 1,
+            requester: req.user._id,
+            department: req.user.department || 'General', // Fallback
+        });
+
+        // Send confirmation to requester (Non-blocking)
+        try {
+            await sendEmail(
+                req.user.email,
+                `Ticket Created: ${ticket.title}`,
+                `Your ticket has been created with ID: ${ticket._id}. Priority: ${ticket.priority}.`,
+                `<h2>Ticket Confirmation</h2><p>Your ticket <b>${ticket.title}</b> has been created.</p><p>Priority: <b>${ticket.priority}</b></p>`
+            );
+        } catch (emailError) {
+            console.error('Email sending failed:', emailError.message);
+            // Continue execution, do not fail ticket creation
         }
 
-        // Create ticket with minimal required fields
-        const ticketData = {
-            title: title.trim(),
-            description: description.trim(),
-            category: category || 'Other',
-            priority: priority || 'Medium',
-            buildingWing: buildingWing || '',
-            companyId: companyId || req.user?.companyId || 1,
-            requester: req.user?._id,
-            department: req.user?.department || 'General',
-            status: req.body.status || 'New',
-        };
+        emitUpdate(req, 'ticket_created', ticket);
 
-        console.log('Ticket data to create:', ticketData);
-
-        const ticket = await Ticket.create(ticketData);
-
-        console.log('Ticket created successfully:', ticket._id);
-
-        // Skip email for now to isolate the issue
-        console.log('Skipping email for debugging');
-
-        // Skip socket.io for now to isolate the issue
-        console.log('Skipping socket.io for debugging');
-
-        res.status(201).json({
-            success: true,
-            message: 'Ticket created successfully',
-            data: ticket
-        });
+        res.status(201).json(ticket);
     } catch (error) {
-        console.error('=== TICKET CREATION ERROR ===');
-        console.error('Error details:', error);
-
-        if (error.name === 'ValidationError') {
-            const messages = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({
-                success: false,
-                message: messages.join(', '),
-                details: error.errors
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            message: error.message,
-            details: error.stack
-        });
+        console.error('Create Ticket Error Stack:', error.stack);
+        res.status(500).json({ message: error.message, stack: error.stack });
     }
 };
 
@@ -88,19 +75,38 @@ exports.getTickets = async (req, res) => {
     try {
         let query;
 
-        // Filter by role
-        if (req.user.role === 'Worker') {
-            const base = { requester: req.user._id };
-            const scoped = req.tenantId ? { ...base, companyId: req.tenantId } : base;
-            query = Ticket.find(scoped);
-        } else if (req.user.role === 'Technician') {
-            const base = { technician: req.user._id };
-            const scoped = req.tenantId ? { ...base, companyId: req.tenantId } : base;
-            query = Ticket.find(scoped);
+        // Build criteria based on role and query parameters
+        let criteria = {};
+
+        // Role-based restrictions
+        // Enforce company scoping for non-global admins
+        // NOTE: Mesob Staff (Company 20) are global admins/technicians
+        const globalAdminRoles = ['System Admin', 'Super Admin', 'Admin'];
+        const isMesobStaff = req.user.companyId === 20;
+
+        if (globalAdminRoles.includes(req.user.role) && isMesobStaff) {
+            // Global admins from Mesob can see everything or filter by tenant header
+            if (req.tenantId) {
+                criteria.companyId = req.tenantId;
+            }
+        } else if (req.user.role === 'Technician' && isMesobStaff) {
+            // Technicians from Mesob see their own assigned tickets across all companies
+            criteria.technician = req.user._id;
         } else {
-            const scoped = req.tenantId ? { companyId: req.tenantId } : {};
-            query = Ticket.find(scoped);
+            // Client employees (Workers, Team Leads) are strictly scoped to their company
+            criteria.companyId = req.user.companyId;
+
+            // If they are a worker, further restrict to their own tickets
+            if (req.user.role === 'Worker') {
+                criteria.requester = req.user._id;
+            }
         }
+
+        // Add optional filters from query params
+        if (req.query.status) criteria.status = req.query.status;
+        if (req.query.reviewStatus) criteria.reviewStatus = req.query.reviewStatus;
+
+        query = Ticket.find(criteria);
 
         const page = Math.max(parseInt(req.query.page || '1', 10), 1);
         const pageSize = Math.max(parseInt(req.query.pageSize || '20', 10), 1);
@@ -108,7 +114,9 @@ exports.getTickets = async (req, res) => {
         const total = await Ticket.countDocuments(query.getQuery());
 
         const tickets = await query
-            .select('title status priority companyId createdAt') // projection for table views
+            .select('title status priority category companyId technician requester buildingWing reviewStatus reviewNotes updatedAt workLog createdAt')
+            .populate('technician', 'name')
+            .populate('requester', 'name')
             .sort({ createdAt: -1 })
             .skip((page - 1) * pageSize)
             .limit(pageSize)
@@ -151,7 +159,7 @@ exports.getTicket = async (req, res) => {
 
 // @desc    Update ticket status
 // @route   PUT /api/tickets/:id
-// @access  Private (Technician/Admin)
+// @access  Private (TECHNICIAN/Admin)
 exports.updateTicket = async (req, res) => {
     try {
         let ticket = await Ticket.findById(req.params.id);
@@ -171,43 +179,71 @@ exports.updateTicket = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 // @desc    Assign ticket to technician
 // @route   PUT /api/tickets/:id/assign
 // @access  Private (Team Lead/Admin)
 exports.assignTicket = async (req, res) => {
     try {
         const { technicianId } = req.body;
+        console.log(`[AssignTicket] Request body:`, req.body);
+        console.log(`[AssignTicket] Attempting to assign ticket ${req.params.id} to tech ${technicianId}`);
 
         let ticket = await Ticket.findById(req.params.id);
         if (!ticket) {
+            console.log(`[AssignTicket] Ticket ${req.params.id} not found`);
             return res.status(404).json({ message: 'Ticket not found' });
         }
 
+        console.log(`[AssignTicket] Current ticket state: ${ticket.status}`);
         ticket.technician = technicianId;
         ticket.status = 'Assigned';
-        await ticket.save();
+
+        console.log(`[AssignTicket] Saving ticket...`);
+        const savedTicket = await ticket.save();
+        console.log(`[AssignTicket] Ticket saved successfully: ${savedTicket._id}`);
 
         const tech = await User.findById(technicianId);
         if (tech) {
-            // Email to technician
-            await sendEmail(
-                tech.email,
-                'New Ticket Assigned',
-                `You have been assigned a new ticket: ${ticket.title}. Priority: ${ticket.priority}.`,
-                `<h2>New Assignment</h2><p>You have been assigned to: <b>${ticket.title}</b></p><p>Priority: <b>${ticket.priority}</b></p>`
-            );
+            console.log(`[AssignTicket] Attempting notifications for tech: ${tech.name} (${tech.email})`);
+
+            // Email to technician - Wrapped in separate try/catch to be non-blocking
+            try {
+                await sendEmail(
+                    tech.email,
+                    'New Ticket Assigned',
+                    `You have been assigned a new ticket: ${ticket.title}. Priority: ${ticket.priority}.`,
+                    `<h2>New Assignment</h2><p>You have been assigned to: <b>${ticket.title}</b></p><p>Priority: <b>${ticket.priority}</b></p>`
+                );
+                console.log(`[AssignTicket] Email notification queued/sent`);
+            } catch (emailErr) {
+                console.error(`[AssignTicket] email notification failed:`, emailErr.message);
+            }
 
             // SMS if critical
             if (ticket.priority === 'Critical') {
-                await sendSMS(tech.phone || '+1234567890', `URGENT: New Critical Ticket Assigned - ${ticket.title}`);
+                try {
+                    await sendSMS(tech.phone || '+1234567890', `URGENT: New Critical Ticket Assigned - ${ticket.title}`);
+                    console.log(`[AssignTicket] SMS notification queued/sent`);
+                } catch (smsErr) {
+                    console.error(`[AssignTicket] SMS notification failed:`, smsErr.message);
+                }
             }
+        } else {
+            console.log(`[AssignTicket] Technician ${technicianId} not found in database for notifications`);
         }
 
-        emitUpdate(req, 'ticket_updated', ticket);
+        emitUpdate(req, 'ticket_updated', savedTicket);
+        console.log(`[AssignTicket] Assignment workflow complete`);
 
-        res.json(ticket);
+        res.json(savedTicket);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('[AssignTicket] CRITICAL Error:', error);
+        res.status(500).json({
+            message: error.message,
+            stack: error.stack,
+            context: 'Assignment flow failed'
+        });
     }
 };
 
@@ -240,7 +276,7 @@ exports.addComment = async (req, res) => {
 
 // @desc    Resolve ticket
 // @route   PUT /api/tickets/:id/resolve
-// @access  Private (Technician/Admin)
+// @access  Private (TECHNICIAN/Admin)
 exports.resolveTicket = async (req, res) => {
     try {
         let ticket = await Ticket.findById(req.params.id);
@@ -258,49 +294,112 @@ exports.resolveTicket = async (req, res) => {
     }
 };
 
-// @desc    Rate and close ticket
+// @desc    Rate and submit for review
 // @route   PUT /api/tickets/:id/rate
 // @access  Private (Requester)
 exports.rateTicket = async (req, res) => {
     try {
         const { rating, feedback } = req.body;
+        console.log(`[RateTicket] ID: ${req.params.id} | Rating: ${rating}`);
 
         let ticket = await Ticket.findById(req.params.id);
-        if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found' });
-        }
+        if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
         ticket.rating = rating;
         ticket.feedback = feedback;
-        ticket.status = 'Closed';
+        ticket.reviewStatus = 'Pending';
+
         await ticket.save();
+        console.log(`[RateTicket] Success - ReviewStatus: Pending`);
 
         emitUpdate(req, 'ticket_updated', ticket);
         res.json(ticket);
     } catch (error) {
+        console.error('[RateTicket] Controller Error:', error);
         res.status(500).json({ message: error.message });
     }
 };
-// @desc    Add work log entry
-// @route   POST /api/tickets/:id/worklog
-// @access  Private (Technician/Admin)
-exports.addWorkLog = async (req, res) => {
+
+// @desc    Review ticket (Approve/Reject)
+// @route   PUT /api/tickets/:id/review
+// @access  Private (Admin/Super Admin/System Admin)
+exports.reviewTicket = async (req, res) => {
     try {
-        const { note } = req.body;
+        const { action, notes } = req.body;
+        console.log(`[ReviewTicket] ${action} on ${req.params.id} by ${req.user.name}`);
+
         let ticket = await Ticket.findById(req.params.id);
-        if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found' });
+        if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+
+        if (ticket.status !== 'Resolved') {
+            return res.status(400).json({ message: 'Only resolved tickets can be reviewed' });
         }
 
-        ticket.workLog.push({
-            note,
-            technician: req.user._id
-        });
+        if (action === 'approve') {
+            ticket.status = 'Closed';
+            ticket.reviewStatus = 'Approved';
+        } else if (action === 'reject') {
+            ticket.status = 'In Progress';
+            ticket.reviewStatus = 'Rejected';
+        } else {
+            return res.status(400).json({ message: 'Invalid action' });
+        }
+
+        ticket.reviewNotes = notes;
+        ticket.reviewedBy = req.user._id;
+        ticket.reviewedAt = new Date();
 
         await ticket.save();
+        console.log(`[ReviewTicket] ${action} successful. Status: ${ticket.status}`);
+
+        // Notification logic (Non-blocking)
+        if (action === 'reject' && ticket.technician) {
+            try {
+                const tech = await User.findById(ticket.technician);
+                if (tech) {
+                    await sendEmail(
+                        tech.email,
+                        `Action Required: Ticket Rejected`,
+                        `Your resolution for ticket ${ticket.title} was rejected. Notes: ${notes}`,
+                        `<h2>Review Update</h2><p><b>Decision:</b> Rejected</p><p><b>Notes:</b> ${notes}</p>`
+                    );
+                }
+            } catch (err) { console.error('[ReviewTicket] Email failed:', err.message); }
+        }
+
         emitUpdate(req, 'ticket_updated', ticket);
         res.json(ticket);
     } catch (error) {
+        console.error('[ReviewTicket] Controller Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Add work log entry
+// @route   POST /api/tickets/:id/worklog
+// @access  Private (TECHNICIAN/Admin)
+exports.addWorkLog = async (req, res) => {
+    try {
+        const { note } = req.body;
+        console.log(`[AddWorkLog] Adding log for ${req.params.id} by ${req.user.name}`);
+
+        let ticket = await Ticket.findById(req.params.id);
+        if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+
+        ticket.workLog = ticket.workLog || [];
+        ticket.workLog.push({
+            note,
+            technician: req.user._id,
+            timestamp: new Date()
+        });
+
+        await ticket.save();
+        console.log(`[AddWorkLog] Log saved successfully`);
+
+        emitUpdate(req, 'ticket_updated', ticket);
+        res.json(ticket);
+    } catch (error) {
+        console.error('[AddWorkLog] Error:', error);
         res.status(500).json({ message: error.message });
     }
 };

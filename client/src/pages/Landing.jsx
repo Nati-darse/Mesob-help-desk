@@ -2,11 +2,13 @@ import { Box, Typography, Button, Container, Stack, Grid } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { ROLE_ROUTES } from '../constants/roles';
+import { useTranslation } from 'react-i18next';
 import logo from '../assets/logo.png';
 
 
 const Landing = () => {
     const { user } = useAuth();
+    const { t } = useTranslation();
 
     return (
         <Box
@@ -118,7 +120,7 @@ const Landing = () => {
                                 fontSize: { xs: '1rem', md: '1.25rem' }
                             }}
                         >
-                            Elevating your workplace productivity with professional, real-time IT support and ticket management.
+                            {t('landing.subtitle')}
                         </Typography>
 
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center" sx={{ width: '100%', maxWidth: '400px', mx: 'auto' }}>
@@ -128,7 +130,7 @@ const Landing = () => {
                                     variant="contained"
                                     size="large"
                                     component={RouterLink}
-                                    to={ROLE_ROUTES[user.role] || '/profile'}
+                                    to={ROLE_ROUTES[user.role] || '/redirect'}
                                     sx={{
                                         px: 4,
                                         py: 2,
@@ -141,7 +143,7 @@ const Landing = () => {
                                         fontWeight: 700
                                     }}
                                 >
-                                    Go to Dashboard
+                                    {t('landing.goToDashboard')}
                                 </Button>
                             ) : (
                                 <>
@@ -163,7 +165,7 @@ const Landing = () => {
                                             fontWeight: 700
                                         }}
                                     >
-                                        Member Login
+                                        {t('landing.memberLogin')}
                                     </Button>
                                 </>
                             )}
@@ -173,9 +175,9 @@ const Landing = () => {
                     {/* Compact Feature Highlights */}
                     <Grid container spacing={2} sx={{ width: '100%', maxWidth: '800px' }}>
                         {[
-                            { title: 'Fast Response', desc: 'Industry-leading resolution times' },
-                            { title: 'Real-time Updates', desc: 'Instant notifications and tracking' },
-                            { title: 'Role-Based Access', desc: 'Secure environment for all tasks' }
+                            { title: t('landing.features.fastResponse'), desc: t('landing.features.fastResponseDesc') },
+                            { title: t('landing.features.realTimeUpdates'), desc: t('landing.features.realTimeUpdatesDesc') },
+                            { title: t('landing.features.roleBasedAccess'), desc: t('landing.features.roleBasedAccessDesc') }
                         ].map((item, i) => (
                             <Grid item xs={12} sm={4} key={i}>
                                 <Box sx={{

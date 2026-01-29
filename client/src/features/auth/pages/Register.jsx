@@ -41,7 +41,7 @@ const Register = () => {
             case ROLES.EMPLOYEE:
                 return '/portal';
             default:
-                return '/profile';
+                return '/redirect';
         }
     };
 
@@ -59,7 +59,12 @@ const Register = () => {
             const redirectPath = getRedirectPath(result.user.role);
             navigate(redirectPath);
         } else {
-            setError(result.message);
+            // Handle error - could be a string or an object with errors array
+            if (result.message && typeof result.message === 'object' && result.message.errors) {
+                setError(result.message.errors.join('. '));
+            } else {
+                setError(result.message || 'Registration failed');
+            }
         }
         setLoading(false);
     };
@@ -142,6 +147,7 @@ const Register = () => {
                         required
                         value={formData.password}
                         onChange={handleChange}
+                        helperText="Must be 8+ characters with uppercase, lowercase, number, and special character"
                     />
                     <Button
                         type="submit"

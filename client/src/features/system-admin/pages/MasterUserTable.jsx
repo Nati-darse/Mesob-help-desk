@@ -41,58 +41,24 @@ const MasterUserTable = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const itemsPerPage = 15;
 
-    // Mock user data
-    const mockUsers = [
-        {
-            _id: '1',
-            name: 'John Doe',
-            email: 'john.doe@ethiotelecom.et',
-            role: 'Worker',
-            companyId: 1,
-            isActive: true,
-            lastLogin: '2024-01-20T10:30:00Z',
-            createdAt: '2023-06-15T09:00:00Z',
-            loginCount: 245,
-            ticketsCreated: 12,
-            avatar: null
-        },
-        {
-            _id: '2',
-            name: 'Jane Smith',
-            email: 'jane.smith@cbe.com.et',
-            role: 'Team Lead',
-            companyId: 2,
-            isActive: true,
-            lastLogin: '2024-01-19T16:45:00Z',
-            createdAt: '2023-03-10T11:30:00Z',
-            loginCount: 189,
-            ticketsCreated: 8,
-            avatar: null
-        },
-        {
-            _id: '3',
-            name: 'Mike Johnson',
-            email: 'mike.johnson@ethiopianairlines.com',
-            role: 'Technician',
-            companyId: 3,
-            isActive: false,
-            lastLogin: '2023-12-15T14:20:00Z',
-            createdAt: '2023-01-20T08:15:00Z',
-            loginCount: 67,
-            ticketsCreated: 0,
-            avatar: null
-        }
-    ];
-
+    // Real user data fetch
     useEffect(() => {
-        // Simulate API call
-        setTimeout(() => {
-            setUsers(mockUsers);
-            setFilteredUsers(mockUsers);
-            setTotalPages(Math.ceil(mockUsers.length / itemsPerPage));
-            setLoading(false);
-        }, 1000);
+        fetchUsers();
     }, []);
+
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get('/api/users/global');
+            setUsers(res.data);
+            setFilteredUsers(res.data);
+            setTotalPages(Math.ceil(res.data.length / itemsPerPage));
+        } catch (error) {
+            console.error('Error fetching global users:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         applyFilters();
@@ -100,17 +66,17 @@ const MasterUserTable = () => {
 
     const applyFilters = () => {
         let filtered = users.filter(user => {
-            const matchesSearch = !searchQuery || 
+            const matchesSearch = !searchQuery ||
                 user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 user.email.toLowerCase().includes(searchQuery.toLowerCase());
 
             const matchesRole = filters.role === 'all' || user.role === filters.role;
             const matchesCompany = filters.company === 'all' || user.companyId === parseInt(filters.company);
-            const matchesStatus = filters.status === 'all' || 
+            const matchesStatus = filters.status === 'all' ||
                 (filters.status === 'active' && user.isActive) ||
                 (filters.status === 'inactive' && !user.isActive);
 
-            const daysSinceLogin = user.lastLogin ? 
+            const daysSinceLogin = user.lastLogin ?
                 (new Date() - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24) : 999;
             const matchesLastLogin = filters.lastLogin === 'all' ||
                 (filters.lastLogin === 'recent' && daysSinceLogin <= 7) ||
@@ -170,10 +136,10 @@ const MasterUserTable = () => {
         if (!user.isActive) {
             return <Chip label="Suspended" color="error" size="small" />;
         }
-        
-        const daysSinceLogin = user.lastLogin ? 
+
+        const daysSinceLogin = user.lastLogin ?
             (new Date() - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24) : 999;
-        
+
         if (daysSinceLogin > 90) {
             return <Chip label="Dormant" color="warning" size="small" />;
         } else if (daysSinceLogin > 30) {
@@ -248,7 +214,7 @@ const MasterUserTable = () => {
                             <Select
                                 value={filters.role}
                                 label="Role"
-                                onChange={(e) => setFilters({...filters, role: e.target.value})}
+                                onChange={(e) => setFilters({ ...filters, role: e.target.value })}
                             >
                                 <MenuItem value="all">All Roles</MenuItem>
                                 {Object.values(ROLES).map(role => (
@@ -264,7 +230,7 @@ const MasterUserTable = () => {
                             <Select
                                 value={filters.company}
                                 label="Organization"
-                                onChange={(e) => setFilters({...filters, company: e.target.value})}
+                                onChange={(e) => setFilters({ ...filters, company: e.target.value })}
                             >
                                 <MenuItem value="all">All Organizations</MenuItem>
                                 {COMPANIES.map(company => (
@@ -282,7 +248,7 @@ const MasterUserTable = () => {
                             <Select
                                 value={filters.status}
                                 label="Status"
-                                onChange={(e) => setFilters({...filters, status: e.target.value})}
+                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                             >
                                 <MenuItem value="all">All Status</MenuItem>
                                 <MenuItem value="active">Active</MenuItem>
@@ -297,7 +263,7 @@ const MasterUserTable = () => {
                             <Select
                                 value={filters.lastLogin}
                                 label="Last Login"
-                                onChange={(e) => setFilters({...filters, lastLogin: e.target.value})}
+                                onChange={(e) => setFilters({ ...filters, lastLogin: e.target.value })}
                             >
                                 <MenuItem value="all">Any Time</MenuItem>
                                 <MenuItem value="recent">Last 7 Days</MenuItem>
@@ -341,7 +307,7 @@ const MasterUserTable = () => {
                         <CardContent sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
                                 {filteredUsers.filter(u => {
-                                    const daysSinceLogin = u.lastLogin ? 
+                                    const daysSinceLogin = u.lastLogin ?
                                         (new Date() - new Date(u.lastLogin)) / (1000 * 60 * 60 * 24) : 999;
                                     return daysSinceLogin > 30;
                                 }).length}
@@ -383,9 +349,9 @@ const MasterUserTable = () => {
                     <TableBody>
                         {paginatedUsers.map((user) => {
                             const company = getCompanyById(user.companyId);
-                            const daysSinceLogin = user.lastLogin ? 
+                            const daysSinceLogin = user.lastLogin ?
                                 Math.floor((new Date() - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24)) : null;
-                            
+
                             return (
                                 <TableRow key={user._id} hover>
                                     <TableCell>
@@ -404,17 +370,17 @@ const MasterUserTable = () => {
                                         </Box>
                                     </TableCell>
                                     <TableCell>
-                                        <Chip 
-                                            label={user.role} 
-                                            color={getRoleColor(user.role)} 
-                                            size="small" 
+                                        <Chip
+                                            label={user.role}
+                                            color={getRoleColor(user.role)}
+                                            size="small"
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <Chip 
-                                            label={company.initials} 
-                                            size="small" 
-                                            variant="outlined" 
+                                        <Chip
+                                            label={company.initials}
+                                            size="small"
+                                            variant="outlined"
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -516,7 +482,7 @@ const MasterUserTable = () => {
                         You are about to <strong>{actionType}</strong> the user <strong>{selectedUser?.name}</strong>.
                         This action will be logged in the audit trail.
                     </Alert>
-                    
+
                     {selectedUser && (
                         <Box sx={{ mt: 2 }}>
                             <Typography variant="body2" sx={{ mb: 1 }}>

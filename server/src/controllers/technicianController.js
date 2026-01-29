@@ -1,187 +1,195 @@
 const Ticket = require('../models/Ticket');
 const User = require('../models/User');
 
-// @desc    Get tickets assigned to technician
-// @route   GET /api/tickets/assigned
-// @access  Private (Technician)
-exports.getAssignedTickets = async (req, res) => {
+// @desc    Update technician duty status
+// @route   PUT /api/technician/duty-status
+// @access  Private (TECHNICIAN)
+exports.updateDutyStatus = async (req, res) => {
     try {
-        // Get tickets assigned to current technician or their team
-        const tickets = await Ticket.find({
-            $or: [
-                { assignedTo: req.user.id },
-                { assignedTeam: req.user.department }
-            ]
-        })
-            .populate('requester', 'name email')
-            .populate('assignedTo', 'name email')
-            .populate('company', 'name initials')
-            .sort({ createdAt: -1 });
+        const { dutyStatus } = req.body;
+        console.log(`[UpdateDutyStatus] User ${req.user?._id} requested status change to: ${dutyStatus}`);
 
-        // Add mock timeline data
-        const ticketsWithTimeline = tickets.map(ticket => ({
-            ...ticket.toObject(),
-            timeline: [
-                {
-                    timestamp: ticket.createdAt,
-                    type: 'created',
-                    user: ticket.requester?.name || 'Unknown',
-                    content: 'Ticket created'
-                }
-            ]
-        }));
+        // Validate duty status
+        const validStatuses = ['Online', 'On-Site', 'Break', 'Offline'];
+        if (!validStatuses.includes(dutyStatus)) {
+            console.log(`[UpdateDutyStatus] Invalid status requested: ${dutyStatus}`);
+            return res.status(400).json({ message: 'Invalid duty status' });
+        }
 
-        res.json(ticketsWithTimeline);
+        // Update user's duty status
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            console.log(`[UpdateDutyStatus] User not found: ${req.user._id}`);
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log(`[UpdateDutyStatus] Persisting change for ${user.name}: ${user.dutyStatus} -> ${dutyStatus}`);
+        user.dutyStatus = dutyStatus;
+        user.isAvailable = (dutyStatus === 'Online');
+
+        const updatedUser = await user.save();
+        console.log(`[UpdateDutyStatus] Save successful. New DB state: ${updatedUser.dutyStatus}`);
+
+        // Emit socket event for real-time updates (Global for centralized pool)
+        const io = req.app.get('io');
+        if (io) {
+            console.log(`[UpdateDutyStatus] Emitting global socket update for technician: ${updatedUser.name}`);
+            io.emit('technician_status_updated', updatedUser);
+        }
+
+        res.json({
+            message: 'Duty status updated successfully',
+            dutyStatus: updatedUser.dutyStatus,
+            user: updatedUser
+        });
     } catch (error) {
+        console.error('[UpdateDutyStatus] CRITICAL Error:', error);
+        res.status(500).json({ message: error.message, stack: error.stack });
+    }
+};
+
+// @desc    Get technician performance metrics
+// @route   GET /api/technician/performance
+// @access  Private (TECHNICIAN)
+exports.getPerformanceMetrics = async (req, res) => {
+    try {
+        const techId = req.user.id;
+        
+        // Get all tickets assigned to this technician
+        const allTickets = await Ticket.find({ technician: techId });
+        const resolvedTickets = allTickets.filter(t => t.status === 'Resolved' || t.status === 'Closed');
+        
+        // Calculate average response time (time from creation to assignment)
+        let totalResponseTime = 0;
+        let responseTimeCount = 0;
+        
+        // Calculate average resolution time (time from creation to resolution)
+        let totalResolutionTime = 0;
+        let resolutionTimeCount = 0;
+        
+        resolvedTickets.forEach(ticket => {
+            if (ticket.createdAt && ticket.updatedAt) {
+                const resolutionTime = (new Date(ticket.updatedAt) - new Date(ticket.createdAt)) / (1000 * 60 * 60); // hours
+                totalResolutionTime += resolutionTime;
+                resolutionTimeCount++;
+            }
+        });
+        
+        // Get today's resolved tickets
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const todayResolved = resolvedTickets.filter(t => 
+            new Date(t.updatedAt) >= startOfToday
+        ).length;
+        
+        const avgResponseTime = responseTimeCount > 0 ? (totalResponseTime / responseTimeCount).toFixed(1) : '0';
+        const avgResolutionTime = resolutionTimeCount > 0 ? (totalResolutionTime / resolutionTimeCount).toFixed(1) : '0';
+
+        res.json({
+            totalAssigned: allTickets.length,
+            totalResolved: resolvedTickets.length,
+            todayResolved,
+            avgResponseTime,
+            avgResolutionTime,
+            responseTimeCount,
+            resolutionTimeCount
+        });
+    } catch (error) {
+        console.error('[GetMetrics] Error:', error);
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Get single ticket details
-// @route   GET /api/tickets/:id
-// @access  Private
+// @desc    Get assigned tickets for technician
+// @route   GET /api/technician/assigned
+// @access  Private (TECHNICIAN)
+exports.getAssignedTickets = async (req, res) => {
+    try {
+        const { startDate, endDate, includeResolved } = req.query;
+        
+        // Build query
+        const query = { technician: req.user.id };
+        
+        // Add status filter
+        if (includeResolved === 'true') {
+            // Include all statuses for reports
+        } else {
+            // Default: only active tickets
+            query.status = { $in: ['Assigned', 'In Progress'] };
+        }
+        
+        // Add date range filter
+        if (startDate || endDate) {
+            query.createdAt = {};
+            if (startDate) query.createdAt.$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999); // End of day
+                query.createdAt.$lte = end;
+            }
+        }
+
+        const tickets = await Ticket.find(query)
+            .populate('requester', 'name email department')
+            .sort({ createdAt: -1 });
+
+        res.json(tickets);
+    } catch (error) {
+        console.error('[GetAssigned] Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get single ticket details for technician
+// @route   GET /api/technician/:id
+// @access  Private (TECHNICIAN)
 exports.getTicketById = async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id)
-            .populate('requester', 'name email phone')
-            .populate('assignedTo', 'name email')
-            .populate('company', 'name initials');
+            .populate('requester', 'name email department')
+            .populate('comments.user', 'name role');
 
-        if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found' });
+        if (!ticket || String(ticket.technician) !== String(req.user.id)) {
+            return res.status(404).json({ message: 'Ticket not found or not assigned to you' });
         }
 
         res.json(ticket);
     } catch (error) {
+        console.error('[GetTicketById] Error:', error);
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Update ticket status
-// @route   PUT /api/tickets/:id
-// @access  Private
+// @desc    Update ticket (Legacy name for internal updates)
 exports.updateTicket = async (req, res) => {
+    // Basic implementation for technician updates
     try {
-        const ticket = await Ticket.findById(req.params.id);
-
-        if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found' });
-        }
-
-        // Update ticket
-        const updatedTicket = await Ticket.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        );
-
-        const io = req.app.get('io');
-        const cid = (updatedTicket && updatedTicket.companyId) || req.tenantId || (req.user && req.user.companyId);
-        if (io) {
-            if (cid) {
-                io.to(`company:${cid}`).emit('ticket_updated', updatedTicket);
-            } else {
-                io.emit('ticket_updated', updatedTicket);
-            }
-        }
-        res.json(updatedTicket);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        const ticket = await Ticket.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(ticket);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-// @desc    Add internal notes to ticket
-// @route   PUT /api/tickets/:id/internal-notes
-// @access  Private
 exports.addInternalNotes = async (req, res) => {
-    try {
-        const ticket = await Ticket.findById(req.params.id);
-
-        if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found' });
-        }
-
-        ticket.internalNotes = req.body.internalNotes;
-        await ticket.save();
-
-        res.json({ message: 'Internal notes updated' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    // Simplified placeholder
+    res.json({ message: 'Not implemented' });
 };
 
-// @desc    Add customer update to ticket
-// @route   POST /api/tickets/:id/updates
-// @access  Private
 exports.addCustomerUpdate = async (req, res) => {
-    try {
-        const ticket = await Ticket.findById(req.params.id);
-
-        if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found' });
-        }
-
-        // Add update to ticket updates array
-        const update = {
-            message: req.body.message,
-            type: req.body.type || 'customer',
-            timestamp: new Date(),
-            user: req.user.name
-        };
-
-        if (!ticket.updates) {
-            ticket.updates = [];
-        }
-        ticket.updates.push(update);
-        await ticket.save();
-
-        res.json({ message: 'Update added' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    // Simplified placeholder
+    res.json({ message: 'Not implemented' });
 };
 
-// @desc    Resolve ticket
-// @route   PUT /api/tickets/:id/resolve
-// @access  Private
 exports.resolveTicket = async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id);
+        if (!ticket) return res.status(404).json({ message: 'Not found' });
 
-        if (!ticket) {
-            return res.status(404).json({ message: 'Ticket not found' });
-        }
-
-        // Update ticket with resolution data
-        const resolutionData = {
-            status: 'Resolved',
-            resolvedAt: new Date(),
-            resolvedBy: req.user.id,
-            resolutionCategory: req.body.category,
-            resolutionCode: req.body.resolutionCode,
-            timeSpent: req.body.timeSpent,
-            partsUsed: req.body.partsUsed,
-            nextSteps: req.body.nextSteps,
-            ...req.body
-        };
-
-        const resolvedTicket = await Ticket.findByIdAndUpdate(
-            req.params.id,
-            resolutionData,
-            { new: true }
-        );
-
-        const io = req.app.get('io');
-        const cid = (resolvedTicket && resolvedTicket.companyId) || req.tenantId || (req.user && req.user.companyId);
-        if (io) {
-            if (cid) {
-                io.to(`company:${cid}`).emit('ticket_updated', resolvedTicket);
-            } else {
-                io.emit('ticket_updated', resolvedTicket);
-            }
-        }
-        res.json(resolvedTicket);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        ticket.status = 'Resolved';
+        await ticket.save();
+        res.json(ticket);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };

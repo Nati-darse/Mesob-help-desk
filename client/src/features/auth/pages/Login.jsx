@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Container, Paper, TextField, Button, Typography, Box, Link, Alert } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import logo from '../../../assets/logo.png';
 import { ROLES } from '../../../constants/roles';
 
@@ -13,22 +14,25 @@ const Login = () => {
 
     const { login } = useAuth();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const getRedirectPath = (role) => {
-        switch (role) {
-            case ROLES.SYSTEM_ADMIN:
-                return '/sys-admin';
-            case ROLES.SUPER_ADMIN:
-                return '/admin';
-            case ROLES.TECHNICIAN:
-                return '/tech';
-            case ROLES.TEAM_LEAD:
-                return '/teamleaderdashboard';
-            case ROLES.EMPLOYEE:
-                return '/portal';
-            default:
-                return '/profile';
-        }
+        // Normalize role string (trim whitespace)
+        const normalizedRole = String(role).trim();
+        
+        console.log('🔍 Login - User Role:', normalizedRole);
+        console.log('🔍 Login - Role Constants:', ROLES);
+        
+        // Direct string comparison for reliability
+        if (normalizedRole === 'System Admin') return '/sys-admin';
+        if (normalizedRole === 'Super Admin') return '/admin';
+        if (normalizedRole === 'Technician') return '/tech';
+        if (normalizedRole === 'Team Lead') return '/team-lead';
+        if (normalizedRole === 'Worker') return '/portal';
+        
+        // Fallback
+        console.warn('⚠️ Unknown role:', normalizedRole, '- redirecting to login');
+        return '/login';
     };
 
     const handleSubmit = async (e) => {
@@ -36,14 +40,27 @@ const Login = () => {
         setError('');
         setLoading(true);
 
-        const result = await login(email, password);
-        if (result.success) {
-            const redirectPath = getRedirectPath(result.user.role);
-            navigate(redirectPath);
-        } else {
-            setError(result.message);
+        try {
+            const result = await login(email, password);
+            
+            if (result.success) {
+                console.log('✅ Login successful:', result.user);
+                const redirectPath = getRedirectPath(result.user.role);
+                console.log('🚀 Redirecting to:', redirectPath);
+                
+                // Small delay to ensure state is updated
+                setTimeout(() => {
+                    navigate(redirectPath, { replace: true });
+                }, 100);
+            } else {
+                setError(result.message);
+            }
+        } catch (err) {
+            console.error('❌ Login error:', err);
+            setError('An unexpected error occurred. Please try again.');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (
@@ -53,10 +70,10 @@ const Login = () => {
                     <img src="/logo.png" alt="Mesob Logo" style={{ height: 80 }} onError={(e) => { e.currentTarget.src = logo; }} />
                 </Box>
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    Welcome Back
+                    {t('auth.welcomeBack')}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-                    Please enter your credentials to access the help desk.
+                    {t('auth.loginPrompt')}
                 </Typography>
 
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -64,7 +81,7 @@ const Login = () => {
                 <form onSubmit={handleSubmit}>
                     <TextField
                         fullWidth
-                        label="Email Address"
+                        label={t('auth.email')}
                         variant="outlined"
                         margin="normal"
                         required
@@ -73,7 +90,7 @@ const Login = () => {
                     />
                     <TextField
                         fullWidth
-                        label="Password"
+                        label={t('auth.password')}
                         type="password"
                         variant="outlined"
                         margin="normal"
@@ -90,13 +107,13 @@ const Login = () => {
                         disabled={loading}
                         sx={{ mt: 3, mb: 2, height: 48 }}
                     >
-                        {loading ? 'Logging in...' : 'Login'}
+                        {loading ? t('auth.loggingIn') : t('auth.login')}
                     </Button>
                 </form>
 
                 <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
                     <Typography variant="caption" color="text.secondary">
-                        Secure Access Portal • Managed by Mesob Admin
+                        {t('auth.securePortal')}
                     </Typography>
                 </Box>
             </Paper>

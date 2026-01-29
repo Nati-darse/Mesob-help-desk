@@ -7,6 +7,7 @@ import { ROLES } from '../../../constants/roles';
 import { getCompanyById } from '../../../utils/companies';
 import TruncatedText from '../../../components/TruncatedText';
 import React, { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const priorityColors = {
     Low: 'success',
@@ -77,6 +78,7 @@ const TicketRow = memo(({ ticket, user }) => {
 const TicketList = () => {
     const { data: tickets = [], isLoading: loading, error } = useTickets();
     const { user } = useAuth();
+    const { t } = useTranslation();
 
     if (loading) {
         return (
@@ -89,7 +91,7 @@ const TicketList = () => {
     if (error) {
         return (
             <Container sx={{ mt: 4 }}>
-                <Alert severity="error">Failed to fetch tickets. Please try again later.</Alert>
+                <Alert severity="error">{t('ticketList.failedToFetch')}</Alert>
             </Container>
         );
     }
@@ -98,7 +100,7 @@ const TicketList = () => {
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    Support Tickets
+                    {t('ticketList.supportTickets')}
                 </Typography>
                 {user?.role === ROLES.EMPLOYEE && (
                     <Button
@@ -108,7 +110,7 @@ const TicketList = () => {
                         component={RouterLink}
                         to="/tickets/new"
                     >
-                        New Ticket
+                        {t('ticketList.newTicket')}
                     </Button>
                 )}
             </Box>
@@ -117,20 +119,20 @@ const TicketList = () => {
                 <Table sx={{ minWidth: 700 }}>
                     <TableHead sx={{ bgcolor: 'action.hover' }}>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Title</TableCell>
-                            {user?.role !== ROLES.EMPLOYEE && <TableCell sx={{ fontWeight: 'bold' }}>Bureau</TableCell>}
-                            <TableCell sx={{ fontWeight: 'bold' }}>Category</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Priority</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Created</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }} align="right">Actions</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.title')}</TableCell>
+                            {user?.role !== ROLES.EMPLOYEE && <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.bureau')}</TableCell>}
+                            <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.category')}</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.priority')}</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.status')}</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.created')}</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }} align="right">{t('ticketList.actions')}</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {tickets.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                                    <Typography color="text.secondary">No tickets found.</Typography>
+                                    <Typography color="text.secondary">{t('ticketList.noTicketsFound')}</Typography>
                                 </TableCell>
                             </TableRow>
                         ) : (

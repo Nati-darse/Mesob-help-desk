@@ -16,23 +16,48 @@ import {
     Build as BuildIcon,
     Warning as WarningIcon,
     Work as WorkIcon,
-    Home as HomeIcon
+    Home as HomeIcon,
+    FiberManualRecord as StatusIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { useAuth } from '../../auth/context/AuthContext';
 import axios from 'axios';
 
 const TechWorkspace = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState(0);
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [dutyStatus, setDutyStatus] = useState('Active');
+    const [dutyStatus, setDutyStatus] = useState(user?.dutyStatus || 'Online');
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchAssignedTickets();
-    }, []);
+
+        // Socket for real-time ticket updates
+        if (user) {
+            const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
+                transports: ['websocket'],
+                auth: { companyId: user.companyId },
+                extraHeaders: { 'x-tenant-id': String(user.companyId || '') }
+            });
+
+            socket.emit('join_company', user.companyId);
+
+            socket.on('ticket_updated', () => {
+                fetchAssignedTickets();
+            });
+
+            socket.on('ticket_created', () => {
+                fetchAssignedTickets();
+            });
+
+            return () => socket.disconnect();
+        }
+    }, [user]);
 
     const fetchAssignedTickets = async () => {
         try {
@@ -75,6 +100,32 @@ const TechWorkspace = () => {
         const priorityColor = getPriorityColor(ticket.priority, ticket.createdAt);
         const slaStatus = getSLABadge(ticket.priority, ticket.createdAt);
         const isSLABreach = slaStatus === 'SLA BREACH';
+        const isAssignedToMe = ticket.technician === user?._id || (ticket.technician?._id === user?._id);
+
+        const handleAccept = async (e) => {
+            e.stopPropagation();
+            try {
+                await axios.put(`/api/tickets/${ticket._id}/assign`, { technicianId: user._id });
+                fetchAssignedTickets();
+            } catch (err) {
+                console.error('Error accepting ticket:', err);
+            }
+        };
+
+        const handleStart = async (e) => {
+            e.stopPropagation();
+            try {
+                await axios.put(`/api/tickets/${ticket._id}`, { status: 'In Progress' });
+                fetchAssignedTickets();
+            } catch (err) {
+                console.error('Error starting ticket:', err);
+            }
+        };
+
+        const handleResolveClick = (e) => {
+            e.stopPropagation();
+            navigate(`/tech/tickets/${ticket._id}`);
+        };
 
         return (
             <Card
@@ -113,25 +164,48 @@ const TechWorkspace = () => {
                                 size="small"
                                 sx={{ mb: 1 }}
                             />
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" display="block">
                                 {new Date(ticket.createdAt).toLocaleTimeString()}
                             </Typography>
                         </Box>
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Chip
-                            label={ticket.priority}
-                            size="small"
-                            sx={{
-                                bgcolor: priorityColor,
-                                color: 'white',
-                                fontWeight: 'bold'
-                            }}
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                            {ticket.location || 'No location'}
-                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Chip
+                                label={ticket.priority}
+                                size="small"
+                                sx={{
+                                    bgcolor: priorityColor,
+                                    color: 'white',
+                                    fontWeight: 'bold'
+                                }}
+                            />
+                            <Chip
+                                label={ticket.status}
+                                size="small"
+                                variant="outlined"
+                            />
+                        </Box>
+
+                        <Box onClick={(e) => e.stopPropagation()}>
+                            {ticket.status === 'New' && (
+                                <Button size="small" variant="contained" onClick={handleAccept}>
+                                    Accept Ticket
+                                </Button>
+                            )}
+                            {/* Allow start if assigned to me OR if status is Assigned (some teams auto-assign) */}
+                            {(ticket.status === 'Assigned' && isAssignedToMe) && (
+                                <Button size="small" variant="contained" color="primary" onClick={handleStart}>
+                                    Start Work
+                                </Button>
+                            )}
+                            {(ticket.status === 'In Progress' && isAssignedToMe) && (
+                                <Button size="small" variant="contained" color="success" onClick={handleResolveClick}>
+                                    Resolve
+                                </Button>
+                            )}
+                        </Box>
                     </Box>
                 </CardContent>
             </Card>
@@ -163,6 +237,18 @@ const TechWorkspace = () => {
         );
     }
 
+    const handleStatusChange = async (newStatus) => {
+        try {
+            await axios.put('/api/technician/duty-status', { dutyStatus: newStatus });
+            setDutyStatus(newStatus);
+            if (user) {
+                updateUser({ dutyStatus: newStatus });
+            }
+        } catch (err) {
+            console.error('Error updating status:', err);
+        }
+    };
+
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
             {/* Header with Duty Status */}
@@ -177,10 +263,10 @@ const TechWorkspace = () => {
                     <FormControl size="small">
                         <Select
                             value={dutyStatus}
-                            onChange={(e) => setDutyStatus(e.target.value)}
+                            onChange={(e) => handleStatusChange(e.target.value)}
                             sx={{ minWidth: 120 }}
                         >
-                            <MenuItem value="Active">Active</MenuItem>
+                            <MenuItem value="Online">Online</MenuItem>
                             <MenuItem value="On-Site">On-Site</MenuItem>
                             <MenuItem value="Break">Break</MenuItem>
                             <MenuItem value="Offline">Offline</MenuItem>
@@ -219,9 +305,9 @@ const TechWorkspace = () => {
                             {activeTab === 1 && (
                                 <Box>
                                     <Typography variant="h6" gutterBottom>
-                                        Pending Feedback ({tickets.filter(t => t.status === 'Pending Feedback').length})
+                                        Pending Review ({tickets.filter(t => t.reviewStatus === 'Pending').length})
                                     </Typography>
-                                    {tickets.filter(t => t.status === 'Pending Feedback').map(ticket => (
+                                    {tickets.filter(t => t.reviewStatus === 'Pending').map(ticket => (
                                         <TicketCard key={ticket._id} ticket={ticket} />
                                     ))}
                                 </Box>

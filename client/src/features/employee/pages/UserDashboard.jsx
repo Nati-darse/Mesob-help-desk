@@ -9,6 +9,7 @@ import { Newspaper as NewsIcon, Business as CompanyIcon, NotificationsActive as 
 import React, { useMemo, memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 const StatCard = memo(({ icon, value, label, color }) => {
     return (
@@ -30,6 +31,7 @@ const StatCard = memo(({ icon, value, label, color }) => {
 
 const UserDashboard = () => {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const { data: tickets = [], isLoading } = useTickets();
 
     const company = useMemo(() => getCompanyById(user?.companyId || 1), [user?.companyId]);
@@ -37,7 +39,7 @@ const UserDashboard = () => {
     const companyInitials = company.initials;
 
     const activeTickets = useMemo(
-        () => tickets.filter(t => t.status !== 'Closed' && t.status !== 'Resolved'),
+        () => tickets.filter(t => t.status !== 'Closed' && (t.status !== 'Resolved' || t.reviewStatus === 'Pending')),
         [tickets]
     );
     const totalTicketsCount = tickets.length;
@@ -71,7 +73,7 @@ const UserDashboard = () => {
                     </Avatar>
                     <Box sx={{ minWidth: 0 }}>
                         <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', mb: 0.5 }}>
-                            Welcome back, {user?.name}
+                            {t('userDashboard.welcomeBack', { name: user?.name })}
                         </Typography>
                         <Stack direction="row" alignItems="center" spacing={1}>
                             <TruncatedText
@@ -81,7 +83,7 @@ const UserDashboard = () => {
                                 maxWidth="400px"
                             />
                             <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
-                                | Employee Portal
+                                | {t('userDashboard.employeePortal')}
                             </Typography>
                         </Stack>
                     </Box>
@@ -101,20 +103,20 @@ const UserDashboard = () => {
                         boxShadow: '0 10px 20px rgba(30, 79, 177, 0.2)'
                     }}
                 >
-                    New Support Ticket
+                    {t('userDashboard.newSupportTicket')}
                 </Button>
             </Box>
 
             {/* Stats Overview */}
             <Grid container spacing={3} sx={{ mb: 6 }}>
                 <Grid item xs={12} sm={4}>
-                    <StatCard icon={<TicketIcon />} value={totalTicketsCount} label="Total Requests" color="#1e4fb1" />
+                    <StatCard icon={<TicketIcon />} value={totalTicketsCount} label={t('userDashboard.totalRequests')} color="#1e4fb1" />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                    <StatCard icon={<TimeIcon />} value={activeTickets.length} label="Active Tickets" color="#0061f2" />
+                    <StatCard icon={<TimeIcon />} value={activeTickets.length} label={t('userDashboard.activeTickets')} color="#0061f2" />
                 </Grid>
                 <Grid item xs={12} sm={4}>
-                    <StatCard icon={<CheckIcon />} value={resolvedCount} label="Resolved Today" color="#42a5f5" />
+                    <StatCard icon={<CheckIcon />} value={resolvedCount} label={t('userDashboard.resolvedToday')} color="#42a5f5" />
                 </Grid>
             </Grid>
 
@@ -122,18 +124,18 @@ const UserDashboard = () => {
             <Grid container spacing={4}>
                 <Grid item xs={12} md={4}>
                     <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                        Announcements
+                        {t('userDashboard.announcements')}
                     </Typography>
                     <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, height: 'fit-content', bgcolor: (theme) => theme.palette.mode === 'dark' ? '#112240' : '#f8f9fa' }}>
                         <CardContent sx={{ p: 4 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, color: 'primary.main' }}>
                                 <AlertIcon />
-                                <Typography variant="h6" sx={{ fontWeight: 700 }}>Latest Updates</Typography>
+                                <Typography variant="h6" sx={{ fontWeight: 700 }}>{t('userDashboard.latestUpdates')}</Typography>
                             </Box>
                             <Stack spacing={3}>
                                 {notifications.length === 0 ? (
                                     <Box sx={{ textAlign: 'center', py: 2 }}>
-                                        <Typography variant="body2" color="text.secondary">No new announcements at this time.</Typography>
+                                        <Typography variant="body2" color="text.secondary">{t('userDashboard.noAnnouncements')}</Typography>
                                     </Box>
                                 ) : (
                                     notifications.map((note) => (
@@ -143,13 +145,13 @@ const UserDashboard = () => {
                                                 color={note.priority === 'error' ? 'error.main' : note.priority === 'warning' ? 'warning.main' : 'info.main'}
                                                 sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, display: 'block' }}
                                             >
-                                                {note.priority || 'Info'} Alert
+                                                {note.priority || 'Info'} {t('userDashboard.alert')}
                                             </Typography>
                                             <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 0.5 }}>
                                                 {note.message}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                                                {note.createdAt ? new Date(note.createdAt).toLocaleString() : 'Just now'}
+                                                {note.createdAt ? new Date(note.createdAt).toLocaleString() : t('userDashboard.justNow')}
                                             </Typography>
                                             <Divider sx={{ mt: 2 }} />
                                         </Box>
@@ -162,17 +164,17 @@ const UserDashboard = () => {
 
                 <Grid item xs={12} md={8}>
                     <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                        My Active Tickets
+                        {t('userDashboard.myActiveTickets')}
                     </Typography>
                     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, overflow: 'hidden' }}>
                         {isLoading ? (
                             <Box sx={{ p: 4, textAlign: 'center' }}>
-                                <Typography color="text.secondary">Loading tickets...</Typography>
+                                <Typography color="text.secondary">{t('userDashboard.loadingTickets')}</Typography>
                             </Box>
                         ) : activeTickets.length === 0 ? (
                             <Box sx={{ p: 8, textAlign: 'center' }}>
-                                <Typography variant="h6" color="text.secondary" gutterBottom>No active tickets</Typography>
-                                <Typography variant="body2" color="text.secondary">Everything looks good! If you need help, create a new ticket.</Typography>
+                                <Typography variant="h6" color="text.secondary" gutterBottom>{t('userDashboard.noActiveTickets')}</Typography>
+                                <Typography variant="body2" color="text.secondary">{t('userDashboard.everythingGood')}</Typography>
                             </Box>
                         ) : (
                             <Box>

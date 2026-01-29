@@ -71,7 +71,7 @@ const BroadcastCenter = () => {
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
                     Real-time broadcast system for all 19 government organizations
                 </Typography>
-                
+
                 {/* Stats Overview */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid item xs={12} sm={6} md={3}>
@@ -82,14 +82,14 @@ const BroadcastCenter = () => {
                                 </Avatar>
                                 <Box>
                                     <Typography variant="h5" fontWeight="bold" color="#1e4fb1">
-                                        2,847
+                                        System-Wide
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Active Users
+                                        Targeting 24 Organizations
                                     </Typography>
                                 </Box>
                             </Box>
-                            <LinearProgress variant="determinate" value={85} sx={{ bgcolor: 'rgba(30, 79, 177, 0.1)' }} />
+                            <LinearProgress variant="determinate" value={100} sx={{ bgcolor: 'rgba(30, 79, 177, 0.1)' }} />
                         </Card>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
@@ -107,7 +107,7 @@ const BroadcastCenter = () => {
                                     </Typography>
                                 </Box>
                             </Box>
-                            <LinearProgress variant="determinate" value={92} sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }} />
+                            <LinearProgress variant="determinate" value={100} sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)' }} />
                         </Card>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
@@ -118,10 +118,10 @@ const BroadcastCenter = () => {
                                 </Avatar>
                                 <Box>
                                     <Typography variant="h5" fontWeight="bold" color="#ff9800">
-                                        24/7
+                                        Online
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        System Availability
+                                        Real-time Socket Gateway
                                     </Typography>
                                 </Box>
                             </Box>
@@ -136,14 +136,14 @@ const BroadcastCenter = () => {
                                 </Avatar>
                                 <Box>
                                     <Typography variant="h5" fontWeight="bold" color="#0061f2">
-                                        99.2%
+                                        Instant
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Delivery Rate
+                                        Message Delivery Mode
                                     </Typography>
                                 </Box>
                             </Box>
-                            <LinearProgress variant="determinate" value={99.2} sx={{ bgcolor: 'rgba(0, 97, 242, 0.1)' }} />
+                            <LinearProgress variant="determinate" value={100} sx={{ bgcolor: 'rgba(0, 97, 242, 0.1)' }} />
                         </Card>
                     </Grid>
                 </Grid>
