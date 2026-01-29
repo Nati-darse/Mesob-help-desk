@@ -30,33 +30,43 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// ===== CORS CONFIGURATION =====
-const allowedOrigins = [
-    'https://mesob-help-desk.vercel.app',
-    'https://mesob-helpdesk-backend.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:5000'
-];
+// ===== PROXY TRUST =====
+app.enable('trust proxy');
 
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
-    credentials: true,
-    optionsSuccessStatus: 200
-}));
+// ===== MANUAL CORS =====
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
 
-// Initialize Socket.io
+    // Check if origin matches trusted domains
+    const isAllowed = origin && (
+        origin.includes('mesob-help-desk') ||
+        origin.includes('vercel.app') ||
+        origin.includes('onrender.com') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')
+    );
+
+    if (isAllowed) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+
+    // Handle preflight immediately for all routes
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    next();
+});
+
+// Initialize Socket.io with permissive CORS
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+            callback(null, true);
+        },
         credentials: true
     }
 });
