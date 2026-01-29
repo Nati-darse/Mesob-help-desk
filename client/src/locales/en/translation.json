@@ -1,0 +1,101 @@
+{
+    "nav": {
+        "dashboard": "Dashboard",
+        "tickets": "Tickets",
+        "reports": "Reports",
+        "myProfile": "My Profile",
+        "language": "Language"
+    },
+    "auth": {
+        "login": "Login",
+        "logout": "Logout",
+        "welcomeBack": "Welcome Back",
+        "loginPrompt": "Please sign in to your account",
+        "email": "Email Address",
+        "password": "Password",
+        "loggingIn": "Logging in...",
+        "securePortal": "Secure Support Portal"
+    },
+    "landing": {
+        "subtitle": "Streamlining support requests for Mesob organizations with efficiency and precision.",
+        "goToDashboard": "Go to Dashboard",
+        "memberLogin": "Member Login",
+        "features": {
+            "fastResponse": "Fast Response",
+            "fastResponseDesc": "Real-time dispatching to available technicians",
+            "realTimeUpdates": "Real-time Updates",
+            "realTimeUpdatesDesc": "Live tracking of all your support tickets",
+            "roleBasedAccess": "Role-based Access",
+            "roleBasedAccessDesc": "Secured workspace for employees, leads, and admins"
+        }
+    },
+    "adminCommandCenter": {
+        "commandCenter": "Admin Command Center",
+        "unifiedMissionControl": "Unified Mission Control",
+        "syncCloud": "Sync with Cloud",
+        "liveRequests": "Live Requests",
+        "unassigned": "Unassigned",
+        "onlineTechs": "Online Technicians",
+        "pendingReview": "Pending Review",
+        "liveDispatchInbox": "Live Dispatch Inbox",
+        "pendingAction": "Pending Action",
+        "general": "General",
+        "dispatch": "Dispatch",
+        "allClear": "All Clear! Deployment synchronized.",
+        "workforceStatus": "Workforce Status",
+        "quickDispatch": "Quick Dispatch",
+        "assigning": "Assigning '{{title}}'",
+        "availablePersonnel": "Available Personnel ({{count}})",
+        "readyForDispatch": "Ready for dispatch",
+        "noTechniciansAvailable": "No technicians currently online",
+        "abortMission": "Abort Mission"
+    },
+    "admin": {
+        "reviewQueue": "Review Queue"
+    },
+    "teamLeadDashboard": {
+        "teamOperationsCenter": "Team Operations Center",
+        "manageRequests": "Managing requests for {{company}} ({{initials}})",
+        "activeRequests": "Active Requests",
+        "needsConfirmation": "Needs Confirmation",
+        "pendingAction": "Pending Action",
+        "newSupportRequest": "New Support Request",
+        "issueTitle": "Issue Title",
+        "brieflyDescribe": "Briefly describe the problem",
+        "floorRoom": "Floor / Room",
+        "detailedDescription": "Detailed Description",
+        "provideContext": "Provide more context here...",
+        "submitting": "Submitting...",
+        "identifyDispatch": "Identify & Dispatch",
+        "teamTicketHistory": "Team Ticket History",
+        "showingTickets": "Showing {{count}} active tickets",
+        "allClear": "All Clear! No active tickets",
+        "by": "by",
+        "tech": "Tech:",
+        "pendingReview": "Pending Review",
+        "reviewService": "Review Service",
+        "waitingForAssign": "Waiting for assignment",
+        "rateExperience": "Rate Your Experience",
+        "howSatisfied": "How satisfied are you with the resolution?",
+        "additionalComments": "Additional Comments",
+        "whatDidWell": "What did we do well?",
+        "skip": "Skip",
+        "confirmResolved": "Confirm & Resolve",
+        "sessionExpired": "Session expired. Please login again.",
+        "failedToSubmit": "Failed to submit request:",
+        "failedToSubmitFeedback": "Failed to submit feedback"
+    },
+    "priority": {
+        "priority": "Priority",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+    },
+    "category": {
+        "category": "Category"
+    },
+    "language": {
+        "selectLanguage": "Select Language"
+    }
+}

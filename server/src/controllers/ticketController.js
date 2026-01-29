@@ -28,6 +28,11 @@ const emitUpdate = (req, event, data) => {
 // @access  Private (Worker)
 exports.createTicket = async (req, res) => {
     try {
+        console.log('=== TICKET CREATION DEBUG ===');
+        console.log('Request body:', req.body);
+        console.log('User info:', req.user);
+        console.log('Headers:', req.headers);
+
         const { title, description, category, priority, buildingWing, companyId } = req.body;
 
         const ticket = await Ticket.create({
