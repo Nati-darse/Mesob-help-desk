@@ -17,7 +17,13 @@ export const AuthProvider = ({ children }) => {
                 const parsedUser = JSON.parse(storedUser);
                 setUser(parsedUser);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
-                axios.defaults.headers.common['x-tenant-id'] = String(parsedUser.companyId || '');
+                
+                // Only set tenant header for non-global admins
+                // Super Admin and System Admin should see ALL tickets across all companies
+                const globalAdminRoles = ['Super Admin', 'System Admin'];
+                if (!globalAdminRoles.includes(parsedUser.role)) {
+                    axios.defaults.headers.common['x-tenant-id'] = String(parsedUser.companyId || '');
+                }
             } catch (e) {
                 console.error('Failed to parse stored user');
                 sessionStorage.removeItem('mesob_user');
@@ -42,7 +48,13 @@ export const AuthProvider = ({ children }) => {
             setUser(userData);
             sessionStorage.setItem('mesob_user', JSON.stringify(userData));
             axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
-            axios.defaults.headers.common['x-tenant-id'] = String(userData.companyId || '');
+            
+            // Only set tenant header for non-global admins
+            // Super Admin and System Admin should see ALL tickets across all companies
+            const globalAdminRoles = ['Super Admin', 'System Admin'];
+            if (!globalAdminRoles.includes(userData.role)) {
+                axios.defaults.headers.common['x-tenant-id'] = String(userData.companyId || '');
+            }
             
             return { success: true, user: userData };
         } catch (error) {
@@ -60,7 +72,13 @@ export const AuthProvider = ({ children }) => {
             setUser(res.data);
             sessionStorage.setItem('mesob_user', JSON.stringify(res.data));
             axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-            axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
+            
+            // Only set tenant header for non-global admins
+            const globalAdminRoles = ['Super Admin', 'System Admin'];
+            if (!globalAdminRoles.includes(res.data.role)) {
+                axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
+            }
+            
             return { success: true, user: res.data };
         } catch (error) {
             return {
