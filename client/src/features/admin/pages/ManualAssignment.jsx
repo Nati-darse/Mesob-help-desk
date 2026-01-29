@@ -71,8 +71,19 @@ const ManualAssignment = () => {
         try {
             // Tickets fetch
             try {
+                console.log('[ManualAssignment] Fetching tickets...');
                 const ticketsRes = await axios.get('/api/tickets?pageSize=100');
+                console.log('[ManualAssignment] Tickets received:', ticketsRes.data.length);
+                
                 const unassigned = ticketsRes.data.filter(t => t.status === 'New' || !t.technician);
+                console.log('[ManualAssignment] Unassigned tickets:', unassigned.length);
+                console.log('[ManualAssignment] Unassigned details:', unassigned.map(t => ({
+                    id: t._id,
+                    title: t.title,
+                    status: t.status,
+                    technician: t.technician
+                })));
+                
                 setTickets(unassigned);
 
                 // Get all to calculate workload later if needed

@@ -82,9 +82,10 @@ const calculateTechnicianBreakdown = async (tickets) => {
         if (ticket.status === 'Resolved' || ticket.status === 'Closed') {
             techMap[techId].resolved++;
             
-            // Calculate resolution time
-            if (ticket.createdAt && ticket.updatedAt) {
-                const resolutionTime = (new Date(ticket.updatedAt) - new Date(ticket.createdAt)) / (1000 * 60 * 60);
+            // Calculate resolution time using resolvedAt if available, otherwise updatedAt
+            if (ticket.createdAt && (ticket.resolvedAt || ticket.updatedAt)) {
+                const resolvedTime = ticket.resolvedAt || ticket.updatedAt;
+                const resolutionTime = (new Date(resolvedTime) - new Date(ticket.createdAt)) / (1000 * 60 * 60);
                 techMap[techId].resolutionTimes.push(resolutionTime);
             }
         } else if (ticket.status === 'In Progress') {
@@ -152,8 +153,9 @@ const getPerformanceReport = async (req, res) => {
                 // Calculate metrics
                 let totalResolutionTime = 0;
                 resolvedTickets.forEach(ticket => {
-                    if (ticket.createdAt && ticket.updatedAt) {
-                        totalResolutionTime += (new Date(ticket.updatedAt) - new Date(ticket.createdAt)) / (1000 * 60 * 60);
+                    if (ticket.createdAt && (ticket.resolvedAt || ticket.updatedAt)) {
+                        const resolvedTime = ticket.resolvedAt || ticket.updatedAt;
+                        totalResolutionTime += (new Date(resolvedTime) - new Date(ticket.createdAt)) / (1000 * 60 * 60);
                     }
                 });
 

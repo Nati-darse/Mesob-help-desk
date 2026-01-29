@@ -64,7 +64,7 @@ const FeedbackForm = ({ ticketId, onResolved }) => {
                     fullWidth
                     disabled={loading}
                 >
-                    Submit Feedback & Close Ticket
+                    Submit Feedback for Review
                 </Button>
             </form>
         </Paper>

@@ -94,21 +94,31 @@ app.use('/api/admin/reports', checkMaint, adminReportRoutes);
 
 // Socket.io connection
 io.on('connection', (socket) => {
+    console.log(`[Socket.IO] Client connected: ${socket.id}`);
+    
     const h = socket.handshake.headers['x-tenant-id'];
     const a = socket.handshake.auth && socket.handshake.auth.companyId;
     const n = Number(h || a);
     const companyId = Number.isNaN(n) ? (h || a) : n;
+    
     if (companyId) {
         socket.join(`company:${companyId}`);
+        console.log(`[Socket.IO] Client ${socket.id} joined company room: ${companyId}`);
     }
+    
     socket.on('join_company', (cid) => {
         if (cid) {
             socket.join(`company:${cid}`);
+            console.log(`[Socket.IO] Client ${socket.id} manually joined company: ${cid}`);
         }
     });
 
     socket.on('disconnect', () => {
-        return;
+        console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+    });
+    
+    socket.on('error', (error) => {
+        console.error(`[Socket.IO] Socket error for ${socket.id}:`, error);
     });
 });
 
@@ -125,7 +135,10 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`✅ Socket.IO initialized and ready`);
+    console.log(`✅ Client URL: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = { app, io, server };

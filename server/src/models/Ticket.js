@@ -99,6 +99,12 @@ const ticketSchema = new mongoose.Schema({
     },
     reviewedAt: {
         type: Date,
+    },
+    resolvedAt: {
+        type: Date,
+    },
+    assignedAt: {
+        type: Date,
     }
 }, {
     timestamps: true
