@@ -68,6 +68,13 @@ exports.createTicket = async (req, res) => {
 // @access  Private (All authenticated users, filtered by role)
 exports.getTickets = async (req, res) => {
     try {
+        console.log('[GetTickets] Request from user:', {
+            name: req.user.name,
+            role: req.user.role,
+            companyId: req.user.companyId,
+            tenantId: req.tenantId
+        });
+
         let query;
 
         // Build criteria based on role and query parameters
@@ -81,8 +88,12 @@ exports.getTickets = async (req, res) => {
         if (globalAdminRoles.includes(req.user.role)) {
             // System Admin and Super Admin can see ALL tickets across all companies
             // They can optionally filter by tenant header
+            console.log('[GetTickets] Global admin detected - should see ALL tickets');
             if (req.tenantId) {
                 criteria.companyId = req.tenantId;
+                console.log('[GetTickets] Filtering by tenant:', req.tenantId);
+            } else {
+                console.log('[GetTickets] No tenant filter - showing ALL tickets');
             }
             // Otherwise, no company filter - see everything
         } else if (companyAdminRoles.includes(req.user.role)) {
@@ -116,12 +127,15 @@ exports.getTickets = async (req, res) => {
         if (req.query.status) criteria.status = req.query.status;
         if (req.query.reviewStatus) criteria.reviewStatus = req.query.reviewStatus;
 
+        console.log('[GetTickets] Final criteria:', JSON.stringify(criteria));
+
         query = Ticket.find(criteria);
 
         const page = Math.max(parseInt(req.query.page || '1', 10), 1);
         const pageSize = Math.max(parseInt(req.query.pageSize || '20', 10), 1);
 
         const total = await Ticket.countDocuments(query.getQuery());
+        console.log('[GetTickets] Total tickets matching criteria:', total);
 
         const tickets = await query
             .select('title status priority category companyId technician requester buildingWing reviewStatus reviewNotes updatedAt workLog createdAt')
@@ -132,12 +146,15 @@ exports.getTickets = async (req, res) => {
             .limit(pageSize)
             .lean();
 
+        console.log('[GetTickets] Returning', tickets.length, 'tickets to client');
+
         // Non-breaking change: return array, but include pagination via headers
         res.set('X-Total-Count', String(total));
         res.set('X-Page', String(page));
         res.set('X-Page-Size', String(pageSize));
         res.json(tickets);
     } catch (error) {
+        console.error('[GetTickets] ERROR:', error);
         res.status(500).json({ message: error.message });
     }
 };
