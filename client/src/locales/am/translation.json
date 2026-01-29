@@ -1,0 +1,101 @@
+{
+    "nav": {
+        "dashboard": "ዳሽቦርድ",
+        "tickets": "ቲኬቶች",
+        "reports": "ሪፖርቶች",
+        "myProfile": "የእኔ መገለጫ",
+        "language": "ቋንቋ"
+    },
+    "auth": {
+        "login": "ግባ",
+        "logout": "ውጣ",
+        "welcomeBack": "እንኳን ደህና መጡ",
+        "loginPrompt": "እባክዎን ወደ መለያዎ ይግቡ",
+        "email": "ኢሜል አድራሻ",
+        "password": "የይለፍ ቃል",
+        "loggingIn": "በመግባት ላይ...",
+        "securePortal": "ደህንነቱ የተጠበቀ የድጋፍ ፖርታል"
+    },
+    "landing": {
+        "subtitle": "የመሶብ ድርጅቶች የድጋፍ ጥያቄዎችን በብቃት እና በትክክለኛነት ማሳለጥ።",
+        "goToDashboard": "ወደ ዳሽቦርድ ይሂዱ",
+        "memberLogin": "የአባል መግቢያ",
+        "features": {
+            "fastResponse": "ፈጣን ምላሽ",
+            "fastResponseDesc": "ለሚገኙ ቴክኒሻኖች ፈጣን ምደባ ማድረግ",
+            "realTimeUpdates": "የቀጥታ ወቅታዊ መረጃዎች",
+            "realTimeUpdatesDesc": "ሁሉንም የድጋፍ ቲኬቶችዎን የቀጥታ ሁኔታ መከታተል",
+            "roleBasedAccess": "በሚና ላይ የተመሰረተ መዳረሻ",
+            "roleBasedAccessDesc": "ለሰራተኞች፣ መሪዎች እና አስተዳዳሪዎች የተጠበቀ መሥሪያ ቦታ"
+        }
+    },
+    "adminCommandCenter": {
+        "commandCenter": "የአስተዳዳሪ ትእዛዝ ማዕከል",
+        "unifiedMissionControl": "የተዋሃደ ተልዕኮ ቁጥጥር",
+        "syncCloud": "ከደመና ጋር አመሳስል",
+        "liveRequests": "ቀጥታ ጥያቄዎች",
+        "unassigned": "ያልተመደቡ",
+        "onlineTechs": "በመስመር ላይ ያሉ ቴክኒሻኖች",
+        "pendingReview": "ግምገማ በመጠባበቅ ላይ",
+        "liveDispatchInbox": "ቀጥታ መላኪያ ገቢ ሳጥን",
+        "pendingAction": "እርምጃ በመጠባበቅ ላይ",
+        "general": "ጠቅላላ",
+        "dispatch": "መላኪያ",
+        "allClear": "ሁሉም ነገር ግልጽ ነው! ስምሪት ተመሳስሏል።",
+        "workforceStatus": "የሰው ኃይል ሁኔታ",
+        "quickDispatch": "ፈጣን መላኪያ",
+        "assigning": "'{{title}}'ን በመመደብ ላይ",
+        "availablePersonnel": "የሚገኙ ሰራተኞች ({{count}})",
+        "readyForDispatch": "ለመላክ ዝግጁ",
+        "noTechniciansAvailable": "በአሁኑ ጊዜ በመስመር ላይ ያሉ ቴክኒሻኖች የሉም",
+        "abortMission": "ተልዕኮውን አቁም"
+    },
+    "admin": {
+        "reviewQueue": "የግምገማ ወረፋ"
+    },
+    "teamLeadDashboard": {
+        "teamOperationsCenter": "የቡድን ተግባራት ማዕከል",
+        "manageRequests": "ለ {{company}} ({{initials}}) ጥያቄዎችን ማስተዳደር",
+        "activeRequests": "ንቁ ጥያቄዎች",
+        "needsConfirmation": "ማረጋገጫ ያስፈልገዋል",
+        "pendingAction": "እርምጃ በመጠባበቅ ላይ",
+        "newSupportRequest": "አዲስ የድጋፍ ጥያቄ",
+        "issueTitle": "የችግሩ ርዕስ",
+        "brieflyDescribe": "ችግሩን በአጭሩ ይግለጹ",
+        "floorRoom": "ፎቅ / ክፍል",
+        "detailedDescription": "ዝርዝር መግለጫ",
+        "provideContext": "እዚህ ተጨማሪ መረጃ ይስጡ...",
+        "submitting": "በመላክ ላይ...",
+        "identifyDispatch": "ለይቶ መላክ",
+        "teamTicketHistory": "የቡድን ቲኬት ታሪክ",
+        "showingTickets": "{{count}} ንቁ ቲኬቶችን በማሳየት ላይ",
+        "allClear": "ሁሉም ነገር ግልጽ ነው! ምንም ንቁ ቲኬቶች የሉም",
+        "by": "በ",
+        "tech": "ቴክኒሻን:",
+        "pendingReview": "ግምገማ በመጠባበቅ ላይ",
+        "reviewService": "አገልግሎቱን ይገምግሙ",
+        "waitingForAssign": "ምደባ በመጠባበቅ ላይ",
+        "rateExperience": "ልምድዎን ደረጃ ይስጡ",
+        "howSatisfied": "በመፍትሔው ምን ያህል ረክተዋል?",
+        "additionalComments": "ተጨማሪ አስተያየቶች",
+        "whatDidWell": "ምን ጥሩ ሰራን?",
+        "skip": "ዝለል",
+        "confirmResolved": "ያረጋግጡ እና ይፍቱ",
+        "sessionExpired": "ክፍለ-ጊዜው አልፎበታል። እባክዎን እንደገና ይግቡ።",
+        "failedToSubmit": "ጥያቄውን መላክ አልተቻለም:",
+        "failedToSubmitFeedback": "አስተያየቱን መላክ አልተቻለም"
+    },
+    "priority": {
+        "priority": "ቅድሚያ የሚሰጠው",
+        "low": "ዝቅተኛ",
+        "medium": "መካከለኛ",
+        "high": "ከፍተኛ",
+        "critical": "ወሳኝ"
+    },
+    "category": {
+        "category": "ምድብ"
+    },
+    "language": {
+        "selectLanguage": "ቋንቋ ይምረጡ"
+    }
+}

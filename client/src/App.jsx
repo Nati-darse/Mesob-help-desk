@@ -185,7 +185,7 @@ const AppContent = () => {
 
               {/* Team Leader Routes */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.TEAM_LEAD]} />}>
-                <Route path="/teamleaderdashboard" element={<TeamLeadDashboard />} />
+                <Route path="/team-lead" element={<TeamLeadDashboard />} />
               </Route>
 
               {/* Technician Routes */}
