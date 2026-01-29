@@ -185,7 +185,7 @@ const AppContent = () => {
 
               {/* Team Leader Routes */}
               <Route element={<ProtectedRoute allowedRoles={[ROLES.TEAM_LEAD]} />}>
-                <Route path="/teamleaderdashboard" element={<TeamLeaderDashboard />} />
+                <Route path="/teamleaderdashboard" element={<TeamLeadDashboard />} />
               </Route>
 
               {/* Technician Routes */}
@@ -219,7 +219,7 @@ const AppContent = () => {
         {user && (
           <ChangePasswordDialog
             open={showPasswordDialog}
-            onClose={() => {}} // Prevent closing
+            onClose={() => { }} // Prevent closing
             onSuccess={handlePasswordChangeSuccess}
           />
         )}
