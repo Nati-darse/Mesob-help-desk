@@ -28,13 +28,25 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
+            console.log('🔐 Attempting login for:', email);
             const res = await axios.post('/api/auth/login', { email, password });
-            setUser(res.data);
-            sessionStorage.setItem('mesob_user', JSON.stringify(res.data));
-            axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-            axios.defaults.headers.common['x-tenant-id'] = String(res.data.companyId || '');
-            return { success: true, user: res.data };
+            console.log('✅ Login response:', res.data);
+            console.log('👤 User role:', res.data.role);
+            
+            // Ensure profilePic is included in user data
+            const userData = {
+                ...res.data,
+                profilePic: res.data.profilePic || ''
+            };
+            
+            setUser(userData);
+            sessionStorage.setItem('mesob_user', JSON.stringify(userData));
+            axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
+            axios.defaults.headers.common['x-tenant-id'] = String(userData.companyId || '');
+            
+            return { success: true, user: userData };
         } catch (error) {
+            console.error('❌ Login failed:', error.response?.data || error.message);
             return {
                 success: false,
                 message: error.response?.data?.message || 'Login failed'
@@ -77,8 +89,14 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const updateUser = (data) => {
+        const updatedUser = { ...user, ...data };
+        setUser(updatedUser);
+        sessionStorage.setItem('mesob_user', JSON.stringify(updatedUser));
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, updateAvailability }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, updateAvailability, updateUser }}>
             {!loading && children}
         </AuthContext.Provider>
     );

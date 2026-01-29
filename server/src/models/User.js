@@ -45,9 +45,17 @@ const userSchema = new mongoose.Schema({
         enum: ['Online', 'On-Site', 'Break', 'Offline'],
         default: 'Online',
     },
+    phone: {
+        type: String,
+        default: '',
+    },
     profilePic: {
         type: String,
         default: '',
+    },
+    isFirstLogin: {
+        type: Boolean,
+        default: true,
     },
     createdAt: {
         type: Date,
@@ -55,17 +63,24 @@ const userSchema = new mongoose.Schema({
     },
 });
 
-// Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) {
-        next();
+// Combined pre-save hook for password and status sync
+// Modern async/await style without next() for Mongoose 6+
+userSchema.pre('save', async function () {
+    // Hashing password if modified
+    if (this.isModified('password')) {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+
+    // Syncing isAvailable with dutyStatus
+    if (this.isModified('dutyStatus')) {
+        this.isAvailable = (this.dutyStatus === 'Online');
+    }
 });
 
 // Match user entered password to hashed password in database
 userSchema.methods.matchPassword = async function (enteredPassword) {
+    if (!enteredPassword || !this.password) return false;
     return await bcrypt.compare(enteredPassword, this.password);
 };
 

@@ -29,6 +29,7 @@ const SuperAdminLayout = () => {
 
     const menuItems = [
         { text: 'Command Center', icon: <DashboardIcon />, path: '/admin' },
+        { text: 'Resolution Review', icon: <AssignmentIcon />, path: '/admin/reviews' },
         { text: 'Analytics', icon: <TrendingUpIcon />, path: '/admin/dashboard' },
         { text: 'Manual Assignment', icon: <AssignmentIcon />, path: '/admin/assign' },
         { text: 'Organization Registry', icon: <BusinessIcon />, path: '/admin/companies' },

@@ -10,12 +10,13 @@ const {
     updateDutyStatus,
     getPerformanceMetrics
 } = require('../controllers/technicianController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
 
-// Protect all routes
+// Protect all routes and restrict to Technician role
 router.use(protect);
 router.use(enforceMaintenance);
+router.use(authorize('Technician', 'Admin', 'Super Admin', 'System Admin')); // Add role authorization
 
 // Update duty status
 router.put('/duty-status', updateDutyStatus);

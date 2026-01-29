@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { io } from 'socket.io-client';
 import {
     Container, Typography, Box, Grid, Paper, List, ListItem, ListItemText, Button,
     Chip, Avatar, Stack, Divider, Dialog, DialogTitle, DialogContent, DialogActions,
-    Alert, CircularProgress, IconButton, Tooltip, Badge, LinearProgress, Card, CardContent
+    Alert, CircularProgress, IconButton, Tooltip, Badge, LinearProgress, Card, CardContent,
+    TextField, InputAdornment, Tabs, Tab
 } from '@mui/material';
 import {
     CheckCircle as CheckIcon,
@@ -11,10 +13,12 @@ import {
     SmartToy as AIIcon,
     Speed as SpeedIcon,
     TrendingUp as TrendIcon,
-    Refresh as RefreshIcon
+    Refresh as RefreshIcon,
+    Search as SearchIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { getCompanyById } from '../../../utils/companies';
+import { useAuth } from '../../auth/context/AuthContext';
 
 const ManualAssignment = () => {
     const [tickets, setTickets] = useState([]);
@@ -25,51 +29,82 @@ const ManualAssignment = () => {
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const [assigning, setAssigning] = useState(false);
     const [aiSuggestions, setAiSuggestions] = useState({});
+    const [techFilter, setTechFilter] = useState('all');
+    const [techSearch, setTechSearch] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
+    const { user } = useAuth();
+    const socketRef = useRef(null);
 
     useEffect(() => {
         fetchData();
-    }, []);
 
-    const fetchData = async () => {
-        try {
-            const [ticketsRes, techsRes] = await Promise.all([
-                axios.get('/api/tickets'),
-                axios.get('/api/users/technicians')
-            ]);
-
-            // Filter unassigned tickets
-            const unassigned = ticketsRes.data.filter(t => !t.technician && t.status === 'New');
-            setTickets(unassigned);
-
-            // Get all tickets to calculate workload
-            const allTickets = ticketsRes.data;
-
-            // Calculate ticket count for each technician
-            const techsWithWorkload = techsRes.data.map(tech => {
-                const assignedCount = allTickets.filter(t =>
-                    t.technician &&
-                    (t.technician._id === tech._id || t.technician === tech._id) &&
-                    t.status !== 'Resolved' &&
-                    t.status !== 'Closed'
-                ).length;
-
-                return {
-                    ...tech,
-                    currentTickets: assignedCount,
-                    score: (tech.isAvailable ? 100 : 0) - (assignedCount * 10)
-                };
+        // Socket logic for real-time status updates
+        if (user) {
+            const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
+                transports: ['websocket'],
+                auth: { companyId: user.companyId },
+                extraHeaders: { 'x-tenant-id': String(user.companyId || '') }
             });
 
-            // Sort by score (highest first)
-            techsWithWorkload.sort((a, b) => b.score - a.score);
-            setTechnicians(techsWithWorkload);
+            socketRef.current = socket;
+            socket.emit('join_company', user.companyId);
 
-            // Generate AI suggestions for each ticket
-            generateAISuggestions(unassigned, techsWithWorkload);
+            socket.on('technician_status_updated', (updatedTech) => {
+                setTechnicians(prev => prev.map(tech =>
+                    tech._id === updatedTech._id ? { ...tech, ...updatedTech } : tech
+                ));
+            });
 
-        } catch (error) {
-            console.error('Error fetching assignment data:', error);
+            socket.on('ticket_updated', () => {
+                // Refresh data when tickets change to update workloads too
+                fetchData();
+            });
+
+            return () => {
+                socket.disconnect();
+            };
+        }
+    }, [user]);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            // Tickets fetch
+            try {
+                const ticketsRes = await axios.get('/api/tickets?pageSize=100');
+                const unassigned = ticketsRes.data.filter(t => t.status === 'New' || !t.technician);
+                setTickets(unassigned);
+
+                // Get all to calculate workload later if needed
+                const allTickets = ticketsRes.data;
+
+                // Techs fetch
+                try {
+                    const techsRes = await axios.get('/api/users/technicians');
+                    const techsWithWorkload = techsRes.data.map(tech => {
+                        const assignedCount = allTickets.filter(t =>
+                            t.technician &&
+                            (t.technician._id === tech._id || t.technician === tech._id) &&
+                            t.status !== 'Resolved' &&
+                            t.status !== 'Closed'
+                        ).length;
+
+                        return {
+                            ...tech,
+                            currentTickets: assignedCount,
+                            score: (tech.isAvailable ? 100 : 0) - (assignedCount * 10)
+                        };
+                    });
+                    techsWithWorkload.sort((a, b) => b.score - a.score);
+                    setTechnicians(techsWithWorkload);
+                    generateAISuggestions(unassigned, techsWithWorkload);
+                } catch (techError) {
+                    console.error('Failed to load technicians:', techError);
+                }
+
+            } catch (ticketError) {
+                console.error('Failed to load tickets:', ticketError);
+            }
         } finally {
             setLoading(false);
         }
@@ -79,38 +114,39 @@ const ManualAssignment = () => {
         const suggestions = {};
 
         ticketsList.forEach(ticket => {
-            // AI scoring algorithm based on multiple factors
+            // AI scoring algorithm based on real data factors
             const scoredTechs = techsList.map(tech => {
                 let score = 0;
                 let reasons = [];
 
-                // Availability factor (40% weight)
+                // 1. Availability factor (40% weight)
                 if (tech.isAvailable) {
                     score += 40;
-                    reasons.push('Available');
+                    reasons.push('Current Availability');
                 }
 
-                // Workload factor (30% weight)
+                // 2. Workload factor (30% weight)
                 const workloadScore = Math.max(0, 30 - (tech.currentTickets * 5));
                 score += workloadScore;
-                if (workloadScore > 20) reasons.push('Low workload');
-                else if (workloadScore < 10) reasons.push('High workload');
+                if (tech.currentTickets < 2) reasons.push('Low current load');
+                else if (tech.currentTickets > 5) reasons.push('High current load');
 
-                // Skills matching (20% weight) - simulated
-                const skillsMatch = Math.random() * 20;
-                score += skillsMatch;
-                if (skillsMatch > 15) reasons.push('Skills match');
+                // 3. Department Match (20% weight)
+                if (tech.department === ticket.category || tech.department === 'IT Operations') {
+                    score += 20;
+                    reasons.push(`${tech.department} Specialist`);
+                }
 
-                // Company familiarity (10% weight)
-                if (tech.companyId === ticket.companyId) {
+                // 4. Company familiarity (10% weight)
+                if (String(tech.companyId) === String(ticket.companyId)) {
                     score += 10;
-                    reasons.push('Company experience');
+                    reasons.push('On-site Personnel');
                 }
 
                 return {
                     ...tech,
-                    aiScore: score,
-                    aiReasons: reasons
+                    aiScore: Math.min(score, 100),
+                    aiReasons: reasons.length > 0 ? reasons : ['General Support']
                 };
             });
 
@@ -155,10 +191,28 @@ const ManualAssignment = () => {
     };
 
     const getAvailabilityBadge = (tech) => {
-        return tech.isAvailable ?
-            <Chip label="Available" color="success" size="small" /> :
-            <Chip label="Busy" color="default" size="small" />;
+        const status = tech.dutyStatus || (tech.isAvailable ? 'Online' : 'Offline');
+        switch (status) {
+            case 'Online': return <Chip label="Online" color="success" size="small" />;
+            case 'On-Site': return <Chip label="On-Site" color="primary" size="small" />;
+            case 'Break': return <Chip label="On Break" color="warning" size="small" />;
+            case 'Offline': return <Chip label="Offline" color="error" size="small" />;
+            default: return <Chip label={status} size="small" />;
+        }
     };
+
+    const filteredTechnicians = useMemo(() => {
+        return technicians.filter(tech => {
+            const matchesSearch = tech.name.toLowerCase().includes(techSearch.toLowerCase()) ||
+                tech.department?.toLowerCase().includes(techSearch.toLowerCase());
+
+            const currentStatus = tech.dutyStatus || (tech.isAvailable ? 'Online' : 'Offline');
+            const matchesStatus = techFilter === 'all' ||
+                (techFilter.toLowerCase() === currentStatus.toLowerCase());
+
+            return matchesSearch && matchesStatus;
+        });
+    }, [technicians, techFilter, techSearch]);
 
     if (loading) {
         return (
@@ -286,71 +340,109 @@ const ManualAssignment = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <PersonIcon sx={{ mr: 1, color: 'success.main' }} />
                             <Typography variant="h5" fontWeight="bold">
-                                Available Technicians ({technicians.filter(t => t.isAvailable).length})
+                                Workforce Status ({technicians.length})
                             </Typography>
                         </Box>
 
-                        <List>
-                            {technicians.map((tech, index) => (
-                                <ListItem
-                                    key={tech._id}
-                                    sx={{
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        borderRadius: 2,
-                                        mb: 2,
-                                        p: 2
-                                    }}
-                                >
-                                    <Box sx={{ width: '100%' }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-                                                {tech.name.charAt(0)}
-                                            </Avatar>
-                                            <Box sx={{ flex: 1 }}>
-                                                <Typography variant="subtitle2" fontWeight="bold">
-                                                    {tech.name}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {tech.specialization || 'IT Support'}
-                                                </Typography>
-                                            </Box>
-                                            {getAvailabilityBadge(tech)}
-                                        </Box>
+                        <Paper sx={{ p: 2, mb: 3, bgcolor: 'action.hover', borderRadius: 2 }}>
+                            <TextField
+                                size="small"
+                                fullWidth
+                                placeholder="Search personnel..."
+                                value={techSearch}
+                                onChange={(e) => setTechSearch(e.target.value)}
+                                sx={{ mb: 2 }}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon size={18} />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                            <Tabs
+                                value={techFilter}
+                                onChange={(_, v) => setTechFilter(v)}
+                                indicatorColor="primary"
+                                textColor="primary"
+                                variant="scrollable"
+                                scrollButtons="auto"
+                                sx={{ minHeight: 36, '& .MuiTab-root': { py: 0.5, minHeight: 36, fontSize: '0.7rem' } }}
+                            >
+                                <Tab label="All" value="all" />
+                                <Tab label="Online" value="Online" />
+                                <Tab label="On-Site" value="On-Site" />
+                                <Tab label="Break" value="Break" />
+                                <Tab label="Offline" value="Offline" />
+                            </Tabs>
+                        </Paper>
 
-                                        <Box sx={{ mt: 2 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Current Workload
-                                                </Typography>
-                                                <Typography variant="caption" fontWeight="bold">
-                                                    {tech.currentTickets} tickets
-                                                </Typography>
+                        <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+                            {filteredTechnicians.length === 0 ? (
+                                <Box sx={{ py: 4, textAlign: 'center' }}>
+                                    <Typography color="text.secondary">No personnel found</Typography>
+                                </Box>
+                            ) : (
+                                filteredTechnicians.map((tech, index) => (
+                                    <ListItem
+                                        key={tech._id}
+                                        sx={{
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            borderRadius: 2,
+                                            mb: 2,
+                                            p: 2
+                                        }}
+                                    >
+                                        <Box sx={{ width: '100%' }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                                                    {tech.name.charAt(0)}
+                                                </Avatar>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Typography variant="subtitle2" fontWeight="bold">
+                                                        {tech.name}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {tech.specialization || 'IT Support'}
+                                                    </Typography>
+                                                </Box>
+                                                {getAvailabilityBadge(tech)}
                                             </Box>
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={Math.min((tech.currentTickets / 10) * 100, 100)}
-                                                sx={{
-                                                    height: 6,
-                                                    borderRadius: 3,
-                                                    bgcolor: 'grey.200'
-                                                }}
-                                            />
-                                        </Box>
 
-                                        {index === 0 && (
-                                            <Box sx={{ mt: 1 }}>
-                                                <Chip
-                                                    icon={<TrendIcon />}
-                                                    label="Top Performer"
-                                                    color="primary"
-                                                    size="small"
+                                            <Box sx={{ mt: 2 }}>
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        Current Workload
+                                                    </Typography>
+                                                    <Typography variant="caption" fontWeight="bold">
+                                                        {tech.currentTickets} tickets
+                                                    </Typography>
+                                                </Box>
+                                                <LinearProgress
+                                                    variant="determinate"
+                                                    value={Math.min((tech.currentTickets / 10) * 100, 100)}
+                                                    sx={{
+                                                        height: 6,
+                                                        borderRadius: 3,
+                                                        bgcolor: 'grey.200'
+                                                    }}
                                                 />
                                             </Box>
-                                        )}
-                                    </Box>
-                                </ListItem>
-                            ))}
+
+                                            {index === 0 && (
+                                                <Box sx={{ mt: 1 }}>
+                                                    <Chip
+                                                        icon={<TrendIcon />}
+                                                        label="Top Performer"
+                                                        color="primary"
+                                                        size="small"
+                                                    />
+                                                </Box>
+                                            )}
+                                        </Box>
+                                    </ListItem>
+                                )))}
                         </List>
                     </Paper>
                 </Grid>
@@ -380,23 +472,24 @@ const ManualAssignment = () => {
                             </Typography>
 
                             <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
-                                Recommended Technicians:
+                                Recommended Technicians (AI):
                             </Typography>
 
                             {aiSuggestions[selectedTicket._id]?.map((tech, index) => (
                                 <Card
-                                    key={tech._id}
+                                    key={`ai-${tech._id}`}
                                     sx={{
                                         mb: 2,
                                         cursor: 'pointer',
                                         border: selectedTech?._id === tech._id ? '2px solid' : '1px solid',
-                                        borderColor: selectedTech?._id === tech._id ? 'primary.main' : 'divider'
+                                        borderColor: selectedTech?._id === tech._id ? 'primary.main' : 'divider',
+                                        bgcolor: selectedTech?._id === tech._id ? 'primary.50' : 'background.paper'
                                     }}
                                     onClick={() => setSelectedTech(tech)}
                                 >
                                     <CardContent sx={{ p: 2 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                                                 {tech.name.charAt(0)}
                                             </Avatar>
                                             <Box sx={{ flex: 1 }}>
@@ -406,9 +499,10 @@ const ManualAssignment = () => {
                                                 <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
                                                     {getAvailabilityBadge(tech)}
                                                     <Chip
-                                                        label={`${tech.currentTickets} tickets`}
+                                                        label={`${tech.currentTickets} active`}
                                                         variant="outlined"
                                                         size="small"
+                                                        sx={{ height: 20, fontSize: '0.65rem' }}
                                                     />
                                                 </Stack>
                                             </Box>
@@ -417,7 +511,7 @@ const ManualAssignment = () => {
                                                     {Math.round(tech.aiScore)}%
                                                 </Typography>
                                                 <Typography variant="caption" color="text.secondary">
-                                                    Match Score
+                                                    Match
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -428,13 +522,61 @@ const ManualAssignment = () => {
                                                     label={reason}
                                                     size="small"
                                                     variant="outlined"
-                                                    sx={{ fontSize: '0.7rem', height: 20 }}
+                                                    sx={{ fontSize: '0.65rem', height: 18, bgcolor: 'primary.50' }}
                                                 />
                                             ))}
                                         </Stack>
                                     </CardContent>
                                 </Card>
                             ))}
+
+                            <Divider sx={{ my: 3 }}>
+                                <Chip label="All Personnel" size="small" variant="outlined" />
+                            </Divider>
+
+                            <Box sx={{ maxHeight: 300, overflow: 'auto', pr: 1 }}>
+                                <Stack spacing={1}>
+                                    {technicians.map(tech => (
+                                        <Paper
+                                            key={`all-${tech._id}`}
+                                            onClick={() => setSelectedTech(tech)}
+                                            sx={{
+                                                p: 1.5,
+                                                cursor: 'pointer',
+                                                border: '1px solid',
+                                                borderColor: selectedTech?._id === tech._id ? 'primary.main' : 'divider',
+                                                bgcolor: selectedTech?._id === tech._id ? 'primary.50' : (tech.isAvailable ? 'background.paper' : '#fcfcfc'),
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                '&:hover': { bgcolor: 'action.hover' },
+                                                opacity: tech.isAvailable ? 1 : 0.8
+                                            }}
+                                        >
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                <Badge
+                                                    variant="dot"
+                                                    color={tech.isAvailable ? 'success' : 'error'}
+                                                    overlap="circular"
+                                                >
+                                                    <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem' }}>{tech.name.charAt(0)}</Avatar>
+                                                </Badge>
+                                                <Box>
+                                                    <Typography variant="subtitle2" sx={{ fontSize: '0.85rem' }}>{tech.name}</Typography>
+                                                    <Typography variant="caption" color="text.secondary">{tech.department || 'IT Operations'}</Typography>
+                                                </Box>
+                                            </Box>
+                                            <Chip
+                                                label={tech.isAvailable ? 'On-Duty' : 'Off-Duty'}
+                                                size="small"
+                                                color={tech.isAvailable ? 'success' : 'default'}
+                                                variant={tech.isAvailable ? 'filled' : 'outlined'}
+                                                sx={{ height: 20, fontSize: '0.65rem' }}
+                                            />
+                                        </Paper>
+                                    ))}
+                                </Stack>
+                            </Box>
                         </Box>
                     )}
                 </DialogContent>

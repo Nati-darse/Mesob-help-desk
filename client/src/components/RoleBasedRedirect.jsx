@@ -9,42 +9,34 @@ const RoleBasedRedirect = () => {
 
   useEffect(() => {
     if (!user) {
+      console.log('🔍 RoleBasedRedirect - No user, redirecting to login');
       navigate('/login');
       return;
     }
 
     // Redirect based on user role
-    console.log('Redirecting user with role:', user.role);
-
-    // Convert role to standard comparison (trim and same case)
     const normalizedRole = String(user.role).trim();
+    console.log('🔍 RoleBasedRedirect - User Role:', normalizedRole);
 
-    switch (normalizedRole) {
-      case ROLES.SYSTEM_ADMIN:
-        console.log('Match: SYSTEM_ADMIN');
-        navigate('/sys-admin');
-        break;
-      case ROLES.SUPER_ADMIN:
-        console.log('Match: SUPER_ADMIN');
-        navigate('/admin');
-        break;
-      case ROLES.TECHNICIAN:
-      case 'TECHNICIAN': // Handle all caps version
-      case 'Technician': // Handle proper case version
-        console.log('Match: TECHNICIAN');
-        navigate('/tech');
-        break;
-      case ROLES.TEAM_LEAD:
-        navigate('/team-lead');
-        break;
-      case ROLES.EMPLOYEE:
-      case ROLES.WORKER:
-        navigate('/portal');
-        break;
-      default:
-        console.log('No specific match, going to generic dashboard');
-        navigate('/dashboard');
+    let redirectPath = '/login';
+
+    // Direct string comparison for reliability
+    if (normalizedRole === 'System Admin') {
+      redirectPath = '/sys-admin';
+    } else if (normalizedRole === 'Super Admin') {
+      redirectPath = '/admin';
+    } else if (normalizedRole === 'Technician') {
+      redirectPath = '/tech';
+    } else if (normalizedRole === 'Team Lead') {
+      redirectPath = '/team-lead';
+    } else if (normalizedRole === 'Worker') {
+      redirectPath = '/portal';
+    } else {
+      console.warn('⚠️ Unknown role:', normalizedRole);
     }
+
+    console.log('🚀 RoleBasedRedirect - Redirecting to:', redirectPath);
+    navigate(redirectPath, { replace: true });
   }, [user, navigate]);
 
   // Show loading while redirecting

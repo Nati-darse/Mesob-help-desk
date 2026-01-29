@@ -22,6 +22,7 @@ const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const technicianRoutes = require('./routes/technicianRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const adminReportRoutes = require('./routes/adminReportRoutes');
 
 // Connect to Database
 connectDB();
@@ -89,6 +90,7 @@ app.use('/api/dashboard', checkMaint, dashboardRoutes);
 app.use('/api/technician', checkMaint, technicianRoutes);
 app.use('/api/settings', checkMaint, settingsRoutes);
 app.use('/api/notifications', checkMaint, require('./routes/notificationRoutes'));
+app.use('/api/admin/reports', checkMaint, adminReportRoutes);
 
 // Socket.io connection
 io.on('connection', (socket) => {
