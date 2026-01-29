@@ -3,29 +3,27 @@ const mongoose = require('mongoose');
 const ticketSchema = new mongoose.Schema({
     title: {
         type: String,
-        required: true,
+        required: [true, 'Please add a title'],
         trim: true,
     },
     description: {
         type: String,
-        required: true,
+        required: [true, 'Please add a description'],
     },
     category: {
         type: String,
-        required: true,
+        required: [true, 'Please add a category'],
         enum: ['Software', 'Hardware', 'Network', 'Account', 'Building', 'Other'],
-        default: 'Other',
     },
     priority: {
         type: String,
-        required: true,
+        required: [true, 'Please add a priority'],
         enum: ['Low', 'Medium', 'High', 'Critical'],
         default: 'Medium',
     },
     status: {
         type: String,
-        required: true,
-        enum: ['New', 'Assigned', 'In Progress', 'Resolved', 'Pending Feedback', 'Closed'],
+        enum: ['New', 'Assigned', 'In Progress', 'Resolved', 'Closed'],
         default: 'New',
     },
     requester: {
@@ -39,78 +37,63 @@ const ticketSchema = new mongoose.Schema({
     },
     department: {
         type: String,
-        required: false,
-        default: 'General',
+        required: true,
     },
     companyId: {
         type: Number,
         required: true,
     },
-    comments: [
-        {
-            text: String,
-            user: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User',
-            },
-            createdAt: {
-                type: Date,
-                default: Date.now,
-            },
+    buildingWing: {
+        type: String,
+    },
+    attachments: [{
+        filename: String,
+        path: String,
+        mimetype: String,
+    }],
+    comments: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
         },
-    ],
+        text: String,
+        createdAt: {
+            type: Date,
+            default: Date.now,
+        },
+    }],
     rating: {
         type: Number,
         min: 1,
         max: 5,
     },
-    feedback: {
-        type: String,
-    },
-    workLog: [
-        {
-            technician: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User',
-            },
-            action: String,
-            timestamp: {
-                type: Date,
-                default: Date.now,
-            },
-            details: String,
-            duration: Number, // In minutes
+    feedback: String,
+    workLog: [{
+        note: String,
+        technician: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
         },
-    ],
-    buildingWing: {
-        type: String,
-    },
-    reviewStatus: {
-        type: String,
-        enum: ['None', 'Pending', 'Approved', 'Rejected'],
-        default: 'None',
-    },
-    reviewNotes: {
-        type: String,
-    },
-    reviewedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-    },
-    reviewedAt: {
+        createdAt: {
+            type: Date,
+            default: Date.now,
+        },
+    }],
+    createdAt: {
         type: Date,
+        default: Date.now,
     },
-    resolvedAt: {
+    updatedAt: {
         type: Date,
+        default: Date.now,
     },
-    assignedAt: {
-        type: Date,
-    }
-}, {
-    timestamps: true
 });
 
-// Index for performance
 ticketSchema.index({ companyId: 1, status: 1, createdAt: -1 });
+
+ticketSchema.pre('save', function (next) {
+    this.updatedAt = Date.now();
+    next();
+});
 
 module.exports = mongoose.model('Ticket', ticketSchema);

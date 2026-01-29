@@ -97,5 +97,8 @@
     },
     "language": {
         "selectLanguage": "ቋንቋ ይምረጡ"
+    },
+    "status": {
+        "status": "ሁኔታ"
     }
 }

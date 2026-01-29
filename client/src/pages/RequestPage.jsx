@@ -40,11 +40,14 @@ const RequestPage = () => {
     const [activeStep, setActiveStep] = useState(0);
 
     const categories = [
-        'Software',
-        'Hardware', 
-        'Network',
-        'Account',
-        'Building',
+        'Technical Support',
+        'Hardware Issue',
+        'Software Issue',
+        'Network Issue',
+        'Printer Issue',
+        'Account Access',
+        'Facility Maintenance',
+        'Security Issue',
         'Other'
     ];
 
@@ -81,7 +84,12 @@ const RequestPage = () => {
                 category: formData.category,
                 priority: formData.priority,
                 buildingWing: formData.buildingWing || `Floor: ${formData.floor}`,
-                companyId: user.companyId
+                floor: formData.floor,
+                contactPhone: formData.contactPhone,
+                contactEmail: formData.contactEmail,
+                companyId: user.companyId,
+                requestedBy: user.name,
+                status: 'New'
             });
 
             setTicketId(response.data._id);

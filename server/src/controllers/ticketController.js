@@ -3,23 +3,13 @@ const User = require('../models/User');
 const { sendEmail, sendSMS } = require('../services/notificationService');
 
 const emitUpdate = (req, event, data) => {
-    try {
-        const io = req.app.get('io');
-        if (!io) return;
-        const cid = (data && data.companyId) || req.tenantId || (req.user && req.user.companyId);
-        if (cid) {
-            io.to(`company:${cid}`).emit(event, data);
-
-            // Also notify Mesob Digitalization Team (Company 20) for all ticket events
-            // as they are the global workforce managing these tickets.
-            if (String(cid) !== '20') {
-                io.to('company:20').emit(event, data);
-            }
-        } else {
-            io.emit(event, data);
-        }
-    } catch (err) {
-        console.error('Socket Emit Error:', err.message);
+    const io = req.app.get('io');
+    if (!io) return;
+    const cid = (data && data.companyId) || req.tenantId || (req.user && req.user.companyId);
+    if (cid) {
+        io.to(`company:${cid}`).emit(event, data);
+    } else {
+        io.emit(event, data);
     }
 };
 
@@ -28,11 +18,6 @@ const emitUpdate = (req, event, data) => {
 // @access  Private (Worker)
 exports.createTicket = async (req, res) => {
     try {
-        console.log('=== TICKET CREATION DEBUG ===');
-        console.log('Request body:', req.body);
-        console.log('User info:', req.user);
-        console.log('Headers:', req.headers);
-
         const { title, description, category, priority, buildingWing, companyId } = req.body;
 
         const ticket = await Ticket.create({
@@ -43,28 +28,22 @@ exports.createTicket = async (req, res) => {
             buildingWing,
             companyId: companyId || req.tenantId || req.user.companyId || 1,
             requester: req.user._id,
-            department: req.user.department || 'General', // Fallback
+            department: req.user.department,
         });
 
-        // Send confirmation to requester (Non-blocking)
-        try {
-            await sendEmail(
-                req.user.email,
-                `Ticket Created: ${ticket.title}`,
-                `Your ticket has been created with ID: ${ticket._id}. Priority: ${ticket.priority}.`,
-                `<h2>Ticket Confirmation</h2><p>Your ticket <b>${ticket.title}</b> has been created.</p><p>Priority: <b>${ticket.priority}</b></p>`
-            );
-        } catch (emailError) {
-            console.error('Email sending failed:', emailError.message);
-            // Continue execution, do not fail ticket creation
-        }
+        // Send confirmation to requester
+        await sendEmail(
+            req.user.email,
+            `Ticket Created: ${ticket.title}`,
+            `Your ticket has been created with ID: ${ticket._id}. Priority: ${ticket.priority}.`,
+            `<h2>Ticket Confirmation</h2><p>Your ticket <b>${ticket.title}</b> has been created.</p><p>Priority: <b>${ticket.priority}</b></p>`
+        );
 
         emitUpdate(req, 'ticket_created', ticket);
 
         res.status(201).json(ticket);
     } catch (error) {
-        console.error('Create Ticket Error Stack:', error.stack);
-        res.status(500).json({ message: error.message, stack: error.stack });
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -73,85 +52,33 @@ exports.createTicket = async (req, res) => {
 // @access  Private (All authenticated users, filtered by role)
 exports.getTickets = async (req, res) => {
     try {
-        console.log('[GetTickets] Request from user:', {
-            name: req.user.name,
-            role: req.user.role,
-            companyId: req.user.companyId,
-            tenantId: req.tenantId
-        });
-
         let query;
 
-        // Build criteria based on role and query parameters
-        let criteria = {};
-
-        // Role-based restrictions
-        const globalAdminRoles = ['System Admin', 'Super Admin'];
-        const companyAdminRoles = ['Admin'];
-        const isMesobStaff = req.user.companyId === 20;
-
-        if (globalAdminRoles.includes(req.user.role)) {
-            // System Admin and Super Admin can see ALL tickets across all companies
-            // They can optionally filter by tenant header
-            console.log('[GetTickets] Global admin detected - should see ALL tickets');
-            if (req.tenantId) {
-                criteria.companyId = req.tenantId;
-                console.log('[GetTickets] Filtering by tenant:', req.tenantId);
-            } else {
-                console.log('[GetTickets] No tenant filter - showing ALL tickets');
-            }
-            // Otherwise, no company filter - see everything
-        } else if (companyAdminRoles.includes(req.user.role)) {
-            // Regular Admins see tickets from their company
-            // If they're Mesob staff, they can see all companies via tenant header
-            if (isMesobStaff && req.tenantId) {
-                criteria.companyId = req.tenantId;
-            } else if (isMesobStaff) {
-                // Mesob Admin without tenant header sees all
-            } else {
-                // Non-Mesob Admin sees only their company
-                criteria.companyId = req.user.companyId;
-            }
+        // Filter by role
+        if (req.user.role === 'Worker') {
+            const base = { requester: req.user._id };
+            const scoped = req.tenantId ? { ...base, companyId: req.tenantId } : base;
+            query = Ticket.find(scoped);
         } else if (req.user.role === 'Technician') {
-            // Technicians see their assigned tickets
-            // Mesob technicians can see across companies, others only their company
-            criteria.technician = req.user._id;
-            if (!isMesobStaff) {
-                criteria.companyId = req.user.companyId;
-            }
-        } else if (req.user.role === 'Team Lead') {
-            // Team Leads see all tickets from their company
-            criteria.companyId = req.user.companyId;
+            const base = { technician: req.user._id };
+            const scoped = req.tenantId ? { ...base, companyId: req.tenantId } : base;
+            query = Ticket.find(scoped);
         } else {
-            // Workers see only their own tickets from their company
-            criteria.companyId = req.user.companyId;
-            criteria.requester = req.user._id;
+            const scoped = req.tenantId ? { companyId: req.tenantId } : {};
+            query = Ticket.find(scoped);
         }
-
-        // Add optional filters from query params
-        if (req.query.status) criteria.status = req.query.status;
-        if (req.query.reviewStatus) criteria.reviewStatus = req.query.reviewStatus;
-
-        console.log('[GetTickets] Final criteria:', JSON.stringify(criteria));
-
-        query = Ticket.find(criteria);
 
         const page = Math.max(parseInt(req.query.page || '1', 10), 1);
         const pageSize = Math.max(parseInt(req.query.pageSize || '20', 10), 1);
 
         const total = await Ticket.countDocuments(query.getQuery());
-        console.log('[GetTickets] Total tickets matching criteria:', total);
 
         const tickets = await query
-            .select('title status priority category companyId technician requester buildingWing reviewStatus reviewNotes updatedAt workLog createdAt')
-            .populate('technician', 'name')
-            .populate('requester', 'name')
+            .select('title status priority companyId createdAt') // projection for table views
             .sort({ createdAt: -1 })
             .skip((page - 1) * pageSize)
             .limit(pageSize)
             .lean();
-
-        console.log('[GetTickets] Returning', tickets.length, 'tickets to client');
 
         // Non-breaking change: return array, but include pagination via headers
         res.set('X-Total-Count', String(total));
@@ -159,7 +86,6 @@ exports.getTickets = async (req, res) => {
         res.set('X-Page-Size', String(pageSize));
         res.json(tickets);
     } catch (error) {
-        console.error('[GetTickets] ERROR:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -191,7 +117,7 @@ exports.getTicket = async (req, res) => {
 
 // @desc    Update ticket status
 // @route   PUT /api/tickets/:id
-// @access  Private (TECHNICIAN/Admin)
+// @access  Private (Technician/Admin)
 exports.updateTicket = async (req, res) => {
     try {
         let ticket = await Ticket.findById(req.params.id);
@@ -211,72 +137,43 @@ exports.updateTicket = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
 // @desc    Assign ticket to technician
 // @route   PUT /api/tickets/:id/assign
 // @access  Private (Team Lead/Admin)
 exports.assignTicket = async (req, res) => {
     try {
         const { technicianId } = req.body;
-        console.log(`[AssignTicket] Request body:`, req.body);
-        console.log(`[AssignTicket] Attempting to assign ticket ${req.params.id} to tech ${technicianId}`);
 
         let ticket = await Ticket.findById(req.params.id);
         if (!ticket) {
-            console.log(`[AssignTicket] Ticket ${req.params.id} not found`);
             return res.status(404).json({ message: 'Ticket not found' });
         }
 
-        console.log(`[AssignTicket] Current ticket state: ${ticket.status}`);
         ticket.technician = technicianId;
         ticket.status = 'Assigned';
-        ticket.assignedAt = new Date();
-
-        console.log(`[AssignTicket] Saving ticket...`);
-        const savedTicket = await ticket.save();
-        console.log(`[AssignTicket] Ticket saved successfully: ${savedTicket._id}`);
+        await ticket.save();
 
         const tech = await User.findById(technicianId);
         if (tech) {
-            console.log(`[AssignTicket] Attempting notifications for tech: ${tech.name} (${tech.email})`);
-
-            // Email to technician - Wrapped in separate try/catch to be non-blocking
-            try {
-                await sendEmail(
-                    tech.email,
-                    'New Ticket Assigned',
-                    `You have been assigned a new ticket: ${ticket.title}. Priority: ${ticket.priority}.`,
-                    `<h2>New Assignment</h2><p>You have been assigned to: <b>${ticket.title}</b></p><p>Priority: <b>${ticket.priority}</b></p>`
-                );
-                console.log(`[AssignTicket] Email notification queued/sent`);
-            } catch (emailErr) {
-                console.error(`[AssignTicket] email notification failed:`, emailErr.message);
-            }
+            // Email to technician
+            await sendEmail(
+                tech.email,
+                'New Ticket Assigned',
+                `You have been assigned a new ticket: ${ticket.title}. Priority: ${ticket.priority}.`,
+                `<h2>New Assignment</h2><p>You have been assigned to: <b>${ticket.title}</b></p><p>Priority: <b>${ticket.priority}</b></p>`
+            );
 
             // SMS if critical
             if (ticket.priority === 'Critical') {
-                try {
-                    await sendSMS(tech.phone || '+1234567890', `URGENT: New Critical Ticket Assigned - ${ticket.title}`);
-                    console.log(`[AssignTicket] SMS notification queued/sent`);
-                } catch (smsErr) {
-                    console.error(`[AssignTicket] SMS notification failed:`, smsErr.message);
-                }
+                await sendSMS(tech.phone || '+1234567890', `URGENT: New Critical Ticket Assigned - ${ticket.title}`);
             }
-        } else {
-            console.log(`[AssignTicket] Technician ${technicianId} not found in database for notifications`);
         }
 
-        emitUpdate(req, 'ticket_updated', savedTicket);
-        console.log(`[AssignTicket] Assignment workflow complete`);
+        emitUpdate(req, 'ticket_updated', ticket);
 
-        res.json(savedTicket);
+        res.json(ticket);
     } catch (error) {
-        console.error('[AssignTicket] CRITICAL Error:', error);
-        res.status(500).json({
-            message: error.message,
-            stack: error.stack,
-            context: 'Assignment flow failed'
-        });
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -309,7 +206,7 @@ exports.addComment = async (req, res) => {
 
 // @desc    Resolve ticket
 // @route   PUT /api/tickets/:id/resolve
-// @access  Private (TECHNICIAN/Admin)
+// @access  Private (Technician/Admin)
 exports.resolveTicket = async (req, res) => {
     try {
         let ticket = await Ticket.findById(req.params.id);
@@ -318,7 +215,6 @@ exports.resolveTicket = async (req, res) => {
         }
 
         ticket.status = 'Resolved';
-        ticket.resolvedAt = new Date();
         await ticket.save();
 
         emitUpdate(req, 'ticket_updated', ticket);
@@ -328,112 +224,49 @@ exports.resolveTicket = async (req, res) => {
     }
 };
 
-// @desc    Rate and submit for review
+// @desc    Rate and close ticket
 // @route   PUT /api/tickets/:id/rate
 // @access  Private (Requester)
 exports.rateTicket = async (req, res) => {
     try {
         const { rating, feedback } = req.body;
-        console.log(`[RateTicket] ID: ${req.params.id} | Rating: ${rating}`);
 
         let ticket = await Ticket.findById(req.params.id);
-        if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
 
         ticket.rating = rating;
         ticket.feedback = feedback;
-        ticket.reviewStatus = 'Pending';
-
+        ticket.status = 'Closed';
         await ticket.save();
-        console.log(`[RateTicket] Success - ReviewStatus: Pending`);
 
         emitUpdate(req, 'ticket_updated', ticket);
         res.json(ticket);
     } catch (error) {
-        console.error('[RateTicket] Controller Error:', error);
         res.status(500).json({ message: error.message });
     }
 };
-
-// @desc    Review ticket (Approve/Reject)
-// @route   PUT /api/tickets/:id/review
-// @access  Private (Admin/Super Admin/System Admin)
-exports.reviewTicket = async (req, res) => {
-    try {
-        const { action, notes } = req.body;
-        console.log(`[ReviewTicket] ${action} on ${req.params.id} by ${req.user.name}`);
-
-        let ticket = await Ticket.findById(req.params.id);
-        if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
-
-        if (ticket.status !== 'Resolved') {
-            return res.status(400).json({ message: 'Only resolved tickets can be reviewed' });
-        }
-
-        if (action === 'approve') {
-            ticket.status = 'Closed';
-            ticket.reviewStatus = 'Approved';
-        } else if (action === 'reject') {
-            ticket.status = 'In Progress';
-            ticket.reviewStatus = 'Rejected';
-        } else {
-            return res.status(400).json({ message: 'Invalid action' });
-        }
-
-        ticket.reviewNotes = notes;
-        ticket.reviewedBy = req.user._id;
-        ticket.reviewedAt = new Date();
-
-        await ticket.save();
-        console.log(`[ReviewTicket] ${action} successful. Status: ${ticket.status}`);
-
-        // Notification logic (Non-blocking)
-        if (action === 'reject' && ticket.technician) {
-            try {
-                const tech = await User.findById(ticket.technician);
-                if (tech) {
-                    await sendEmail(
-                        tech.email,
-                        `Action Required: Ticket Rejected`,
-                        `Your resolution for ticket ${ticket.title} was rejected. Notes: ${notes}`,
-                        `<h2>Review Update</h2><p><b>Decision:</b> Rejected</p><p><b>Notes:</b> ${notes}</p>`
-                    );
-                }
-            } catch (err) { console.error('[ReviewTicket] Email failed:', err.message); }
-        }
-
-        emitUpdate(req, 'ticket_updated', ticket);
-        res.json(ticket);
-    } catch (error) {
-        console.error('[ReviewTicket] Controller Error:', error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
 // @desc    Add work log entry
 // @route   POST /api/tickets/:id/worklog
-// @access  Private (TECHNICIAN/Admin)
+// @access  Private (Technician/Admin)
 exports.addWorkLog = async (req, res) => {
     try {
         const { note } = req.body;
-        console.log(`[AddWorkLog] Adding log for ${req.params.id} by ${req.user.name}`);
-
         let ticket = await Ticket.findById(req.params.id);
-        if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
 
-        ticket.workLog = ticket.workLog || [];
         ticket.workLog.push({
             note,
-            technician: req.user._id,
-            timestamp: new Date()
+            technician: req.user._id
         });
 
         await ticket.save();
-        console.log(`[AddWorkLog] Log saved successfully`);
-
         emitUpdate(req, 'ticket_updated', ticket);
         res.json(ticket);
     } catch (error) {
-        console.error('[AddWorkLog] Error:', error);
         res.status(500).json({ message: error.message });
     }
 };
