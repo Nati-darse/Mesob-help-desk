@@ -160,8 +160,14 @@ exports.getAdminStats = async (req, res) => {
             }
         ]);
 
-        // 6. Unassigned Tickets
-        const unassignedTickets = await Ticket.countDocuments({ status: 'New', technician: { $exists: false } });
+        // 6. Unassigned Tickets (status is 'New' OR no technician assigned)
+        const unassignedTickets = await Ticket.countDocuments({
+            $or: [
+                { status: 'New' },
+                { technician: { $exists: false } },
+                { technician: null }
+            ]
+        });
 
         // 7. Technician Availability
         const techAvailability = await User.find({ role: 'Technician' })
