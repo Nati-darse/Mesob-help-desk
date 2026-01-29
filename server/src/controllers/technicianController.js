@@ -187,6 +187,7 @@ exports.resolveTicket = async (req, res) => {
         if (!ticket) return res.status(404).json({ message: 'Not found' });
 
         ticket.status = 'Resolved';
+        ticket.resolvedAt = new Date();
         await ticket.save();
         res.json(ticket);
     } catch (err) {

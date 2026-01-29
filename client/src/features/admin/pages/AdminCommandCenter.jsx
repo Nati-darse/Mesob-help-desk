@@ -96,10 +96,16 @@ const AdminCommandCenter = () => {
     const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
         queryKey: ['tickets', 'all'],
         queryFn: async () => {
+            console.log('[AdminCommandCenter] Fetching tickets...');
             const res = await axios.get('/api/tickets?pageSize=100');
+            console.log('[AdminCommandCenter] Tickets received:', res.data.length);
+            console.log('[AdminCommandCenter] Sample ticket:', res.data[0]);
             return res.data;
         },
-        refetchInterval: 5000
+        refetchInterval: 5000,
+        onError: (error) => {
+            console.error('[AdminCommandCenter] Error fetching tickets:', error);
+        }
     });
 
     // Assignment Mutation
@@ -116,9 +122,18 @@ const AdminCommandCenter = () => {
     });
 
     // Derived State
-    const unassignedTickets = useMemo(() =>
-        tickets.filter(t => t.status === 'New' || !t.technician),
-        [tickets]);
+    const unassignedTickets = useMemo(() => {
+        const filtered = tickets.filter(t => t.status === 'New' || !t.technician);
+        console.log('[AdminCommandCenter] Total tickets:', tickets.length);
+        console.log('[AdminCommandCenter] Unassigned tickets:', filtered.length);
+        console.log('[AdminCommandCenter] Unassigned details:', filtered.map(t => ({
+            id: t._id,
+            title: t.title,
+            status: t.status,
+            technician: t.technician
+        })));
+        return filtered;
+    }, [tickets]);
 
     const onlineTechs = useMemo(() =>
         stats?.technicians?.filter(t => t.isAvailable) || [],

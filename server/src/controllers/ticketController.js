@@ -74,27 +74,42 @@ exports.getTickets = async (req, res) => {
         let criteria = {};
 
         // Role-based restrictions
-        // Enforce company scoping for non-global admins
-        // NOTE: Mesob Staff (Company 20) are global admins/technicians
-        const globalAdminRoles = ['System Admin', 'Super Admin', 'Admin'];
+        const globalAdminRoles = ['System Admin', 'Super Admin'];
+        const companyAdminRoles = ['Admin'];
         const isMesobStaff = req.user.companyId === 20;
 
-        if (globalAdminRoles.includes(req.user.role) && isMesobStaff) {
-            // Global admins from Mesob can see everything or filter by tenant header
+        if (globalAdminRoles.includes(req.user.role)) {
+            // System Admin and Super Admin can see ALL tickets across all companies
+            // They can optionally filter by tenant header
             if (req.tenantId) {
                 criteria.companyId = req.tenantId;
             }
-        } else if (req.user.role === 'Technician' && isMesobStaff) {
-            // Technicians from Mesob see their own assigned tickets across all companies
-            criteria.technician = req.user._id;
-        } else {
-            // Client employees (Workers, Team Leads) are strictly scoped to their company
-            criteria.companyId = req.user.companyId;
-
-            // If they are a worker, further restrict to their own tickets
-            if (req.user.role === 'Worker') {
-                criteria.requester = req.user._id;
+            // Otherwise, no company filter - see everything
+        } else if (companyAdminRoles.includes(req.user.role)) {
+            // Regular Admins see tickets from their company
+            // If they're Mesob staff, they can see all companies via tenant header
+            if (isMesobStaff && req.tenantId) {
+                criteria.companyId = req.tenantId;
+            } else if (isMesobStaff) {
+                // Mesob Admin without tenant header sees all
+            } else {
+                // Non-Mesob Admin sees only their company
+                criteria.companyId = req.user.companyId;
             }
+        } else if (req.user.role === 'Technician') {
+            // Technicians see their assigned tickets
+            // Mesob technicians can see across companies, others only their company
+            criteria.technician = req.user._id;
+            if (!isMesobStaff) {
+                criteria.companyId = req.user.companyId;
+            }
+        } else if (req.user.role === 'Team Lead') {
+            // Team Leads see all tickets from their company
+            criteria.companyId = req.user.companyId;
+        } else {
+            // Workers see only their own tickets from their company
+            criteria.companyId = req.user.companyId;
+            criteria.requester = req.user._id;
         }
 
         // Add optional filters from query params
@@ -193,6 +208,7 @@ exports.assignTicket = async (req, res) => {
         console.log(`[AssignTicket] Current ticket state: ${ticket.status}`);
         ticket.technician = technicianId;
         ticket.status = 'Assigned';
+        ticket.assignedAt = new Date();
 
         console.log(`[AssignTicket] Saving ticket...`);
         const savedTicket = await ticket.save();
@@ -280,6 +296,7 @@ exports.resolveTicket = async (req, res) => {
         }
 
         ticket.status = 'Resolved';
+        ticket.resolvedAt = new Date();
         await ticket.save();
 
         emitUpdate(req, 'ticket_updated', ticket);

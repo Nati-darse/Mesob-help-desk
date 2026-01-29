@@ -294,9 +294,9 @@ const TechWorkspace = () => {
                             {activeTab === 0 && (
                                 <Box>
                                     <Typography variant="h6" gutterBottom>
-                                        Active Tasks ({tickets.filter(t => t.status === 'Open').length})
+                                        Active Tasks ({tickets.filter(t => ['Assigned', 'In Progress'].includes(t.status)).length})
                                     </Typography>
-                                    {tickets.filter(t => t.status === 'Open').map(ticket => (
+                                    {tickets.filter(t => ['Assigned', 'In Progress'].includes(t.status)).map(ticket => (
                                         <TicketCard key={ticket._id} ticket={ticket} />
                                     ))}
                                 </Box>
