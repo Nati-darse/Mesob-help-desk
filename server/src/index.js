@@ -53,9 +53,6 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// Enable pre-flight for all routes
-app.options('*', cors());
-
 // Initialize Socket.io
 const io = new Server(server, {
     cors: {
