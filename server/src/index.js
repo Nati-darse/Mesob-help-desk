@@ -19,7 +19,7 @@ const adminReportRoutes = require('./routes/adminReportRoutes');
 const maintenanceMiddleware = require('./middleware/maintenanceMiddleware');
 const { protect } = require('./middleware/authMiddleware');
 
-// ====== ENV CHECK ======
+// ===== ENV CHECK =====
 if (
     !process.env.MONGODB_URI ||
     !process.env.JWT_SECRET ||
@@ -28,24 +28,23 @@ if (
     throw new Error('❌ Missing required environment variables');
 }
 
-// ====== DB ======
+// ===== DB =====
 connectDB();
 
-// ====== APP ======
+// ===== APP =====
 const app = express();
 const server = http.createServer(app);
 
-// ====== ALLOWED ORIGINS ======
+// ===== ALLOWED ORIGINS =====
 const allowedOrigins = [
     'https://mesob-help-desk.vercel.app',
     'http://localhost:5173'
 ];
 
-// ====== CORS (THE ONLY ONE) ======
+// ===== CORS (ONLY ONE) =====
 app.use(cors({
     origin: (origin, callback) => {
-        // allow server-to-server or Postman
-        if (!origin) return callback(null, true);
+        if (!origin) return callback(null, true); // Postman / server calls
 
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
@@ -58,10 +57,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id']
 }));
 
-// Explicit OPTIONS handling (important for Render)
-app.options('*', cors());
+// ❌ REMOVED app.options('*', cors());
 
-// ====== SOCKET.IO ======
+// ===== SOCKET.IO =====
 const io = new Server(server, {
     cors: {
         origin: allowedOrigins,
@@ -71,7 +69,7 @@ const io = new Server(server, {
 
 app.set('io', io);
 
-// ====== MIDDLEWARE ======
+// ===== MIDDLEWARE =====
 app.use(compression());
 if (process.env.NODE_ENV !== 'production') {
     app.use(morgan('tiny'));
@@ -90,12 +88,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// ====== ROUTES ======
-
-// PUBLIC
+// ===== ROUTES =====
 app.use('/api/auth', authRoutes);
 
-// PROTECTED + MAINTENANCE
 const checkMaint = [protect, maintenanceMiddleware];
 
 app.use('/api/tickets', checkMaint, ticketRoutes);
@@ -106,7 +101,7 @@ app.use('/api/settings', checkMaint, settingsRoutes);
 app.use('/api/notifications', checkMaint, require('./routes/notificationRoutes'));
 app.use('/api/admin/reports', checkMaint, adminReportRoutes);
 
-// ====== SOCKET EVENTS ======
+// ===== SOCKET EVENTS =====
 io.on('connection', (socket) => {
     console.log(`[Socket.IO] Connected: ${socket.id}`);
 
@@ -124,7 +119,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// ====== HEALTH ======
+// ===== HEALTH =====
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Mesob API is running' });
 });
@@ -133,7 +128,7 @@ app.get('/', (req, res) => {
     res.send('Mesob Help Desk API is running 🚀');
 });
 
-// ====== START ======
+// ===== START =====
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
