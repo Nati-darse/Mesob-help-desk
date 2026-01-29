@@ -1,13 +1,20 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+if (
+    !process.env.MONGODB_URI ||
+    !process.env.PORT ||
+    !process.env.JWT_SECRET ||
+    !process.env.JWT_REFRESH_SECRET
+) {
+    throw new Error('Missing required environment variables');
+}
 const express = require('express');
 const compression = require('compression');
 const morgan = require('morgan');
 const cors = require('cors');
-const http = require('http');
 const { Server } = require('socket.io');
-
+const http = require('http');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
@@ -16,50 +23,40 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const technicianRoutes = require('./routes/technicianRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const adminReportRoutes = require('./routes/adminReportRoutes');
-const maintenanceMiddleware = require('./middleware/maintenanceMiddleware');
-const { protect } = require('./middleware/authMiddleware');
 
-// ===== ENV CHECK =====
-if (
-    !process.env.MONGODB_URI ||
-    !process.env.JWT_SECRET ||
-    !process.env.JWT_REFRESH_SECRET
-) {
-    throw new Error('❌ Missing required environment variables');
-}
-
-// ===== DB =====
+// Connect to Database
 connectDB();
 
-// ===== APP =====
 const app = express();
 const server = http.createServer(app);
 
-// ===== ALLOWED ORIGINS =====
+// ===== CORS CONFIGURATION =====
 const allowedOrigins = [
     'https://mesob-help-desk.vercel.app',
-    'http://localhost:5173'
+    'https://mesob-helpdesk-backend.onrender.com',
+    'http://localhost:5173',
+    'http://localhost:5000'
 ];
 
-// ===== CORS (ONLY ONE) =====
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin) return callback(null, true); // Postman / server calls
-
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
         }
-
-        return callback(new Error(`CORS blocked: ${origin}`), false);
     },
-    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
+    credentials: true,
+    optionsSuccessStatus: 200
 }));
 
-// ❌ REMOVED app.options('*', cors());
+// Enable pre-flight for all routes
+app.options('*', cors());
 
-// ===== SOCKET.IO =====
+// Initialize Socket.io
 const io = new Server(server, {
     cors: {
         origin: allowedOrigins,
@@ -69,16 +66,13 @@ const io = new Server(server, {
 
 app.set('io', io);
 
-// ===== MIDDLEWARE =====
+// Middleware
 app.use(compression());
 if (process.env.NODE_ENV !== 'production') {
     app.use(morgan('tiny'));
 }
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Tenant middleware
 app.use((req, res, next) => {
     const h = req.headers['x-tenant-id'];
     if (h) {
@@ -88,9 +82,31 @@ app.use((req, res, next) => {
     next();
 });
 
-// ===== ROUTES =====
-app.use('/api/auth', authRoutes);
+const maintenanceMiddleware = require('./middleware/maintenanceMiddleware');
 
+// Routes
+// Note: We apply maintenance check globally, but after auth routes to ensure login works if needed
+// However, our middleware explicitly allows /api/auth, so we can place it here.
+// But valid user is needed for bypassing.
+// Strategy: Middleware can check token itself or rely on previous auth middleware.
+// Better approach: We need `req.user` populated for the bypass check.
+// So we should verify token logic. 
+// BUT: `checkMaintenance` needs `req.user`. Standard `protect` middleware populates `req.user`.
+// So we can't easily apply it globally without running `protect` globally, which might break public routes.
+// FIX: We will apply it to specific routes or handle token verification inside it if we want global lockout.
+// SIMPLER FIX: Let's apply it to the main API routes, and we need to ensure `req.user` is present if a token exists.
+// For now, let's insert a "soft" auth middleware that tries to decode token but doesn't error if missing.
+
+const { protect } = require('./middleware/authMiddleware');
+
+// Routes
+app.use('/api/auth', authRoutes); // Auth is always public
+// For other routes, we want to check maintenance
+// We use a middleware chain: [optionalAuth, checkMaintenance]
+// Since `protect` enforces auth, we can just use `protect` then `checkMaintenance` for protected routes.
+// But maintenance mode should block even if you HAVE a token (unless you are admin).
+
+// So, for protected routes:
 const checkMaint = [protect, maintenanceMiddleware];
 
 app.use('/api/tickets', checkMaint, ticketRoutes);
@@ -101,37 +117,53 @@ app.use('/api/settings', checkMaint, settingsRoutes);
 app.use('/api/notifications', checkMaint, require('./routes/notificationRoutes'));
 app.use('/api/admin/reports', checkMaint, adminReportRoutes);
 
-// ===== SOCKET EVENTS =====
+// Socket.io connection
 io.on('connection', (socket) => {
-    console.log(`[Socket.IO] Connected: ${socket.id}`);
+    console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
     const h = socket.handshake.headers['x-tenant-id'];
-    const a = socket.handshake.auth?.companyId;
+    const a = socket.handshake.auth && socket.handshake.auth.companyId;
     const n = Number(h || a);
     const companyId = Number.isNaN(n) ? (h || a) : n;
 
     if (companyId) {
         socket.join(`company:${companyId}`);
+        console.log(`[Socket.IO] Client ${socket.id} joined company room: ${companyId}`);
     }
 
+    socket.on('join_company', (cid) => {
+        if (cid) {
+            socket.join(`company:${cid}`);
+            console.log(`[Socket.IO] Client ${socket.id} manually joined company: ${cid}`);
+        }
+    });
+
     socket.on('disconnect', () => {
-        console.log(`[Socket.IO] Disconnected: ${socket.id}`);
+        console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+    });
+
+    socket.on('error', (error) => {
+        console.error(`[Socket.IO] Socket error for ${socket.id}:`, error);
     });
 });
 
-// ===== HEALTH =====
+// Health check route
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Mesob API is running' });
 });
 
+// Root route for easy verification
 app.get('/', (req, res) => {
     res.send('Mesob Help Desk API is running 🚀');
 });
 
-// ===== START =====
 const PORT = process.env.PORT || 5000;
+
 server.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
+    console.log(`✅ Socket.IO initialized and ready`);
+    console.log(`✅ Client URL: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = { app, io, server };
