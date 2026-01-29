@@ -41,7 +41,26 @@ const io = new Server(server, {
 app.set('io', io);
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+    'https://mesob-help-desk.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5000'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
+    credentials: true
+}));
 app.use(compression());
 if (process.env.NODE_ENV !== 'production') {
     app.use(morgan('tiny'));
@@ -95,17 +114,17 @@ app.use('/api/admin/reports', checkMaint, adminReportRoutes);
 // Socket.io connection
 io.on('connection', (socket) => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
-    
+
     const h = socket.handshake.headers['x-tenant-id'];
     const a = socket.handshake.auth && socket.handshake.auth.companyId;
     const n = Number(h || a);
     const companyId = Number.isNaN(n) ? (h || a) : n;
-    
+
     if (companyId) {
         socket.join(`company:${companyId}`);
         console.log(`[Socket.IO] Client ${socket.id} joined company room: ${companyId}`);
     }
-    
+
     socket.on('join_company', (cid) => {
         if (cid) {
             socket.join(`company:${cid}`);
@@ -116,7 +135,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
     });
-    
+
     socket.on('error', (error) => {
         console.error(`[Socket.IO] Socket error for ${socket.id}:`, error);
     });
