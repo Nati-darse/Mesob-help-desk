@@ -1,12 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getTicketsReport, getPerformanceReport } = require('../controllers/adminReportController');
-const { protect, authorize } = require('../middleware/authMiddleware');
-const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
+const { authorize } = require('../middleware/authMiddleware');
 
-// Protect all routes and restrict to admins
-router.use(protect);
-router.use(enforceMaintenance);
+// Role authorization (protect is handled in index.js)
 router.use(authorize('Admin', 'Super Admin', 'System Admin'));
 
 // Get tickets report with filters

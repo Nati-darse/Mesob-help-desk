@@ -1,11 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getTechnicians, updateAvailability, getAllUsers, updateUserRole, deleteUser } = require('../controllers/userController');
-const { protect, authorize } = require('../middleware/authMiddleware');
-const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
+const { authorize } = require('../middleware/authMiddleware');
 
-router.use(protect);
-router.use(enforceMaintenance);
+// Role authorization (protect is handled in index.js)
 router.get('/technicians', authorize('Team Lead', 'Admin', 'System Admin', 'Super Admin'), getTechnicians);
 router.put('/availability', updateAvailability);
 router.get('/global', authorize('System Admin', 'Super Admin'), getAllUsers);

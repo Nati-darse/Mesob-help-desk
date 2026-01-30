@@ -28,6 +28,12 @@ const protect = async (req, res, next) => {
             }
 
             req.user = user;
+
+            // Debug logging for production troubleshooting
+            if (process.env.NODE_ENV === 'production') {
+                console.log(`[AUTH] Verified: ${user.email} (${user.role}) - Path: ${req.path}`);
+            }
+
             return next();
         } catch (error) {
             console.error('[AUTH] Token verification failed:', error.message);

@@ -11,12 +11,9 @@ const {
     rateTicket,
     addWorkLog,
 } = require('../controllers/ticketController');
-const { protect, authorize } = require('../middleware/authMiddleware');
-const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
+const { authorize } = require('../middleware/authMiddleware');
 
-router.use(protect); // All ticket routes are protected
-router.use(enforceMaintenance);
-
+// Ticket routes (protect is handled in index.js)
 router.route('/')
     .post(createTicket)
     .get(getTickets);
