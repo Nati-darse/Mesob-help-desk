@@ -33,33 +33,45 @@ const server = http.createServer(app);
 // ===== PROXY TRUST =====
 app.enable('trust proxy');
 
-// ===== MANUAL CORS =====
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
+// ===== CORS =====
+const allowedOrigins = [
+    'https://mesob-help-desk.vercel.app',
+    'https://mesob-help-desk.onrender.com', // Self
+    'http://localhost:5173',
+    'http://localhost:5000'
+];
 
-    // Check if origin matches trusted domains
-    const isAllowed = origin && (
-        origin.includes('mesob-help-desk') ||
-        origin.includes('vercel.app') ||
-        origin.includes('onrender.com') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')
-    );
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
 
-    if (isAllowed) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-    }
+        const isAllowed = allowedOrigins.indexOf(origin) !== -1 ||
+            origin.includes('mesob-help-desk') ||
+            origin.includes('vercel.app') ||
+            origin.includes('localhost') ||
+            origin.includes('127.0.0.1');
 
-    // Handle preflight immediately for all routes
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.warn(`[CORS] Origin restricted: ${origin}`);
+            callback(null, false);
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
+    credentials: true,
+    optionsSuccessStatus: 200
+}));
 
-    next();
-});
+// DIAGNOSTICS
+console.log('--- SYSTEM DIAGNOSTICS ---');
+console.log(`[AUTH] JWT_SECRET present: ${!!process.env.JWT_SECRET} (len: ${process.env.JWT_SECRET?.length || 0})`);
+console.log(`[AUTH] JWT_REFRESH_SECRET present: ${!!process.env.JWT_REFRESH_SECRET}`);
+console.log(`[ENV] NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`[ENV] MONGODB_URI present: ${!!process.env.MONGODB_URI}`);
+console.log('--------------------------');
 
 // Initialize Socket.io with permissive CORS
 const io = new Server(server, {

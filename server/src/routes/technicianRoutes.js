@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { 
-    getAssignedTickets, 
-    getTicketById, 
-    updateTicket, 
-    addInternalNotes, 
-    addCustomerUpdate, 
+const {
+    getAssignedTickets,
+    getTicketById,
+    updateTicket,
+    addInternalNotes,
+    addCustomerUpdate,
     resolveTicket,
     updateDutyStatus,
     getPerformanceMetrics
@@ -13,9 +13,7 @@ const {
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { enforceMaintenance } = require('../middleware/maintenanceMiddleware');
 
-// Protect all routes and restrict to Technician role
-router.use(protect);
-router.use(enforceMaintenance);
+// Role authorization (protect is handled in index.js)
 router.use(authorize('Technician', 'Admin', 'Super Admin', 'System Admin')); // Add role authorization
 
 // Update duty status
