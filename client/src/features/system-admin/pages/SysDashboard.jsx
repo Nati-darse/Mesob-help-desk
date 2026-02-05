@@ -66,7 +66,7 @@ const SysDashboard = () => {
     return (
         <Box maxWidth="1600px" margin="0 auto">
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#0A1929' }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
                     System Overview
                 </Typography>
                 <Button
@@ -143,7 +143,7 @@ const SysDashboard = () => {
                         </ResponsiveContainer>
                     </Paper>
 
-                    <Paper sx={{ p: 3, bgcolor: '#e3f2fd', borderRadius: 4 }}>
+                    <Paper sx={{ p: 3, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30,79,177,0.15)' : '#e3f2fd', borderRadius: 4 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                             <InfoIcon color="primary" />
                             <Typography variant="h6" fontWeight="bold" color="primary">
@@ -178,7 +178,7 @@ const SysDashboard = () => {
                 {/* Right Column: Global Logs */}
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ height: '100%', overflow: 'hidden' }}>
-                        <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+                        <Box sx={{ p: 2, bgcolor: (theme) => theme.palette.action.hover, borderBottom: '1px solid', borderColor: 'divider' }}>
                             <Typography variant="h6" fontWeight="bold">
                                 Recent Global Logs
                             </Typography>

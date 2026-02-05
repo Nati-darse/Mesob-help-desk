@@ -54,7 +54,7 @@ const Dashboard = () => {
             <Grid container spacing={3}>
                 {/* Stat Cards */}
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
+                    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <CardContent>
                             <Typography color="text.secondary" gutterBottom>Total Tickets</Typography>
                             <Typography variant="h4">{stats.totalTickets}</Typography>
@@ -62,7 +62,7 @@ const Dashboard = () => {
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
+                    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <CardContent>
                             <Typography color="text.secondary" gutterBottom>Open Tickets</Typography>
                             <Typography variant="h4" color="primary">{stats.openTickets}</Typography>
@@ -70,7 +70,7 @@ const Dashboard = () => {
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
+                    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <CardContent>
                             <Typography color="text.secondary" gutterBottom>Resolved</Typography>
                             <Typography variant="h4" color="success.main">{stats.resolvedTickets}</Typography>
@@ -78,7 +78,7 @@ const Dashboard = () => {
                     </Card>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
+                    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <CardContent>
                             <Typography color="text.secondary" gutterBottom>Closed</Typography>
                             <Typography variant="h4" color="text.disabled">{stats.closedTickets}</Typography>
@@ -88,7 +88,7 @@ const Dashboard = () => {
 
                 {/* Charts */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, border: '1px solid #eee', borderRadius: 2, height: '100%' }}>
+                    <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
                         <Typography variant="h6" gutterBottom>Tickets by Priority</Typography>
                         <Box sx={{ height: { xs: 220, sm: 300 }, display: 'flex', justifyContent: 'center' }}>
                             <Pie data={priorityData} options={{ maintainAspectRatio: false }} />
@@ -97,7 +97,7 @@ const Dashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, border: '1px solid #eee', borderRadius: 2, height: '100%' }}>
+                    <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
                         <Typography variant="h6" gutterBottom>Tickets by Category</Typography>
                         <Box sx={{ height: { xs: 220, sm: 300 } }}>
                             <Bar data={categoryData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />

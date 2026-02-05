@@ -272,7 +272,7 @@ const BossDashboard = () => {
                                         alignItems: 'center',
                                         p: 2,
                                         mb: 1,
-                                        bgcolor: '#f8fafd',
+                                        bgcolor: 'action.hover',
                                         borderRadius: 2,
                                         borderLeft: '4px solid',
                                         borderColor: activity.status === 'Critical' ? 'error.main' : 'primary.main'

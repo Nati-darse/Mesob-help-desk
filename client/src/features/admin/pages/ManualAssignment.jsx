@@ -500,7 +500,7 @@ const ManualAssignment = () => {
                                 >
                                     <CardContent sx={{ p: 2 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main', border: '2px solid', borderColor: 'background.paper', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                                                 {tech.name.charAt(0)}
                                             </Avatar>
                                             <Box sx={{ flex: 1 }}>

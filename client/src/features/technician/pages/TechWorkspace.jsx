@@ -132,7 +132,8 @@ const TechWorkspace = () => {
                 sx={{
                     mb: 2,
                     cursor: 'pointer',
-                    border: isSLABreach ? `2px solid ${priorityColor}` : '1px solid #e0e0e0',
+                    border: isSLABreach ? `2px solid ${priorityColor}` : '1px solid',
+                    borderColor: isSLABreach ? priorityColor : 'divider',
                     borderRadius: 2,
                     transition: 'all 0.3s ease',
                     '&:hover': {

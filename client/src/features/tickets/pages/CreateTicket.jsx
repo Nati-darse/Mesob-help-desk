@@ -58,7 +58,7 @@ const CreateTicket = () => {
 
     return (
         <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-            <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, border: '1px solid #eee', borderRadius: 2 }}>
+            <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                     Create New Support Ticket
                 </Typography>

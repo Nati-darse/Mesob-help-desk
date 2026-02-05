@@ -160,9 +160,9 @@ const AdminCommandCenter = () => {
     return (
         <Box sx={{
             minHeight: '100vh',
-            bgcolor: '#f8fafd', // Soft light professional blue-white
+            bgcolor: (theme) => theme.palette.background.default, // Soft light professional blue-white
             pt: 4, pb: 8,
-            backgroundImage: 'radial-gradient(circle at 2px 2px, #e1e4e8 1px, transparent 0)',
+            backgroundImage: (theme) => theme.palette.mode === 'dark' ? 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.04) 1px, transparent 0)' : 'radial-gradient(circle at 2px 2px, #e1e4e8 1px, transparent 0)',
             backgroundSize: '40px 40px'
         }}>
             <Container maxWidth="xl">
@@ -230,8 +230,9 @@ const AdminCommandCenter = () => {
                                 component={kpi.path ? RouterLink : 'div'}
                                 to={kpi.path}
                                 sx={{
-                                    p: 3, borderRadius: 4, bgcolor: 'white',
-                                    border: '1px solid #eef2f6',
+                                    p: 3, borderRadius: 4, bgcolor: 'background.paper',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
                                     display: 'flex', alignItems: 'center', gap: 2,
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                     textDecoration: 'none',
@@ -270,7 +271,7 @@ const AdminCommandCenter = () => {
                 <Grid container spacing={4}>
                     {/* Live Dispatch Inbox */}
                     <Grid item xs={12} lg={8}>
-                        <Paper sx={{ p: 4, borderRadius: 5, bgcolor: '#fff', border: '1px solid #e0e6ed', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+                        <Paper sx={{ p: 4, borderRadius: 5, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                                 <Typography variant="h5" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#1a237e' }}>
                                     <NodeIcon color="primary" /> {t('adminCommandCenter.liveDispatchInbox')}
@@ -285,14 +286,14 @@ const AdminCommandCenter = () => {
                                     <ListItem
                                         key={ticket._id}
                                         sx={{
-                                            bgcolor: '#f8f9fa',
+                                            bgcolor: 'action.hover',
                                             borderRadius: 4,
-                                            border: '1px solid #edf2f7',
+                                            border: '1px solid', borderColor: 'divider',
                                             p: 2,
                                             transition: '0.2s',
                                             flexDirection: { xs: 'column', md: 'row' },
                                             alignItems: { xs: 'flex-start', md: 'center' },
-                                            '&:hover': { bgcolor: '#fff', borderColor: '#1a237e', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
+                                            '&:hover': { bgcolor: 'background.paper', borderColor: '#1a237e', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
                                         }}
                                     >
                                         <ListItemAvatar sx={{ minWidth: 80 }}>
@@ -301,7 +302,7 @@ const AdminCommandCenter = () => {
                                                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                                                 badgeContent={<Box sx={{ width: 12, height: 12, bgcolor: ticket.priority === 'Critical' ? 'error.main' : 'warning.main', borderRadius: '50%', border: '2px solid white' }} />}
                                             >
-                                                <Avatar sx={{ bgcolor: 'white', color: 'text.primary', border: '1px solid #eee' }}>
+                                                <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', border: '1px solid', borderColor: 'divider' }}>
                                                     {getCompanyById(ticket.companyId)?.initials || '??'}
                                                 </Avatar>
                                             </Badge>
@@ -360,7 +361,7 @@ const AdminCommandCenter = () => {
 
                     {/* Technician Monitor */}
                     <Grid item xs={12} lg={4}>
-                        <Paper sx={{ p: 4, borderRadius: 5, bgcolor: '#fff', border: '1px solid #e0e6ed', height: '100%' }}>
+                        <Paper sx={{ p: 4, borderRadius: 5, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', height: '100%' }}>
                             <Typography variant="h5" fontWeight={800} sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 1.5, color: '#1a237e' }}>
                                 <TechIcon color="success" /> {t('adminCommandCenter.workforceStatus')}
                             </Typography>
@@ -388,7 +389,7 @@ const AdminCommandCenter = () => {
                                                     <LinearProgress
                                                         variant="determinate"
                                                         value={tech.isAvailable ? 100 : 30}
-                                                        sx={{ mt: 1, height: 4, borderRadius: 2, bgcolor: '#eee', '& .MuiLinearProgress-bar': { bgcolor: tech.isAvailable ? '#4caf50' : '#ff9800' } }}
+                                                        sx={{ mt: 1, height: 4, borderRadius: 2, bgcolor: 'action.hover', '& .MuiLinearProgress-bar': { bgcolor: tech.isAvailable ? '#4caf50' : '#ff9800' } }}
                                                     />
                                                 </Box>
                                             }
@@ -423,13 +424,13 @@ const AdminCommandCenter = () => {
                                 key={tech._id}
                                 onClick={() => handleConfirmAssignment(tech._id)}
                                 sx={{
-                                    p: 2, borderRadius: 3, border: '1px solid #eee',
+                                    p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider',
                                     cursor: 'pointer', transition: '0.2s',
                                     display: 'flex', alignItems: 'center', gap: 2,
                                     '&:hover': { bgcolor: '#1a237e', color: 'white', borderColor: '#1a237e' }
                                 }}
                             >
-                                <Avatar sx={{ bgcolor: '#eee', color: '#1a237e' }}>{tech.name.charAt(0)}</Avatar>
+                                <Avatar sx={{ bgcolor: 'action.hover', color: '#1a237e' }}>{tech.name.charAt(0)}</Avatar>
                                 <Box sx={{ flex: 1 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <Typography fontWeight={800}>{tech.name}</Typography>

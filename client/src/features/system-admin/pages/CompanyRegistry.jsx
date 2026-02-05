@@ -52,7 +52,7 @@ const CompanyRegistry = () => {
         <Box maxWidth="1600px" margin="0 auto" sx={{ px: 2 }}>
             {/* Header Section */}
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h3" sx={{ fontWeight: 800, color: '#0A1929', mb: 2 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: 'text.primary', mb: 2 }}>
                     Organization Registry
                 </Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>

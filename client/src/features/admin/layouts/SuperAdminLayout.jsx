@@ -60,7 +60,7 @@ const SuperAdminLayout = () => {
     };
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f4f6f8' }}>
+        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: (theme) => theme.palette.background.default }}>
             {/* Sidebar */}
             <Drawer
                 variant={isMobile ? 'temporary' : 'permanent'}

@@ -235,7 +235,7 @@ const TechDashboard = () => {
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: 3 }}>
             {/* Header */}
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: '#0A1929' }}>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: 'text.primary' }}>
                     {t('techDashboard.workspace')}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
@@ -342,7 +342,7 @@ const TechDashboard = () => {
 
                 <Grid container spacing={4}>
                     <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid', borderColor: 'divider' }}>
                             <Typography variant="h2" sx={{ fontWeight: 700, color: '#1976d2', mb: 1 }}>
                                 {performance?.avgResponseTime || '0'}h
                             </Typography>
@@ -356,7 +356,7 @@ const TechDashboard = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid', borderColor: 'divider' }}>
                             <Typography variant="h2" sx={{ fontWeight: 700, color: '#2e7d32', mb: 1 }}>
                                 {performance?.avgResolutionTime || '0'}h
                             </Typography>
@@ -370,7 +370,7 @@ const TechDashboard = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid', borderColor: 'divider' }}>
                             <Typography variant="h2" sx={{ fontWeight: 700, color: '#ed6c02', mb: 1 }}>
                                 {performance?.todayResolved || 0}
                             </Typography>
@@ -384,7 +384,7 @@ const TechDashboard = () => {
                     </Grid>
 
                     <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid #e0e0e0' }}>
+                        <Card sx={{ p: 2, textAlign: 'center', height: '100%', border: '1px solid', borderColor: 'divider' }}>
                             <Typography variant="h2" sx={{ fontWeight: 700, color: '#0288d1', mb: 1 }}>
                                 {performance?.totalResolved || 0}/{performance?.totalAssigned || 0}
                             </Typography>
@@ -563,7 +563,16 @@ const TechDashboard = () => {
                         </Grid>
                     </Grid>
 
-                    <Paper elevation={0} sx={{ mt: 3, p: 2, bgcolor: 'grey.50', border: '1px solid', borderColor: 'divider' }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            mt: 3,
+                            p: 2,
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? theme.palette.action.hover : 'grey.50',
+                            border: '1px solid',
+                            borderColor: 'divider'
+                        }}
+                    >
                         <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
                             {t('techDashboard.reportWillInclude')}
                         </Typography>

@@ -32,9 +32,9 @@ const AuditLogs = () => {
     };
 
     return (
-        <Box maxWidth="1200px" margin="0 auto">
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#0A1929' }}>
+        <Box maxWidth="1200px" margin="0 auto" sx={{ px: { xs: 2, sm: 0 } }}>
+            <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'text.primary', fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                     Audit Logs
                 </Typography>
                 <TextField
@@ -42,7 +42,7 @@ const AuditLogs = () => {
                     size="small"
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
-                    sx={{ width: 200, bgcolor: 'white' }}
+                    sx={{ width: { xs: '100%', sm: 200 }, bgcolor: 'background.paper' }}
                     InputProps={{
                         startAdornment: <FilterIcon sx={{ mr: 1, color: 'action.active' }} />,
                     }}
@@ -58,9 +58,9 @@ const AuditLogs = () => {
                 <List>
                     {MOCK_LOGS.map((log, index) => (
                         <React.Fragment key={log.id}>
-                            <ListItem alignItems="flex-start" sx={{ py: 2, '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+                            <ListItem alignItems="flex-start" sx={{ py: 2, '&:hover': { bgcolor: 'action.hover' } }}>
                                 <ListItemAvatar>
-                                    <Avatar sx={{ bgcolor: log.type === 'error' ? '#ffebee' : '#e3f2fd' }}>
+                                    <Avatar sx={{ bgcolor: (theme) => log.type === 'error' ? (theme.palette.mode === 'dark' ? 'rgba(244,67,54,0.2)' : '#ffebee') : (theme.palette.mode === 'dark' ? 'rgba(30,79,177,0.2)' : '#e3f2fd') }}>
                                         {getIcon(log.type)}
                                     </Avatar>
                                 </ListItemAvatar>

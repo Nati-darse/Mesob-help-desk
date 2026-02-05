@@ -238,7 +238,7 @@ const GlobalSettings = () => {
 
     return (
         <Box maxWidth="1000px" margin="0 auto" sx={{ px: { xs: 2, sm: 0 } }}>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#0A1929', fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
+            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'text.primary', fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                 Global Settings
             </Typography>
 

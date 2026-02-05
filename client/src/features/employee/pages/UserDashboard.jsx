@@ -127,7 +127,16 @@ const UserDashboard = () => {
                     <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
                         {t('userDashboard.announcements')}
                     </Typography>
-                    <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, height: 'fit-content', bgcolor: (theme) => theme.palette.mode === 'dark' ? '#112240' : '#f8f9fa' }}>
+                    <Card
+                        elevation={0}
+                        sx={{
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 4,
+                            height: 'fit-content',
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.background.default
+                        }}
+                    >
                         <CardContent sx={{ p: 4 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, color: 'primary.main' }}>
                                 <AlertIcon />

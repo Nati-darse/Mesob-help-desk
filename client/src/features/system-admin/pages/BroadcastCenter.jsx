@@ -65,7 +65,7 @@ const BroadcastCenter = () => {
         <Box maxWidth="1400px" margin="0 auto" sx={{ px: { xs: 2, sm: 3 } }}>
             {/* Header Section */}
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h3" sx={{ fontWeight: 800, color: '#0A1929', mb: 2, fontSize: { xs: '2rem', sm: '3rem' } }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: 'text.primary', mb: 2, fontSize: { xs: '2rem', sm: '3rem' } }}>
                     Command Center
                 </Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
@@ -228,7 +228,7 @@ const BroadcastCenter = () => {
                     <Paper sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Recent Broadcasts</Typography>
                         {history.map((item) => (
-                            <Box key={item.id} sx={{ mb: 2, p: 2, bgcolor: '#f8f9fa', borderRadius: 1 }}>
+                            <Box key={item.id} sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
                                 <Typography variant="subtitle2" gutterBottom>{item.msg}</Typography>
                                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1, mt: 1 }}>
                                     <Chip label={item.target} size="small" variant="outlined" />

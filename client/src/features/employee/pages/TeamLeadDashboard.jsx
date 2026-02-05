@@ -138,7 +138,7 @@ const TeamLeadDashboard = () => {
             {/* Stats Overview */}
             <Grid container spacing={3} sx={{ mb: 5 }}>
                 <Grid item xs={12} md={4}>
-                    <Card sx={{ bgcolor: '#E3F2FD', borderRadius: 3, boxShadow: 'none' }}>
+                    <Card sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30,79,177,0.15)' : '#E3F2FD', borderRadius: 3, boxShadow: 'none' }}>
                         <CardContent sx={{ textAlign: 'center', py: 3 }}>
                             <Typography variant="h2" sx={{ fontWeight: 800, color: '#1565C0' }}>
                                 {activeTickets.length}
@@ -150,7 +150,7 @@ const TeamLeadDashboard = () => {
                     </Card>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <Card sx={{ bgcolor: '#E8F5E9', borderRadius: 3, boxShadow: 'none' }}>
+                    <Card sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(76,175,80,0.15)' : '#E8F5E9', borderRadius: 3, boxShadow: 'none' }}>
                         <CardContent sx={{ textAlign: 'center', py: 3 }}>
                             <Typography variant="h2" sx={{ fontWeight: 800, color: '#2E7D32' }}>
                                 {resolvedCount}
@@ -162,7 +162,7 @@ const TeamLeadDashboard = () => {
                     </Card>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <Card sx={{ bgcolor: '#FFF3E0', borderRadius: 3, boxShadow: 'none' }}>
+                    <Card sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.15)' : '#FFF3E0', borderRadius: 3, boxShadow: 'none' }}>
                         <CardContent sx={{ textAlign: 'center', py: 3 }}>
                             <Typography variant="h2" sx={{ fontWeight: 800, color: '#EF6C00' }}>
                                 {pendingCount}
@@ -299,7 +299,7 @@ const TeamLeadDashboard = () => {
                     </Box>
 
                     {activeTickets.length === 0 ? (
-                        <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4, bgcolor: '#fafafa', borderStyle: 'dashed' }}>
+                        <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4, bgcolor: (theme) => theme.palette.mode === 'dark' ? theme.palette.action.hover : '#fafafa', borderStyle: 'dashed' }}>
                             <Box sx={{ mb: 2 }}>
                                 <DoneIcon sx={{ fontSize: 60, color: '#bdbdbd' }} />
                             </Box>
@@ -319,7 +319,8 @@ const TeamLeadDashboard = () => {
                                             overflow: 'hidden',
                                             transition: 'transform 0.2s',
                                             '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 },
-                                            border: '1px solid #e0e0e0'
+                                            border: '1px solid',
+                                            borderColor: 'divider'
                                         }}
                                     >
                                         <Box sx={{ p: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>

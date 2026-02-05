@@ -366,7 +366,7 @@ const ResolutionPage = () => {
                     <Grid container spacing={2}>
                         {/* Internal Notes */}
                         <Grid item xs={12}>
-                            <Card sx={{ p: { xs: 2, sm: 3 }, background: '#f5f5f5' }}>
+                            <Card sx={{ p: { xs: 2, sm: 3 }, background: (theme) => theme.palette.action.hover }}>
                                 <Typography variant="h6" gutterBottom>
                                     Internal Notes (IT Only)
                                 </Typography>

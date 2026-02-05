@@ -25,7 +25,7 @@ const FeedbackForm = ({ ticketId, onResolved }) => {
     };
 
     return (
-        <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3f2fd', bgcolor: '#f1f8ff', borderRadius: 2, mt: 3 }}>
+        <Paper elevation={0} sx={{ p: 3, border: '1px solid', borderColor: 'divider', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30,79,177,0.12)' : '#f1f8ff', borderRadius: 2, mt: 3 }}>
             <Typography variant="h6" gutterBottom color="primary.main" sx={{ fontWeight: 'bold' }}>
                 Rate our Service
             </Typography>
@@ -55,7 +55,7 @@ const FeedbackForm = ({ ticketId, onResolved }) => {
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     variant="outlined"
-                    sx={{ mb: 2, bgcolor: '#ffffff' }}
+                    sx={{ mb: 2, bgcolor: 'background.paper' }}
                 />
 
                 <Button
