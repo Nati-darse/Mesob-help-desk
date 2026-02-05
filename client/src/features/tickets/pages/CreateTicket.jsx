@@ -58,7 +58,7 @@ const CreateTicket = () => {
 
     return (
         <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-            <Paper elevation={0} sx={{ p: 4, border: '1px solid #eee', borderRadius: 2 }}>
+            <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, border: '1px solid #eee', borderRadius: 2 }}>
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                     Create New Support Ticket
                 </Typography>
@@ -82,7 +82,7 @@ const CreateTicket = () => {
                         placeholder="e.g., Cannot access email"
                     />
 
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 1 }}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 1 }}>
                         <TextField
                             fullWidth
                             select
@@ -150,12 +150,12 @@ const CreateTicket = () => {
                                 type="file"
                                 multiple
                                 onChange={(e) => setAttachments(e.target.files)}
-                                style={{ padding: '8px 0' }}
+                                style={{ padding: '8px 0', maxWidth: '100%' }}
                             />
                         </Box>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                            <Button variant="outlined" onClick={() => navigate('/tickets')}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'flex-end', gap: 2 }}>
+                            <Button variant="outlined" onClick={() => navigate('/tickets')} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                                 Cancel
                             </Button>
                             <Button
@@ -163,7 +163,7 @@ const CreateTicket = () => {
                                 variant="contained"
                                 color="primary"
                                 disabled={loading}
-                                sx={{ px: 4 }}
+                                sx={{ px: 4, width: { xs: '100%', sm: 'auto' } }}
                             >
                                 {loading ? 'Submitting...' : 'Submit Ticket'}
                             </Button>

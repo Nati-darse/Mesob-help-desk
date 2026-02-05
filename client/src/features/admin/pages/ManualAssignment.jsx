@@ -236,7 +236,7 @@ const ManualAssignment = () => {
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
             {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
                 <Box>
                     <Typography variant="h3" fontWeight="bold" gutterBottom>
                         Smart Assignment Center

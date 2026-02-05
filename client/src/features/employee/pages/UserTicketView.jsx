@@ -76,10 +76,10 @@ const UserTicketView = () => {
                 Back to Dashboard
             </Button>
 
-            <Paper elevation={0} sx={{ p: 4, border: '1px solid', borderColor: 'divider', borderRadius: 4, mb: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+            <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, border: '1px solid', borderColor: 'divider', borderRadius: 4, mb: 4 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'flex-start' }, gap: 2, mb: 3 }}>
                     <Box>
-                        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>{ticket.title}</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>{ticket.title}</Typography>
                         <Typography variant="subtitle2" color="primary.main" sx={{ fontWeight: 700, mb: 0.5 }}>
                             {getCompanyById(ticket.companyId || user?.companyId || 1).name}
                         </Typography>
@@ -94,7 +94,7 @@ const UserTicketView = () => {
 
                 {/* Progress Timeline */}
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 4 }}>Tracking Timeline</Typography>
-                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 6 }}>
+                <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 6, flexWrap: 'wrap' }}>
                     {statusSteps.map((label) => (
                         <Step key={label}>
                             <StepLabel>{label}</StepLabel>
@@ -216,13 +216,13 @@ const UserTicketView = () => {
                         onChange={(e) => setComment(e.target.value)}
                         sx={{ bgcolor: 'background.paper', borderRadius: 2 }}
                     />
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: { xs: 'stretch', sm: 'flex-end' }, mt: 2 }}>
                         <Button
                             type="submit"
                             variant="contained"
                             endIcon={<SendIcon />}
                             disabled={!comment.trim()}
-                            sx={{ px: 4, borderRadius: 2 }}
+                            sx={{ px: 4, borderRadius: 2, width: { xs: '100%', sm: 'auto' } }}
                         >
                             Send Message
                         </Button>

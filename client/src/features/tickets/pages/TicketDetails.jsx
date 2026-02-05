@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Paper, Typography, Box, Grid, Chip, Divider, TextField, Button, MenuItem, List, ListItem, ListItemText, Avatar, Alert } from '@mui/material';
+import { Container, Paper, Typography, Box, Grid, Chip, Divider, TextField, Button, MenuItem, List, ListItem, ListItemText, Avatar, Alert, Rating } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -159,7 +159,7 @@ const TicketDetails = () => {
                         <Typography variant="h6" gutterBottom>Communication & Updates</Typography>
                         <List sx={{ mb: 3 }}>
                             {ticket.comments.map((comment, index) => (
-                                <ListItem key={index} alignItems="xs-start">
+                                <ListItem key={index} alignItems="flex-start" sx={{ px: 0 }}>
                                     <Avatar sx={{ mr: 2, bgcolor: 'primary.main', fontSize: '14px' }}>
                                         {comment.user?.name?.charAt(0)}
                                     </Avatar>
@@ -188,7 +188,7 @@ const TicketDetails = () => {
                                 onChange={(e) => setNewComment(e.target.value)}
                                 variant="outlined"
                             />
-                            <Button type="submit" variant="contained" sx={{ mt: 2 }}>
+                            <Button type="submit" variant="contained" sx={{ mt: 2, width: { xs: '100%', sm: 'auto' } }}>
                                 Post Comment
                             </Button>
                         </form>
@@ -202,7 +202,7 @@ const TicketDetails = () => {
                         {ticket.status === 'Closed' && ticket.rating && (
                             <Box sx={{ mt: 4, p: 3, bgcolor: 'action.hover', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                 <Typography variant="h6" color="primary.main" gutterBottom>Resolution Feedback</Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
                                     <Rating value={ticket.rating} readOnly />
                                     <Typography variant="body2" sx={{ ml: 1 }}>({ticket.rating}/5)</Typography>
                                 </Box>

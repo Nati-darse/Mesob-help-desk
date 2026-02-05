@@ -75,7 +75,7 @@ const UserDashboard = () => {
                         <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', mb: 0.5 }}>
                             {t('userDashboard.welcomeBack', { name: user?.name })}
                         </Typography>
-                        <Stack direction="row" alignItems="center" spacing={1}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1}>
                             <TruncatedText
                                 text={companyName}
                                 variant="subtitle1"
@@ -100,7 +100,8 @@ const UserDashboard = () => {
                         borderRadius: '12px',
                         fontSize: '1.1rem',
                         fontWeight: 700,
-                        boxShadow: '0 10px 20px rgba(30, 79, 177, 0.2)'
+                        boxShadow: '0 10px 20px rgba(30, 79, 177, 0.2)',
+                        width: { xs: '100%', md: 'auto' }
                     }}
                 >
                     {t('userDashboard.newSupportTicket')}
@@ -186,8 +187,10 @@ const UserDashboard = () => {
                                             sx={{
                                                 p: 3,
                                                 display: 'flex',
+                                                flexDirection: { xs: 'column', sm: 'row' },
                                                 justifyContent: 'space-between',
-                                                alignItems: 'center',
+                                                alignItems: { xs: 'flex-start', sm: 'center' },
+                                                gap: 2,
                                                 textDecoration: 'none',
                                                 color: 'inherit',
                                                 transition: 'background-color 0.2s',
@@ -200,7 +203,7 @@ const UserDashboard = () => {
                                                     #{ticket._id.slice(-6).toUpperCase()} • {ticket.category}
                                                 </Typography>
                                             </Stack>
-                                            <Stack direction="row" spacing={2} alignItems="center">
+                                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
                                                 <Chip
                                                     label={ticket.status}
                                                     size="small"

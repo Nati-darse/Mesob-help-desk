@@ -13,7 +13,7 @@ const Landing = () => {
     return (
         <Box
             sx={{
-                height: 'calc(100vh - 64px)',
+                minHeight: 'calc(100vh - 64px)',
                 width: '100%',
                 display: 'flex',
                 flexDirection: 'column',
@@ -31,10 +31,10 @@ const Landing = () => {
             <Box
                 sx={{
                     position: 'absolute',
-                    top: -100,
-                    right: -100,
-                    width: 400,
-                    height: 400,
+                    top: { xs: -160, md: -100 },
+                    right: { xs: -160, md: -100 },
+                    width: { xs: 240, md: 400 },
+                    height: { xs: 240, md: 400 },
                     borderRadius: '50%',
                     background: (theme) => theme.palette.mode === 'light'
                         ? 'rgba(30, 79, 177, 0.05)'
@@ -46,10 +46,10 @@ const Landing = () => {
             <Box
                 sx={{
                     position: 'absolute',
-                    bottom: -50,
-                    left: -50,
-                    width: 300,
-                    height: 300,
+                    bottom: { xs: -120, md: -50 },
+                    left: { xs: -120, md: -50 },
+                    width: { xs: 180, md: 300 },
+                    height: { xs: 180, md: 300 },
                     borderRadius: '50%',
                     background: (theme) => theme.palette.mode === 'light'
                         ? 'rgba(30, 79, 177, 0.03)'
@@ -59,7 +59,7 @@ const Landing = () => {
                 }}
             />
 
-            <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', alignItems: 'center' }}>
+            <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, minHeight: '100%', display: 'flex', alignItems: 'center', py: { xs: 6, md: 0 } }}>
                 <Stack spacing={{ xs: 4, md: 6 }} alignItems="center" textAlign="center" sx={{ width: '100%' }}>
                     {/* Circular Logo Container */}
                     <Box

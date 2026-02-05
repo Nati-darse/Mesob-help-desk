@@ -143,7 +143,7 @@ const TechWorkspace = () => {
                 onClick={() => setSelectedTicket(ticket)}
             >
                 <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Avatar sx={{ bgcolor: priorityColor, color: 'white', mr: 2, width: 32, height: 32 }}>
                                 <TaskIcon />
@@ -157,7 +157,7 @@ const TechWorkspace = () => {
                                 </Typography>
                             </Box>
                         </Box>
-                        <Box sx={{ textAlign: 'right' }}>
+                        <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
                             <Chip
                                 label={slaStatus}
                                 color={isSLABreach ? 'error' : 'success'}
@@ -170,8 +170,8 @@ const TechWorkspace = () => {
                         </Box>
                     </Box>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                             <Chip
                                 label={ticket.priority}
                                 size="small"
@@ -188,20 +188,20 @@ const TechWorkspace = () => {
                             />
                         </Box>
 
-                        <Box onClick={(e) => e.stopPropagation()}>
+                        <Box onClick={(e) => e.stopPropagation()} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                             {ticket.status === 'New' && (
-                                <Button size="small" variant="contained" onClick={handleAccept}>
+                                <Button size="small" variant="contained" onClick={handleAccept} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                                     Accept Ticket
                                 </Button>
                             )}
                             {/* Allow start if assigned to me OR if status is Assigned (some teams auto-assign) */}
                             {(ticket.status === 'Assigned' && isAssignedToMe) && (
-                                <Button size="small" variant="contained" color="primary" onClick={handleStart}>
+                                <Button size="small" variant="contained" color="primary" onClick={handleStart} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                                     Start Work
                                 </Button>
                             )}
                             {(ticket.status === 'In Progress' && isAssignedToMe) && (
-                                <Button size="small" variant="contained" color="success" onClick={handleResolveClick}>
+                                <Button size="small" variant="contained" color="success" onClick={handleResolveClick} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                                     Resolve
                                 </Button>
                             )}
@@ -250,13 +250,13 @@ const TechWorkspace = () => {
     };
 
     return (
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+            <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
             {/* Header with Duty Status */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
                 <Typography variant="h4" fontWeight="bold">
                     Tech Workspace - Mission Control
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1 }}>
                     <Typography variant="body2" sx={{ mr: 2 }}>
                         Duty Status:
                     </Typography>
@@ -264,7 +264,7 @@ const TechWorkspace = () => {
                         <Select
                             value={dutyStatus}
                             onChange={(e) => handleStatusChange(e.target.value)}
-                            sx={{ minWidth: 120 }}
+                            sx={{ minWidth: { xs: '100%', sm: 140 } }}
                         >
                             <MenuItem value="Online">Online</MenuItem>
                             <MenuItem value="On-Site">On-Site</MenuItem>
@@ -279,10 +279,10 @@ const TechWorkspace = () => {
             <Grid container spacing={3}>
                 {/* Main Content - 8 columns */}
                 <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 3, minHeight: 600 }}>
+                    <Paper sx={{ p: 3, minHeight: { xs: 'auto', md: 600 } }}>
                         {/* Tabs */}
                         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                            <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+                            <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} variant="scrollable" scrollButtons="auto">
                                 <Tab icon={<TaskIcon />} label="Active Tasks" />
                                 <Tab icon={<PendingIcon />} label="Pending Feedback" />
                                 <Tab icon={<ResolvedIcon />} label="Today's Resolved" />

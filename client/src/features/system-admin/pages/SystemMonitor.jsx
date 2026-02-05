@@ -317,7 +317,7 @@ const SystemMonitor = () => {
             <Grid container spacing={3}>
                 {/* Performance Chart */}
                 <Grid item xs={12} lg={8}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                             System Performance (24 Hours)
                         </Typography>
@@ -337,7 +337,7 @@ const SystemMonitor = () => {
 
                 {/* Services Status */}
                 <Grid item xs={12} lg={4}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                             Service Status
                         </Typography>
@@ -384,7 +384,7 @@ const SystemMonitor = () => {
 
                 {/* System Alerts */}
                 <Grid item xs={12} lg={6}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6" sx={{ fontWeight: 600 }}>
                                 System Alerts
@@ -448,7 +448,7 @@ const SystemMonitor = () => {
 
                 {/* Database Metrics */}
                 <Grid item xs={12} lg={6}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                             Database Performance
                         </Typography>

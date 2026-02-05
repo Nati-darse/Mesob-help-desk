@@ -178,11 +178,11 @@ const ResolutionPage = () => {
             <Grid container spacing={3}>
                 {/* Left: Ticket Details */}
                 <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 3, minHeight: 600 }}>
+                    <Paper sx={{ p: { xs: 2, sm: 3 }, minHeight: { xs: 'auto', md: 600 } }}>
                         {/* Header */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 3 }}>
                             <Box>
-                                <Typography variant="h4" fontWeight="bold" gutterBottom>
+                                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
                                     {ticket.title}
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -209,7 +209,7 @@ const ResolutionPage = () => {
                             </Box>
                             
                             {/* Quick Actions */}
-                            <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                 <Tooltip title="Mark as On-Site">
                                     <IconButton 
                                         color="primary"
@@ -350,6 +350,7 @@ const ResolutionPage = () => {
                                             startIcon={<CheckIcon />}
                                             onClick={handleResolve}
                                             disabled={!resolutionData.category || !resolutionData.resolutionCode}
+                                            sx={{ width: { xs: '100%', sm: 'auto' } }}
                                         >
                                             Mark as Resolved
                                         </Button>
@@ -365,7 +366,7 @@ const ResolutionPage = () => {
                     <Grid container spacing={2}>
                         {/* Internal Notes */}
                         <Grid item xs={12}>
-                            <Card sx={{ p: 2, background: '#f5f5f5' }}>
+                            <Card sx={{ p: { xs: 2, sm: 3 }, background: '#f5f5f5' }}>
                                 <Typography variant="h6" gutterBottom>
                                     Internal Notes (IT Only)
                                 </Typography>
@@ -382,7 +383,7 @@ const ResolutionPage = () => {
                                     variant="outlined" 
                                     startIcon={<SaveIcon />}
                                     onClick={handleSaveInternalNotes}
-                                    sx={{ mt: 1 }}
+                                    sx={{ mt: 1, width: { xs: '100%', sm: 'auto' } }}
                                 >
                                     Save Notes
                                 </Button>
@@ -391,7 +392,7 @@ const ResolutionPage = () => {
 
                         {/* Customer Updates */}
                         <Grid item xs={12}>
-                            <Card sx={{ p: 2 }}>
+                            <Card sx={{ p: { xs: 2, sm: 3 } }}>
                                 <Typography variant="h6" gutterBottom>
                                     Customer Update
                                 </Typography>
@@ -408,7 +409,7 @@ const ResolutionPage = () => {
                                     variant="contained" 
                                     startIcon={<SendIcon />}
                                     onClick={handleSendCustomerUpdate}
-                                    sx={{ mt: 1 }}
+                                    sx={{ mt: 1, width: { xs: '100%', sm: 'auto' } }}
                                     disabled={!customerUpdate.trim()}
                                 >
                                     Send Update
@@ -418,7 +419,7 @@ const ResolutionPage = () => {
 
                         {/* Contact Info */}
                         <Grid item xs={12}>
-                            <Card sx={{ p: 2 }}>
+                            <Card sx={{ p: { xs: 2, sm: 3 } }}>
                                 <Typography variant="h6" gutterBottom>
                                     Contact Information
                                 </Typography>

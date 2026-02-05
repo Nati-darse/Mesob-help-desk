@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Paper, Button, Typography, Box, Alert, Table, TableBody, TableCell, TableRow } from '@mui/material';
+import { Container, Paper, Button, Typography, Box, Alert, Table, TableBody, TableCell, TableRow, TableContainer } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 
@@ -61,8 +61,9 @@ const LoginDebug = () => {
                     </Alert>
                 )}
 
-                <Table>
-                    <TableBody>
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                    <Table size="small" sx={{ minWidth: 600 }}>
+                        <TableBody>
                         {testAccounts.map((account) => (
                             <TableRow key={account.email}>
                                 <TableCell>
@@ -90,8 +91,9 @@ const LoginDebug = () => {
                                 </TableCell>
                             </TableRow>
                         ))}
-                    </TableBody>
-                </Table>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
 
                 <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
                     <Typography variant="caption" color="text.secondary">

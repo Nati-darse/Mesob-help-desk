@@ -147,8 +147,8 @@ const GlobalUserEditor = () => {
                 </Box>
             </Box>
 
-            <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                <Table>
+            <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 700 }}>
                     <TableHead sx={{ bgcolor: 'background.default' }}>
                         <TableRow>
                             <TableCell>User</TableCell>
@@ -216,7 +216,7 @@ const GlobalUserEditor = () => {
             {/* Edit Role Dialog */}
             <Dialog open={editRoleDialog} onClose={() => setEditRoleDialog(false)}>
                 <DialogTitle>Overwrite {selectedUser?.name}'s Role</DialogTitle>
-                <DialogContent sx={{ minWidth: 300, pt: 2 }}>
+                <DialogContent sx={{ minWidth: { xs: 'auto', sm: 300 }, pt: 2 }}>
                     <Alert severity="warning" sx={{ mb: 2 }}>
                         Changing a user's role will immediately affect their permissions.
                     </Alert>

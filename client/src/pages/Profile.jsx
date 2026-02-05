@@ -69,7 +69,7 @@ const Profile = () => {
 
     return (
         <Container maxWidth="md" sx={{ mt: 8, mb: 8 }}>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main', mb: 4 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main', mb: 4, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                 My Profile
             </Typography>
 
@@ -77,7 +77,7 @@ const Profile = () => {
                 <Grid container spacing={4}>
                     {/* Left: Avatar & Quick Info */}
                     <Grid item xs={12} md={4}>
-                        <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 4 }}>
+                        <Paper sx={{ p: { xs: 2, sm: 4 }, textAlign: 'center', borderRadius: 4 }}>
                             <Box sx={{ position: 'relative', display: 'inline-block' }}>
                                 <Avatar
                                     src={formData.profilePic}
@@ -105,7 +105,7 @@ const Profile = () => {
 
                     {/* Right: Forms */}
                     <Grid item xs={12} md={8}>
-                        <Paper sx={{ p: 4, borderRadius: 4 }}>
+                        <Paper sx={{ p: { xs: 2, sm: 4 }, borderRadius: 4 }}>
                             {message.text && (
                                 <Alert severity={message.type} sx={{ mb: 3 }}>
                                     {message.text}
@@ -180,7 +180,7 @@ const Profile = () => {
                                     size="large"
                                     startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
                                     disabled={loading}
-                                    sx={{ borderRadius: 3, px: 4 }}
+                                    sx={{ borderRadius: 3, px: 4, width: { xs: '100%', sm: 'auto' } }}
                                 >
                                     {loading ? 'Saving...' : 'Save Changes'}
                                 </Button>

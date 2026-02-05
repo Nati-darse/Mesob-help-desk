@@ -47,7 +47,7 @@ const Dashboard = () => {
 
     return (
         <Container maxWidth="lg" sx={{ mt: { xs: 2, md: 4 }, mb: 4 }}>
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main' }}>
+            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: 'primary.main', fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                 Dashboard Overview
             </Typography>
 
@@ -88,18 +88,18 @@ const Dashboard = () => {
 
                 {/* Charts */}
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: 3, border: '1px solid #eee', borderRadius: 2, height: '100%' }}>
+                    <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, border: '1px solid #eee', borderRadius: 2, height: '100%' }}>
                         <Typography variant="h6" gutterBottom>Tickets by Priority</Typography>
-                        <Box sx={{ height: 300, display: 'flex', justifyContent: 'center' }}>
+                        <Box sx={{ height: { xs: 220, sm: 300 }, display: 'flex', justifyContent: 'center' }}>
                             <Pie data={priorityData} options={{ maintainAspectRatio: false }} />
                         </Box>
                     </Paper>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <Paper elevation={0} sx={{ p: 3, border: '1px solid #eee', borderRadius: 2, height: '100%' }}>
+                    <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, border: '1px solid #eee', borderRadius: 2, height: '100%' }}>
                         <Typography variant="h6" gutterBottom>Tickets by Category</Typography>
-                        <Box sx={{ height: 300 }}>
+                        <Box sx={{ height: { xs: 220, sm: 300 } }}>
                             <Bar data={categoryData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
                         </Box>
                     </Paper>

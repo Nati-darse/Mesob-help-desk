@@ -237,8 +237,8 @@ const GlobalSettings = () => {
     };
 
     return (
-        <Box maxWidth="1000px" margin="0 auto">
-            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#0A1929' }}>
+        <Box maxWidth="1000px" margin="0 auto" sx={{ px: { xs: 2, sm: 0 } }}>
+            <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', color: '#0A1929', fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                 Global Settings
             </Typography>
 
@@ -252,7 +252,7 @@ const GlobalSettings = () => {
                         </Box>
                         <Divider sx={{ mb: 3 }} />
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, mb: 2 }}>
                             <Box>
                                 <Typography variant="subtitle1" fontWeight="bold">Maintenance Mode</Typography>
                                 <Typography variant="body2" color="text.secondary">
@@ -673,7 +673,7 @@ const GlobalSettings = () => {
                 </Grid>
 
                 <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'flex-end', gap: 2 }}>
                         <Button 
                             variant="outlined" 
                             onClick={handleDiscardChanges}
@@ -686,6 +686,7 @@ const GlobalSettings = () => {
                             startIcon={<SaveIcon />} 
                             onClick={handleSave}
                             disabled={loading}
+                            sx={{ width: { xs: '100%', sm: 'auto' } }}
                         >
                             {loading ? 'Saving...' : 'Save Configuration'}
                         </Button>
@@ -708,8 +709,8 @@ const GlobalSettings = () => {
                         sx={{ mt: 1 }}
                     />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => closeDialog('testEmail')}>Cancel</Button>
+                <DialogActions sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+                    <Button onClick={() => closeDialog('testEmail')} sx={{ width: { xs: '100%', sm: 'auto' } }}>Cancel</Button>
                     <Button variant="contained" onClick={testEmailConnection} disabled={loading}>
                         {loading ? 'Sending...' : 'Send Test Email'}
                     </Button>
@@ -727,8 +728,8 @@ const GlobalSettings = () => {
                         Are you sure you want to rotate all security keys?
                     </Typography>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => closeDialog('rotateKeys')}>Cancel</Button>
+                <DialogActions sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+                    <Button onClick={() => closeDialog('rotateKeys')} sx={{ width: { xs: '100%', sm: 'auto' } }}>Cancel</Button>
                     <Button variant="contained" color="warning" onClick={rotateSecurityKeys} disabled={loading}>
                         {loading ? 'Rotating...' : 'Rotate Keys'}
                     </Button>
@@ -761,8 +762,8 @@ const GlobalSettings = () => {
                         </ListItem>
                     </List>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => closeDialog('backup')}>Cancel</Button>
+                <DialogActions sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+                    <Button onClick={() => closeDialog('backup')} sx={{ width: { xs: '100%', sm: 'auto' } }}>Cancel</Button>
                     <Button variant="contained" onClick={createBackup} disabled={loading}>
                         {loading ? 'Creating Backup...' : 'Create Backup'}
                     </Button>
@@ -780,8 +781,8 @@ const GlobalSettings = () => {
                         This will reset all system settings to their default values. User data and tickets will not be affected.
                     </Typography>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => closeDialog('resetSystem')}>Cancel</Button>
+                <DialogActions sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+                    <Button onClick={() => closeDialog('resetSystem')} sx={{ width: { xs: '100%', sm: 'auto' } }}>Cancel</Button>
                     <Button variant="contained" color="error" onClick={resetSystem} disabled={loading}>
                         {loading ? 'Resetting...' : 'Reset Settings'}
                     </Button>

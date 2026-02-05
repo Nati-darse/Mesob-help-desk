@@ -135,8 +135,8 @@ const AccountManagement = () => {
                 Account actions are logged and monitored. Use administrative privileges responsibly.
             </Alert>
 
-            <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider' }}>
-                <Table>
+            <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 700 }}>
                     <TableHead sx={{ bgcolor: 'background.default' }}>
                         <TableRow>
                             <TableCell>User Details</TableCell>

@@ -164,8 +164,8 @@ const CompanyRegistry = () => {
             </Paper>
 
             <Paper sx={{ width: '100%' }}>
-                <TableContainer>
-                    <Table>
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                    <Table size="small" sx={{ minWidth: 700 }}>
                         <TableHead>
                             <TableRow>
                                 <TableCell>Code</TableCell>

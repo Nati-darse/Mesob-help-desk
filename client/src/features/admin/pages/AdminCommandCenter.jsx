@@ -167,7 +167,7 @@ const AdminCommandCenter = () => {
         }}>
             <Container maxWidth="xl">
                 {/* Header Section */}
-                <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', lg: 'center' }, gap: 2 }}>
                     <Box>
                         <Stack direction="row" spacing={2} alignItems="center">
                             <Box sx={{
@@ -186,13 +186,13 @@ const AdminCommandCenter = () => {
                             {t('adminCommandCenter.unifiedMissionControl')}
                         </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: { xs: '100%', md: 'auto' } }}>
                         <Button
                             variant="outlined"
                             startIcon={<AssignmentIcon />}
                             component={RouterLink}
                             to="/admin/reports"
-                            sx={{ borderRadius: 3, fontWeight: 700, borderColor: '#1a237e', color: '#1a237e' }}
+                            sx={{ borderRadius: 3, fontWeight: 700, borderColor: '#1a237e', color: '#1a237e', width: { xs: '100%', sm: 'auto' } }}
                         >
                             📊 {t('nav.reports')}
                         </Button>
@@ -201,7 +201,7 @@ const AdminCommandCenter = () => {
                             startIcon={<AssignmentIcon />}
                             component={RouterLink}
                             to="/admin/reviews"
-                            sx={{ borderRadius: 3, fontWeight: 700, borderColor: '#1a237e', color: '#1a237e' }}
+                            sx={{ borderRadius: 3, fontWeight: 700, borderColor: '#1a237e', color: '#1a237e', width: { xs: '100%', sm: 'auto' } }}
                         >
                             {t('admin.reviewQueue')} ({pendingReviewTickets.length})
                         </Button>
@@ -209,7 +209,7 @@ const AdminCommandCenter = () => {
                             variant="outlined"
                             startIcon={<RefreshIcon />}
                             onClick={() => refetchStats()}
-                            sx={{ borderRadius: 3, fontWeight: 700, borderColor: '#1a237e', color: '#1a237e' }}
+                            sx={{ borderRadius: 3, fontWeight: 700, borderColor: '#1a237e', color: '#1a237e', width: { xs: '100%', sm: 'auto' } }}
                         >
                             {t('adminCommandCenter.syncCloud')}
                         </Button>
@@ -290,6 +290,8 @@ const AdminCommandCenter = () => {
                                             border: '1px solid #edf2f7',
                                             p: 2,
                                             transition: '0.2s',
+                                            flexDirection: { xs: 'column', md: 'row' },
+                                            alignItems: { xs: 'flex-start', md: 'center' },
                                             '&:hover': { bgcolor: '#fff', borderColor: '#1a237e', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
                                         }}
                                     >
@@ -329,7 +331,7 @@ const AdminCommandCenter = () => {
                                                 </Stack>
                                             }
                                         />
-                                        <ListItemSecondaryAction sx={{ right: 24 }}>
+                                        <ListItemSecondaryAction sx={{ right: { xs: 16, md: 24 }, position: { xs: 'static', md: 'absolute' }, mt: { xs: 2, md: 0 } }}>
                                             <Button
                                                 variant="contained"
                                                 onClick={() => handleOpenAssign(ticket)}

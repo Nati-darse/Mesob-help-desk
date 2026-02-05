@@ -64,10 +64,10 @@ const Login = () => {
     };
 
     return (
-        <Container maxWidth="xs" sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
-            <Paper elevation={0} sx={{ p: 4, width: '100%', textAlign: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Container maxWidth="xs" sx={{ mt: { xs: 6, md: 8 }, display: 'flex', justifyContent: 'center' }}>
+            <Paper elevation={0} sx={{ p: { xs: 3, sm: 4 }, width: '100%', textAlign: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                 <Box sx={{ mb: 3 }}>
-                    <img src="/logo.png" alt="Mesob Logo" style={{ height: 80 }} onError={(e) => { e.currentTarget.src = logo; }} />
+                    <img src="/logo.png" alt="Mesob Logo" style={{ height: 80, maxWidth: '100%' }} onError={(e) => { e.currentTarget.src = logo; }} />
                 </Box>
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                     {t('auth.welcomeBack')}

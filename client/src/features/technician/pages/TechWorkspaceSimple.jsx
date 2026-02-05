@@ -54,7 +54,7 @@ const TechWorkspace = () => {
 
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
+            <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
                 Tech Workspace - Mission Control
             </Typography>
             <Typography variant="body1" color="text.secondary">

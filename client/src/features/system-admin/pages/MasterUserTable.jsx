@@ -333,8 +333,8 @@ const MasterUserTable = () => {
             </Grid>
 
             {/* Users Table */}
-            <TableContainer component={Paper}>
-                <Table>
+            <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 900 }}>
                     <TableHead sx={{ bgcolor: 'background.default' }}>
                         <TableRow>
                             <TableCell>User</TableCell>

@@ -11,6 +11,7 @@ body {
   padding: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #root {
@@ -28,4 +29,23 @@ body {
 .MuiButton-root, .MuiMenuItem-root, .MuiTypography-root {
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+/* Allow wide tables to scroll on small screens */
+.MuiTableContainer-root {
+  overflow-x: auto;
+}
+
+/* Extra-small device tuning (e.g., 320px wide) */
+@media (max-width: 360px) {
+  .MuiContainer-root {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .MuiButton-root {
+    min-height: 40px;
+  }
+  .MuiChip-root {
+    font-size: 0.75rem;
+  }
 }

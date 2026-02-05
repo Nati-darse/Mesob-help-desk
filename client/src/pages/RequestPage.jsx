@@ -123,7 +123,7 @@ const RequestPage = () => {
     if (submitted) {
         return (
             <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-                <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 4 }}>
+                <Paper sx={{ p: { xs: 3, sm: 6 }, textAlign: 'center', borderRadius: 4 }}>
                     <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 3 }} />
                     <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.main', mb: 2 }}>
                         Request Submitted Successfully!
@@ -160,7 +160,7 @@ const RequestPage = () => {
     }
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             {/* Header */}
             <Box sx={{ mb: 4, textAlign: 'center' }}>
                 <Avatar sx={{ 
@@ -188,7 +188,7 @@ const RequestPage = () => {
 
             {/* Progress Stepper */}
             <Paper sx={{ p: 3, mb: 4, borderRadius: 3 }}>
-                <Stepper activeStep={activeStep} alternativeLabel>
+                <Stepper activeStep={activeStep} alternativeLabel sx={{ flexWrap: 'wrap' }}>
                     {steps.map((label) => (
                         <Step key={label}>
                             <StepLabel>{label}</StepLabel>
@@ -200,7 +200,7 @@ const RequestPage = () => {
             <Grid container spacing={4}>
                 {/* Request Form */}
                 <Grid item xs={12} lg={8}>
-                    <Paper sx={{ p: 4, borderRadius: 4, boxShadow: 3 }}>
+                    <Paper sx={{ p: { xs: 2, sm: 4 }, borderRadius: 4, boxShadow: 3 }}>
                         <form onSubmit={handleSubmit}>
                             <Stack spacing={3}>
                                 {/* Request Details Section */}
@@ -326,7 +326,8 @@ const RequestPage = () => {
                                             py: 1.5, 
                                             borderRadius: 3, 
                                             fontWeight: 'bold',
-                                            boxShadow: 2
+                                            boxShadow: 2,
+                                            width: { xs: '100%', sm: 'auto' }
                                         }}
                                     >
                                         {isSubmitting ? 'Submitting...' : 'Submit Request'}

@@ -293,11 +293,11 @@ const TechDashboard = () => {
                                 )}
                             </Box>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, width: { xs: '100%', sm: 'auto' } }}>
                             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
                                 {t('techDashboard.changeStatus')}
                             </Typography>
-                            <FormControl size="small" sx={{ minWidth: 180 }}>
+                            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 180 } }}>
                                 <Select
                                     value={dutyStatus}
                                     onChange={(e) => handleDutyStatusChange(e.target.value)}
@@ -460,7 +460,7 @@ const TechDashboard = () => {
                             borderRadius: 2,
                             fontWeight: 600,
                             textTransform: 'none',
-                            minWidth: 200
+                            minWidth: { xs: '100%', sm: 200 }
                         }}
                     >
                         {t('techDashboard.openMissionControl')}
@@ -479,7 +479,7 @@ const TechDashboard = () => {
                             borderRadius: 2,
                             fontWeight: 600,
                             textTransform: 'none',
-                            minWidth: 200
+                            minWidth: { xs: '100%', sm: 200 }
                         }}
                     >
                         {t('techDashboard.viewAllTickets')}
@@ -499,7 +499,7 @@ const TechDashboard = () => {
                             borderRadius: 2,
                             fontWeight: 600,
                             textTransform: 'none',
-                            minWidth: 200
+                            minWidth: { xs: '100%', sm: 200 }
                         }}
                     >
                         {loading ? t('techDashboard.refreshing') : t('techDashboard.refreshDashboard')}
@@ -519,7 +519,7 @@ const TechDashboard = () => {
                             borderRadius: 2,
                             fontWeight: 600,
                             textTransform: 'none',
-                            minWidth: 200
+                            minWidth: { xs: '100%', sm: 200 }
                         }}
                     >
                         {t('techDashboard.generateReport')}

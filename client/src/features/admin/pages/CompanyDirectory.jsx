@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Container, Typography, Box, Grid, Card, CardContent, TextField, InputAdornment,
     Chip, Avatar, Tooltip, ToggleButtonGroup, ToggleButton, CircularProgress,
-    LinearProgress, IconButton, Badge, Alert, Paper
+    LinearProgress, IconButton, Badge, Alert, Paper, Dialog, DialogTitle, DialogContent
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -10,7 +10,8 @@ import {
     Business as BusinessIcon,
     TrendingUp as TrendingIcon,
     Speed as SpeedIcon,
-    Refresh as RefreshIcon
+    Refresh as RefreshIcon,
+    Close as CloseIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { COMPANIES } from '../../../utils/companies';
@@ -95,6 +96,11 @@ const CompanyDirectory = () => {
         setDetailsOpen(true);
     };
 
+    const handleCloseDetails = () => {
+        setDetailsOpen(false);
+        setSelectedCompany(null);
+    };
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -106,7 +112,7 @@ const CompanyDirectory = () => {
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
             {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
                 <Box>
                     <Typography variant="h3" fontWeight="bold" gutterBottom>
                         Company Directory
@@ -189,7 +195,7 @@ const CompanyDirectory = () => {
                             value={filter}
                             exclusive
                             onChange={(e, newFilter) => newFilter && setFilter(newFilter)}
-                            sx={{ ml: 'auto' }}
+                            sx={{ ml: { md: 'auto' }, flexWrap: 'wrap' }}
                         >
                             <ToggleButton value="all">All ({filteredCompanies.length})</ToggleButton>
                             <ToggleButton value="critical">Critical</ToggleButton>
@@ -296,89 +302,71 @@ const CompanyDirectory = () => {
             </Grid>
 
             {/* Company Details Dialog */}
-            {selectedCompany && (
-                <Paper sx={{
-                    position: 'fixed',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    p: 4,
-                    minWidth: 400,
-                    maxWidth: 600,
-                    zIndex: 1300,
-                    boxShadow: 24
-                }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                        <Typography variant="h5" fontWeight="bold">
-                            {selectedCompany.name}
-                        </Typography>
-                        <IconButton onClick={() => setDetailsOpen(false)}>
-                            ×
-                        </IconButton>
-                    </Box>
-
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2 }}>
-                                <Avatar sx={{
-                                    bgcolor: 'primary.main',
-                                    color: 'white',
-                                    width: 64,
-                                    height: 64,
-                                    mx: 'auto',
-                                    mb: 2
-                                }}>
-                                    <BusinessIcon sx={{ fontSize: 32 }} />
-                                </Avatar>
-                                <Typography variant="h6" fontWeight="bold">
-                                    {selectedCompany.initials}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {selectedCompany.name}
-                                </Typography>
-                            </Box>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Box sx={{ p: 2 }}>
-                                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                                    Performance Metrics
-                                </Typography>
-                                <Box sx={{ mb: 1 }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Total Tickets: {getTicketStats(selectedCompany.id).total}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ mb: 1 }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Avg Resolution: {getTicketStats(selectedCompany.id).avgResolutionTime}h
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ mb: 1 }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Satisfaction Rate: {getTicketStats(selectedCompany.id).satisfactionRate}%
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Grid>
-                    </Grid>
-                </Paper>
-            )}
-
-            {/* Overlay for dialog */}
-            {detailsOpen && (
-                <Box
-                    sx={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        bgcolor: 'rgba(0,0,0,0.5)',
-                        zIndex: 1200
-                    }}
-                    onClick={() => setDetailsOpen(false)}
-                />
-            )}
+            <Dialog
+                open={detailsOpen && Boolean(selectedCompany)}
+                onClose={handleCloseDetails}
+                maxWidth="sm"
+                fullWidth
+            >
+                {selectedCompany && (
+                    <>
+                        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                            <Typography variant="h6" fontWeight="bold">
+                                {selectedCompany.name}
+                            </Typography>
+                            <IconButton onClick={handleCloseDetails}>
+                                <CloseIcon />
+                            </IconButton>
+                        </DialogTitle>
+                        <DialogContent dividers>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2 }}>
+                                        <Avatar sx={{
+                                            bgcolor: 'primary.main',
+                                            color: 'white',
+                                            width: 64,
+                                            height: 64,
+                                            mx: 'auto',
+                                            mb: 2
+                                        }}>
+                                            <BusinessIcon sx={{ fontSize: 32 }} />
+                                        </Avatar>
+                                        <Typography variant="h6" fontWeight="bold">
+                                            {selectedCompany.initials}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {selectedCompany.name}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <Box sx={{ p: 2 }}>
+                                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                                            Performance Metrics
+                                        </Typography>
+                                        <Box sx={{ mb: 1 }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Total Tickets: {getTicketStats(selectedCompany.id).total}
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ mb: 1 }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Avg Resolution: {getTicketStats(selectedCompany.id).avgResolutionTime}h
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ mb: 1 }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Satisfaction Rate: {getTicketStats(selectedCompany.id).satisfactionRate}%
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                    </>
+                )}
+            </Dialog>
         </Container>
     );
 };

@@ -440,8 +440,8 @@ const AdminReports = () => {
                                     </Typography>
                                 </Alert>
 
-                                <TableContainer component={Paper} variant="outlined">
-                                    <Table size="small">
+                                <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+                                    <Table size="small" sx={{ minWidth: 360 }}>
                                         <TableHead>
                                             <TableRow sx={{ bgcolor: 'grey.100' }}>
                                                 <TableCell><strong>Metric</strong></TableCell>

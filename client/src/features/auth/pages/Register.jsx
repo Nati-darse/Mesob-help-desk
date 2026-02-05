@@ -70,10 +70,10 @@ const Register = () => {
     };
 
     return (
-        <Container maxWidth="xs" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
-            <Paper elevation={0} sx={{ p: 4, width: '100%', textAlign: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Container maxWidth="xs" sx={{ mt: { xs: 4, md: 4 }, mb: 4, display: 'flex', justifyContent: 'center' }}>
+            <Paper elevation={0} sx={{ p: { xs: 3, sm: 4 }, width: '100%', textAlign: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                 <Box sx={{ mb: 2 }}>
-                    <img src={logo} alt="Mesob Logo" style={{ height: 60 }} />
+                    <img src={logo} alt="Mesob Logo" style={{ height: 60, maxWidth: '100%' }} />
                 </Box>
                 <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                     Create Account

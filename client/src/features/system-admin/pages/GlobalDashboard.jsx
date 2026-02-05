@@ -252,7 +252,7 @@ const GlobalDashboard = () => {
             <Grid container spacing={3}>
                 {/* Performance Chart */}
                 <Grid item xs={12} lg={8}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                             Real-time System Performance
                         </Typography>
@@ -272,7 +272,7 @@ const GlobalDashboard = () => {
 
                 {/* System Health */}
                 <Grid item xs={12} lg={4}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                             System Health Status
                         </Typography>
@@ -315,7 +315,7 @@ const GlobalDashboard = () => {
 
                 {/* Recent Alerts */}
                 <Grid item xs={12} lg={6}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                             System Alerts & Notifications
                         </Typography>
@@ -360,7 +360,7 @@ const GlobalDashboard = () => {
 
                 {/* Quick Actions */}
                 <Grid item xs={12} lg={6}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                             Quick Actions
                         </Typography>

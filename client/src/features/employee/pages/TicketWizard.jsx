@@ -132,7 +132,7 @@ const TicketWizard = () => {
                 );
             case 2:
                 return (
-                    <Paper elevation={0} sx={{ p: 4, bgcolor: 'action.hover', borderRadius: 4, border: '1px solid', borderColor: 'divider' }}>
+            <Paper elevation={0} sx={{ p: { xs: 2, sm: 4 }, bgcolor: 'action.hover', borderRadius: 4, border: '1px solid', borderColor: 'divider' }}>
                         <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>Review Your Request</Typography>
                         <Divider sx={{ my: 2 }} />
                         <Grid container spacing={2}>
@@ -161,7 +161,7 @@ const TicketWizard = () => {
     return (
         <Container maxWidth="md" sx={{ mt: 8, mb: 8 }}>
             <Box sx={{ textAlign: 'center', mb: 6 }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: 'primary.main', mb: 2 }}>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: 'primary.main', mb: 2, fontSize: { xs: '2rem', sm: '3rem' } }}>
                     Report an Issue
                 </Typography>
                 <Typography variant="h6" color="text.secondary">
@@ -169,7 +169,7 @@ const TicketWizard = () => {
                 </Typography>
             </Box>
 
-            <Stepper activeStep={activeStep} sx={{ mb: 8 }}>
+            <Stepper activeStep={activeStep} sx={{ mb: 8, flexWrap: 'wrap' }}>
                 {steps.map((label) => (
                     <Step key={label}>
                         <StepLabel>{label}</StepLabel>
@@ -181,12 +181,12 @@ const TicketWizard = () => {
                 {renderStepContent(activeStep)}
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 8 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 2, mt: 8 }}>
                 <Button
                     disabled={activeStep === 0}
                     onClick={handleBack}
                     startIcon={<BackIcon />}
-                    sx={{ px: 4 }}
+                    sx={{ px: 4, width: { xs: '100%', sm: 'auto' } }}
                 >
                     Back
                 </Button>
@@ -198,7 +198,7 @@ const TicketWizard = () => {
                             onClick={handleSubmit}
                             disabled={loading || !formData.title || !formData.description}
                             startIcon={<SubmitIcon />}
-                            sx={{ px: 6, borderRadius: 3 }}
+                            sx={{ px: 6, borderRadius: 3, width: { xs: '100%', sm: 'auto' } }}
                         >
                             {loading ? 'Submitting...' : 'Submit Request'}
                         </Button>
@@ -208,7 +208,7 @@ const TicketWizard = () => {
                             onClick={handleNext}
                             disabled={!formData.category && activeStep === 0}
                             endIcon={<NextIcon />}
-                            sx={{ px: 6, borderRadius: 3 }}
+                            sx={{ px: 6, borderRadius: 3, width: { xs: '100%', sm: 'auto' } }}
                         >
                             Continue
                         </Button>

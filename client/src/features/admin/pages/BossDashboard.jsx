@@ -145,7 +145,7 @@ const BossDashboard = () => {
     return (
         <Container maxWidth="xl" sx={{ mt: 2, mb: 4 }}>
             {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, px: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4, px: 2 }}>
                 <Box>
                     <Typography variant="h3" fontWeight="bold" gutterBottom>
                         Analytics Dashboard
@@ -211,13 +211,13 @@ const BossDashboard = () => {
             {/* Row 1 - Tickets by Company (90% width, centered) */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                 <Box sx={{ width: '90%', maxWidth: '100%' }}>
-                    <Paper sx={{ height: 500, overflow: 'hidden' }}>
+                    <Paper sx={{ height: { xs: 'auto', md: 500 }, overflow: 'hidden' }}>
                         <Box sx={{ px: 3, py: 2 }}>
                             <Typography variant="h6" fontWeight="bold">
                                 Tickets by Company
                             </Typography>
                         </Box>
-                        <ResponsiveContainer width="100%" height={430}>
+                        <ResponsiveContainer width="100%" height={360}>
                             <BarChart data={chartData} margin={{ top: 10, right: 30, left: 30, bottom: 60 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis
@@ -305,9 +305,9 @@ const BossDashboard = () => {
 
             {/* Row 3 - Priority & Top Performers (45% + 45% with space, centered in 90%) */}
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-                <Box sx={{ width: '90%', maxWidth: '100%', display: 'flex', gap: 3 }}>
-                    <Box sx={{ flex: '0 0 45%' }}>
-                        <Paper sx={{ p: 3, height: 400, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ width: '90%', maxWidth: '100%', display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+                    <Box sx={{ flex: { xs: '1 1 auto', md: '0 0 45%' } }}>
+                        <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 }, display: 'flex', flexDirection: 'column' }}>
                             <Typography variant="h6" fontWeight="bold" gutterBottom>
                                 Priority Distribution
                             </Typography>
@@ -344,8 +344,8 @@ const BossDashboard = () => {
                         </Paper>
                     </Box>
 
-                    <Box sx={{ flex: '0 0 45%' }}>
-                        <Paper sx={{ p: 3, height: 400 }}>
+                    <Box sx={{ flex: { xs: '1 1 auto', md: '0 0 45%' } }}>
+                        <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                             <Typography variant="h6" fontWeight="bold" gutterBottom>
                                 Top Performers
                             </Typography>

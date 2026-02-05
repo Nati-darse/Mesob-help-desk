@@ -181,7 +181,7 @@ const CrossTenantAnalytics = () => {
             <Grid container spacing={3}>
                 {/* Ticket Trends Chart */}
                 <Grid item xs={12} lg={8}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                             Ticket Volume Trends
                         </Typography>
@@ -210,7 +210,7 @@ const CrossTenantAnalytics = () => {
 
                 {/* Category Distribution */}
                 <Grid item xs={12} lg={4}>
-                    <Paper sx={{ p: 3, height: 400 }}>
+                    <Paper sx={{ p: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                             Issue Categories
                         </Typography>
@@ -260,8 +260,8 @@ const CrossTenantAnalytics = () => {
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                             Organization Performance Comparison
                         </Typography>
-                        <TableContainer>
-                            <Table size="small">
+                        <TableContainer sx={{ overflowX: 'auto' }}>
+                            <Table size="small" sx={{ minWidth: 700 }}>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Organization</TableCell>

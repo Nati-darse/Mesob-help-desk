@@ -35,7 +35,7 @@ const TicketRow = memo(({ ticket, user }) => {
                 />
             </TableCell>
             {user?.role !== ROLES.EMPLOYEE && (
-                <TableCell sx={{ maxWidth: 200 }}>
+                <TableCell sx={{ maxWidth: 200, display: { xs: 'none', sm: 'table-cell' } }}>
                     <TruncatedText
                         text={getCompanyById(ticket.companyId || 1).name}
                         variant="body2"
@@ -43,7 +43,7 @@ const TicketRow = memo(({ ticket, user }) => {
                     />
                 </TableCell>
             )}
-            <TableCell>{ticket.category}</TableCell>
+            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{ticket.category}</TableCell>
             <TableCell>
                 <Chip
                     label={ticket.priority}
@@ -59,7 +59,7 @@ const TicketRow = memo(({ ticket, user }) => {
                     size="small"
                 />
             </TableCell>
-            <TableCell>
+            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                 {new Date(ticket.createdAt).toLocaleDateString()}
             </TableCell>
             <TableCell align="right">
@@ -98,7 +98,7 @@ const TicketList = () => {
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                     {t('ticketList.supportTickets')}
                 </Typography>
@@ -109,6 +109,7 @@ const TicketList = () => {
                         startIcon={<AddIcon />}
                         component={RouterLink}
                         to="/tickets/new"
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                         {t('ticketList.newTicket')}
                     </Button>
@@ -116,22 +117,22 @@ const TicketList = () => {
             </Box>
 
             <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflowX: 'auto' }}>
-                <Table sx={{ minWidth: 700 }}>
+                <Table size="small" sx={{ minWidth: 700 }}>
                     <TableHead sx={{ bgcolor: 'action.hover' }}>
                         <TableRow>
                             <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.title')}</TableCell>
-                            {user?.role !== ROLES.EMPLOYEE && <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.bureau')}</TableCell>}
-                            <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.category')}</TableCell>
+                            {user?.role !== ROLES.EMPLOYEE && <TableCell sx={{ fontWeight: 'bold', display: { xs: 'none', sm: 'table-cell' } }}>{t('ticketList.bureau')}</TableCell>}
+                            <TableCell sx={{ fontWeight: 'bold', display: { xs: 'none', md: 'table-cell' } }}>{t('ticketList.category')}</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.priority')}</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.status')}</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>{t('ticketList.created')}</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', display: { xs: 'none', md: 'table-cell' } }}>{t('ticketList.created')}</TableCell>
                             <TableCell sx={{ fontWeight: 'bold' }} align="right">{t('ticketList.actions')}</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {tickets.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                                <TableCell colSpan={user?.role !== ROLES.EMPLOYEE ? 7 : 6} align="center" sx={{ py: 4 }}>
                                     <Typography color="text.secondary">{t('ticketList.noTicketsFound')}</Typography>
                                 </TableCell>
                             </TableRow>

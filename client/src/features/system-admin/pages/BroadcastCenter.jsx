@@ -62,10 +62,10 @@ const BroadcastCenter = () => {
     };
 
     return (
-        <Box maxWidth="1400px" margin="0 auto" sx={{ px: 2 }}>
+        <Box maxWidth="1400px" margin="0 auto" sx={{ px: { xs: 2, sm: 3 } }}>
             {/* Header Section */}
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h3" sx={{ fontWeight: 800, color: '#0A1929', mb: 2 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: '#0A1929', mb: 2, fontSize: { xs: '2rem', sm: '3rem' } }}>
                     Command Center
                 </Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
@@ -152,7 +152,7 @@ const BroadcastCenter = () => {
             <Grid container spacing={4}>
                 {/* Compose Form */}
                 <Grid item xs={12} md={7}>
-                    <Paper sx={{ p: 4 }}>
+                    <Paper sx={{ p: { xs: 2, sm: 4 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                             <CampaignIcon color="primary" sx={{ fontSize: 40 }} />
                             <Box>
@@ -225,12 +225,12 @@ const BroadcastCenter = () => {
 
                 {/* History */}
                 <Grid item xs={12} md={5}>
-                    <Paper sx={{ p: 3, height: '100%' }}>
+                    <Paper sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Recent Broadcasts</Typography>
                         {history.map((item) => (
                             <Box key={item.id} sx={{ mb: 2, p: 2, bgcolor: '#f8f9fa', borderRadius: 1 }}>
                                 <Typography variant="subtitle2" gutterBottom>{item.msg}</Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1, mt: 1 }}>
                                     <Chip label={item.target} size="small" variant="outlined" />
                                     <Typography variant="caption" color="text.secondary">{item.time}</Typography>
                                 </Box>

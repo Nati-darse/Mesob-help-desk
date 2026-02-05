@@ -180,15 +180,16 @@ const BulkDataCleanup = () => {
 
     return (
         <Box>
-            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
+            <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
                     Bulk Data Cleanup
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: { xs: '100%', sm: 'auto' } }}>
                     <Button
                         variant="outlined"
                         startIcon={<ExportIcon />}
                         onClick={() => setExportDialog(true)}
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                         Export Data
                     </Button>
@@ -196,6 +197,7 @@ const BulkDataCleanup = () => {
                         variant="outlined"
                         startIcon={<RefreshIcon />}
                         onClick={fetchCleanupStats}
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                         Refresh Stats
                     </Button>
@@ -229,14 +231,14 @@ const BulkDataCleanup = () => {
                                     />
                                 </Box>
 
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <StorageIcon color="action" fontSize="small" />
                                         <Typography variant="body2" color="text.secondary">
                                             {option.estimatedCount.toLocaleString()} items
                                         </Typography>
                                     </Box>
-                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
                                         <Tooltip title="Export before cleanup">
                                             <IconButton
                                                 size="small"
@@ -252,6 +254,7 @@ const BulkDataCleanup = () => {
                                             startIcon={<CleanupIcon />}
                                             onClick={() => handleCleanupStart(option)}
                                             disabled={option.estimatedCount === 0}
+                                            sx={{ width: { xs: '100%', sm: 'auto' } }}
                                         >
                                             Cleanup
                                         </Button>
@@ -264,7 +267,7 @@ const BulkDataCleanup = () => {
             </Grid>
 
             {/* Storage Overview */}
-            <Paper sx={{ mt: 4, p: 3 }}>
+            <Paper sx={{ mt: 4, p: { xs: 2, sm: 3 } }}>
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                     Storage Overview
                 </Typography>
@@ -361,16 +364,17 @@ const BulkDataCleanup = () => {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                     {!isProcessing && (
                         <>
-                            <Button onClick={() => setCleanupDialog(false)}>Cancel</Button>
+                            <Button onClick={() => setCleanupDialog(false)} sx={{ width: { xs: '100%', sm: 'auto' } }}>Cancel</Button>
                             <Button
                                 variant="contained"
                                 color="error"
                                 onClick={executeCleanup}
                                 disabled={confirmText !== selectedCleanup?.confirmPhrase}
                                 startIcon={<CleanupIcon />}
+                                sx={{ width: { xs: '100%', sm: 'auto' } }}
                             >
                                 Execute Cleanup
                             </Button>
@@ -406,8 +410,8 @@ const BulkDataCleanup = () => {
                         ))}
                     </List>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setExportDialog(false)}>Close</Button>
+                <DialogActions sx={{ flexDirection: { xs: 'column', sm: 'row' } }}>
+                    <Button onClick={() => setExportDialog(false)} sx={{ width: { xs: '100%', sm: 'auto' } }}>Close</Button>
                 </DialogActions>
             </Dialog>
         </Box>

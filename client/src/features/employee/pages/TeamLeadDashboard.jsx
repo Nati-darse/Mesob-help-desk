@@ -127,7 +127,7 @@ const TeamLeadDashboard = () => {
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
             {/* Header Section */}
             <Box sx={{ mb: 4, textAlign: 'center' }}>
-                <Typography variant="h3" sx={{ fontWeight: 800, color: '#1A237E', mb: 1 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: '#1A237E', mb: 1, fontSize: { xs: '2rem', sm: '3rem' } }}>
                     {t('teamLeadDashboard.teamOperationsCenter')}
                 </Typography>
                 <Typography variant="h6" color="text.secondary">
@@ -177,7 +177,7 @@ const TeamLeadDashboard = () => {
 
             {/* New Full Width Request Form */}
             <Box sx={{ mb: 5 }}>
-                <Paper elevation={3} sx={{ p: 4, borderRadius: 4, position: 'relative', overflow: 'hidden' }}>
+                <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, borderRadius: 4, position: 'relative', overflow: 'hidden' }}>
                     <Box sx={{
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '6px',
                         background: 'linear-gradient(90deg, #1A237E 0%, #0D47A1 100%)'
@@ -287,7 +287,7 @@ const TeamLeadDashboard = () => {
             <Grid container spacing={4}>
                 {/* Full Width Ticket List */}
                 <Grid item xs={12}>
-                    <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                         <Typography variant="h5" sx={{ fontWeight: 800 }}>
                             {t('teamLeadDashboard.teamTicketHistory')}
                         </Typography>
@@ -322,7 +322,7 @@ const TeamLeadDashboard = () => {
                                             border: '1px solid #e0e0e0'
                                         }}
                                     >
-                                        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Box sx={{ p: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                                             {/* Status Indicator Stripe */}
                                             <Box sx={{
                                                 width: 6,
@@ -360,7 +360,7 @@ const TeamLeadDashboard = () => {
                                                 </Stack>
                                             </Box>
 
-                                            <Box sx={{ textAlign: 'right' }}>
+                                            <Box sx={{ textAlign: { xs: 'left', sm: 'right' }, width: { xs: '100%', sm: 'auto' } }}>
                                                 {ticket.status === 'Resolved' && ticket.reviewStatus === 'Pending' ? (
                                                     <Chip
                                                         label={t('teamLeadDashboard.pendingReview')}
@@ -375,7 +375,7 @@ const TeamLeadDashboard = () => {
                                                         size="small"
                                                         startIcon={<FeedbackIcon />}
                                                         onClick={() => handleOpenFeedback(ticket)}
-                                                        sx={{ borderRadius: 5, fontWeight: 700 }}
+                                                        sx={{ borderRadius: 5, fontWeight: 700, width: { xs: '100%', sm: 'auto' } }}
                                                     >
                                                         {t('teamLeadDashboard.reviewService')}
                                                     </Button>
@@ -415,7 +415,7 @@ const TeamLeadDashboard = () => {
                 <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold', pt: 4 }}>
                     {t('teamLeadDashboard.rateExperience')}
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
                     <Box sx={{ textAlign: 'center', py: 2 }}>
                         <Typography variant="body1" color="text.secondary" gutterBottom>
                             {t('teamLeadDashboard.howSatisfied')}
@@ -429,7 +429,7 @@ const TeamLeadDashboard = () => {
                                 value={rating}
                                 onChange={(event, newValue) => setRating(newValue)}
                                 size="large"
-                                sx={{ fontSize: '3rem' }}
+                                sx={{ fontSize: { xs: '2rem', sm: '3rem' } }}
                             />
                         </Box>
 
@@ -445,8 +445,8 @@ const TeamLeadDashboard = () => {
                         />
                     </Box>
                 </DialogContent>
-                <DialogActions sx={{ p: 3, justifyContent: 'center', gap: 2 }}>
-                    <Button onClick={() => setFeedbackOpen(false)} size="large" sx={{ minWidth: 100 }}>
+                <DialogActions sx={{ p: 3, justifyContent: 'center', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                    <Button onClick={() => setFeedbackOpen(false)} size="large" sx={{ minWidth: 100, width: { xs: '100%', sm: 'auto' } }}>
                         {t('teamLeadDashboard.skip')}
                     </Button>
                     <Button
@@ -455,7 +455,7 @@ const TeamLeadDashboard = () => {
                         onClick={handleSubmitFeedback}
                         size="large"
                         startIcon={<DoneIcon />}
-                        sx={{ minWidth: 150, borderRadius: 2 }}
+                        sx={{ minWidth: 150, borderRadius: 2, width: { xs: '100%', sm: 'auto' } }}
                     >
                         {t('teamLeadDashboard.confirmResolved')}
                     </Button>

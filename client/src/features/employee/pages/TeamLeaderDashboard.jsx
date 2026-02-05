@@ -183,7 +183,9 @@ const TeamLeaderDashboard = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 2
+                        gap: 2,
+                        fontSize: { xs: '2rem', sm: '3rem' },
+                        textAlign: 'center'
                     }}>
                         <TechnicianIcon sx={{ fontSize: 40 }} />
                         Team Leader Dashboard
@@ -203,7 +205,7 @@ const TeamLeaderDashboard = () => {
                     {/* Left Side: Raise Request & Quick Actions */}
                     <Grid item xs={12} lg={4} xl={3}>
                         <Paper sx={{
-                            p: 4,
+                            p: { xs: 2, sm: 4 },
                             borderRadius: 4,
                             border: '1px solid',
                             borderColor: 'divider',
@@ -259,7 +261,7 @@ const TeamLeaderDashboard = () => {
                                     />
 
                                     <Grid container spacing={2}>
-                                        <Grid item xs={6}>
+                                        <Grid item xs={12} sm={6}>
                                             <TextField
                                                 fullWidth
                                                 label="Floor Number"
@@ -268,7 +270,7 @@ const TeamLeaderDashboard = () => {
                                                 onChange={(e) => setRequestData({ ...requestData, floor: e.target.value })}
                                             />
                                         </Grid>
-                                        <Grid item xs={6}>
+                                        <Grid item xs={12} sm={6}>
                                             <TextField
                                                 select
                                                 fullWidth
@@ -372,7 +374,7 @@ const TeamLeaderDashboard = () => {
 
                     {/* Right Side: Active Requests & Tracking */}
                     <Grid item xs={12} lg={8} xl={9}>
-                        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2 }}>
                             <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main' }}>
                                 Technician Requests
                             </Typography>
@@ -573,14 +575,14 @@ const TeamLeaderDashboard = () => {
                                                                 </Box>
                                                             </Box>
                                                         </Grid>
-                                                        <Grid item xs={12} md={6} sx={{ textAlign: 'right' }}>
+                                                        <Grid item xs={12} md={6} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
                                                             <Button
                                                                 variant="contained"
                                                                 color="success"
                                                                 size="large"
                                                                 startIcon={<FeedbackIcon />}
                                                                 onClick={() => handleOpenFeedback(ticket)}
-                                                                sx={{ borderRadius: 2, fontWeight: 700 }}
+                                                                sx={{ borderRadius: 2, fontWeight: 700, width: { xs: '100%', sm: 'auto' } }}
                                                             >
                                                                 Rate Service
                                                             </Button>
@@ -598,7 +600,7 @@ const TeamLeaderDashboard = () => {
                         {pendingTickets.length === 0 && assignedTickets.length === 0 &&
                             inProgressTickets.length === 0 && completedTickets.length === 0 && (
                                 <Paper sx={{
-                                    p: 10,
+                                    p: { xs: 4, sm: 10 },
                                     textAlign: 'center',
                                     borderRadius: 4,
                                     border: '2px dashed',
@@ -625,7 +627,7 @@ const TeamLeaderDashboard = () => {
                         Rate Your Service Experience
                     </Box>
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
                     <Box sx={{ textAlign: 'center', py: 2 }}>
                         {selectedTicket && (
                             <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
@@ -645,6 +647,7 @@ const TeamLeaderDashboard = () => {
                             size="large"
                             sx={{
                                 mb: 3,
+                                fontSize: { xs: '2rem', sm: '3rem' },
                                 '& .MuiRating-iconFilled': {
                                     color: 'warning.main',
                                 },
@@ -665,7 +668,7 @@ const TeamLeaderDashboard = () => {
                             sx={{ mb: 2 }}
                         />
 
-                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
                             <Chip
                                 label="Quick Response"
                                 size="small"
@@ -694,11 +697,12 @@ const TeamLeaderDashboard = () => {
                         </Typography>
                     </Box>
                 </DialogContent>
-                <DialogActions sx={{ p: 3, gap: 1 }}>
+                <DialogActions sx={{ p: 3, gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
                     <Button
                         onClick={() => setFeedbackOpen(false)}
                         variant="outlined"
                         startIcon={<CloseIcon />}
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                         Maybe Later
                     </Button>
@@ -708,6 +712,7 @@ const TeamLeaderDashboard = () => {
                         onClick={handleSubmitFeedback}
                         startIcon={isSubmittingFeedback ? <CircularProgress size={16} /> : <DoneIcon />}
                         disabled={isSubmittingFeedback}
+                        sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                         {isSubmittingFeedback ? 'Submitting...' : 'Submit Feedback'}
                     </Button>

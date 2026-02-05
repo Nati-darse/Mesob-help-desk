@@ -105,8 +105,8 @@ const TicketReviews = () => {
                     </Typography>
                 </Paper>
             ) : (
-                <TableContainer component={Paper}>
-                    <Table>
+                <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+                    <Table size="small" sx={{ minWidth: 700 }}>
                         <TableHead sx={{ bgcolor: 'background.default' }}>
                             <TableRow>
                                 <TableCell>Ticket</TableCell>
@@ -170,7 +170,7 @@ const TicketReviews = () => {
                 <DialogTitle>
                     {reviewDialog.action === 'approve' ? 'Approve Resolution' : 'Reject Resolution'}
                 </DialogTitle>
-                <DialogContent sx={{ minWidth: 400 }}>
+                <DialogContent sx={{ minWidth: { xs: 'auto', sm: 400 } }}>
                     <Alert severity={reviewDialog.action === 'approve' ? 'success' : 'warning'} sx={{ mb: 2 }}>
                         {reviewDialog.action === 'approve'
                             ? 'This will close the ticket permanently.'

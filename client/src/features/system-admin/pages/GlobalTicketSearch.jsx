@@ -350,8 +350,8 @@ const GlobalTicketSearch = () => {
             </Grid>
 
             {/* Results Table */}
-            <TableContainer component={Paper}>
-                <Table>
+            <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 900 }}>
                     <TableHead sx={{ bgcolor: 'background.default' }}>
                         <TableRow>
                             <TableCell>Ticket Details</TableCell>

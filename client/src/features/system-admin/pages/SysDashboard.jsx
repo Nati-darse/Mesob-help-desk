@@ -116,7 +116,7 @@ const SysDashboard = () => {
             <Grid container spacing={3}>
                 {/* Left Column: Latency Chart & Broadcast */}
                 <Grid item xs={12} md={8}>
-                    <Paper sx={{ p: 3, mb: 3, height: '400px' }}>
+                    <Paper sx={{ p: 3, mb: 3, height: { xs: 'auto', md: 400 } }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                             Request Latency (ms)
                         </Typography>
