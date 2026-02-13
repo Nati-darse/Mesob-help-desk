@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Paper, Typography, Grid, Card, CardContent, Button, TextField, List, ListItem, ListItemText, ListItemIcon, Avatar, Snackbar, Alert, Divider } from '@mui/material';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -13,35 +13,45 @@ import {
     Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-
-// Mock Data for Chart
-const data = [
-    { time: '00:00', latency: 45 },
-    { time: '04:00', latency: 30 },
-    { time: '08:00', latency: 120 }, // Morning rush
-    { time: '12:00', latency: 85 },
-    { time: '16:00', latency: 95 },
-    { time: '20:00', latency: 50 },
-    { time: '23:59', latency: 40 },
-];
-
-const MOCK_LOGS = [
-    { id: 1, type: 'info', msg: 'System Backup completed successfully', time: '2 mins ago' },
-    { id: 2, type: 'warning', msg: 'High latency detected in Ethio Telecom node', time: '15 mins ago' },
-    { id: 3, type: 'success', msg: 'New Company "Siket Bank" registered', time: '1 hour ago' },
-    { id: 4, type: 'error', msg: 'Failed login attempt from ip 192.168.1.55', time: '2 hours ago' },
-    { id: 5, type: 'info', msg: 'Database index optimization finished', time: '5 hours ago' },
-];
+import axios from 'axios';
 
 const SysDashboard = () => {
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [toastOpen, setToastOpen] = useState(false);
+    const [metrics, setMetrics] = useState({ totalUsers: 0, activeSockets: 0, companies: 0, uptimeSeconds: 0, maintenance: false });
+    const [latencySeries, setLatencySeries] = useState([]);
+    const [recentLogs, setRecentLogs] = useState([]);
 
     const handleBroadcast = () => {
         if (!broadcastMsg.trim()) return;
-        setToastOpen(true);
-        setBroadcastMsg('');
+        axios.post('/api/notifications/broadcast', {
+            message: broadcastMsg,
+            priority: 'info',
+            targetType: 'all',
+            targetValue: ''
+        }).then(() => {
+            setToastOpen(true);
+            setBroadcastMsg('');
+        }).catch(() => {
+            setToastOpen(true);
+        });
     };
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get('/api/system-admin/overview');
+                setMetrics(res.data.metrics || {});
+                setLatencySeries(res.data.latencySeries || []);
+                setRecentLogs(res.data.recentLogs || []);
+            } catch (error) {
+                // ignore for now
+            }
+        };
+        load();
+        const interval = setInterval(load, 15000);
+        return () => clearInterval(interval);
+    }, []);
 
     const MetricCard = ({ title, value, icon, color }) => (
         <Card sx={{ height: '100%', borderLeft: `5px solid ${color}` }}>
@@ -85,10 +95,10 @@ const SysDashboard = () => {
             </Box>
 
             {/* Maintenance Mode Alert */}
-            <Alert severity="warning" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+            <Alert severity={metrics.maintenance ? 'warning' : 'success'} sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                     <Typography>
-                        <strong>System Status:</strong> Operational (Maintenance Mode Inactive)
+                        <strong>System Status:</strong> {metrics.maintenance ? 'Maintenance Mode Active' : 'Operational'}
                     </Typography>
                     <Button color="inherit" size="small" href="/sys-admin/settings">
                         Configure
@@ -99,16 +109,16 @@ const SysDashboard = () => {
             {/* Metrics Row */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="Total Users" value="1,240" icon={<PeopleIcon />} color="#1e4fb1" />
+                    <MetricCard title="Total Users" value={metrics.totalUsers?.toLocaleString?.() || 0} icon={<PeopleIcon />} color="#1e4fb1" />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="Active Sockets" value="84" icon={<HubIcon />} color="#0061f2" />
+                    <MetricCard title="Active Sockets" value={metrics.activeSockets || 0} icon={<HubIcon />} color="#0061f2" />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="Companies" value="24" icon={<BusinessIcon />} color="#3f51b5" />
+                    <MetricCard title="Companies" value={metrics.companies || 0} icon={<BusinessIcon />} color="#3f51b5" />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                    <MetricCard title="System Uptime" value="99.9%" icon={<TimerIcon />} color="#00bcd4" />
+                    <MetricCard title="System Uptime" value={`${Math.floor((metrics.uptimeSeconds || 0) / 3600)}h`} icon={<TimerIcon />} color="#00bcd4" />
                 </Grid>
             </Grid>
 
@@ -121,7 +131,7 @@ const SysDashboard = () => {
                             Request Latency (ms)
                         </Typography>
                         <ResponsiveContainer width="100%" height="90%">
-                            <AreaChart data={data}>
+                            <AreaChart data={latencySeries}>
                                 <defs>
                                     <linearGradient id="colorLatency" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#1e4fb1" stopOpacity={0.8} />
@@ -184,29 +194,26 @@ const SysDashboard = () => {
                             </Typography>
                         </Box>
                         <List sx={{ p: 0 }}>
-                            {MOCK_LOGS.map((log, index) => (
-                                <Box key={log.id}>
+                            {recentLogs.map((log, index) => (
+                                <Box key={log._id || index}>
                                     <ListItem alignItems="flex-start">
                                         <ListItemIcon sx={{ minWidth: 40, mt: 0.5 }}>
-                                            {log.type === 'info' && <InfoIcon color="info" fontSize="small" />}
-                                            {log.type === 'warning' && <WarningIcon color="warning" fontSize="small" />}
-                                            {log.type === 'error' && <WarningIcon color="error" fontSize="small" />}
-                                            {log.type === 'success' && <CheckCircleIcon color="success" fontSize="small" />}
+                                            {String(log.action || '').includes('ERROR') ? <WarningIcon color="error" fontSize="small" /> : <InfoIcon color="info" fontSize="small" />}
                                         </ListItemIcon>
                                         <ListItemText
                                             primary={
                                                 <Typography variant="subtitle2" sx={{ fontSize: '0.9rem' }}>
-                                                    {log.msg}
+                                                    {log.action?.replace(/_/g, ' ') || 'Log Event'}
                                                 </Typography>
                                             }
                                             secondary={
                                                 <Typography variant="caption" color="text.secondary">
-                                                    {log.time}
+                                                    {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
                                                 </Typography>
                                             }
                                         />
                                     </ListItem>
-                                    {index < MOCK_LOGS.length - 1 && <Divider component="li" />}
+                                    {index < recentLogs.length - 1 && <Divider component="li" />}
                                 </Box>
                             ))}
                         </List>

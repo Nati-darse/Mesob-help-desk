@@ -19,8 +19,9 @@ import {
     Security as SecurityIcon,
     History as HistoryIcon
 } from '@mui/icons-material';
-import { COMPANIES, getCompanyById } from '../../../utils/companies';
-import { ROLES } from '../../../constants/roles';
+import axios from 'axios';
+import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { ROLES, ROLE_LABELS } from '../../../constants/roles';
 
 const MasterUserTable = () => {
     const [users, setUsers] = useState([]);
@@ -40,6 +41,7 @@ const MasterUserTable = () => {
     const [actionType, setActionType] = useState('');
     const [anchorEl, setAnchorEl] = useState(null);
     const itemsPerPage = 15;
+    const roleOptions = [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.TEAM_LEAD, ROLES.TECHNICIAN, ROLES.EMPLOYEE];
 
     // Real user data fetch
     useEffect(() => {
@@ -50,9 +52,10 @@ const MasterUserTable = () => {
         setLoading(true);
         try {
             const res = await axios.get('/api/users/global');
-            setUsers(res.data);
-            setFilteredUsers(res.data);
-            setTotalPages(Math.ceil(res.data.length / itemsPerPage));
+            const visibleUsers = res.data.filter((u) => u.role !== ROLES.SYSTEM_ADMIN);
+            setUsers(visibleUsers);
+            setFilteredUsers(visibleUsers);
+            setTotalPages(Math.ceil(visibleUsers.length / itemsPerPage));
         } catch (error) {
             console.error('Error fetching global users:', error);
         } finally {
@@ -108,14 +111,14 @@ const MasterUserTable = () => {
 
     const handleExport = () => {
         const csvContent = [
-            ['Name', 'Email', 'Role', 'Company', 'Status', 'Last Login', 'Login Count', 'Tickets Created'].join(','),
+            ['Name', 'Email', 'Role', 'Organization', 'Status', 'Last Login', 'Login Count', 'Tickets Created'].join(','),
             ...filteredUsers.map(user => {
                 const company = getCompanyById(user.companyId);
                 return [
                     `"${user.name}"`,
                     user.email,
-                    user.role,
-                    `"${company.name}"`,
+                    ROLE_LABELS[user.role] || user.role,
+                    `"${formatCompanyLabel(company)}"`,
                     user.isActive ? 'Active' : 'Inactive',
                     user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never',
                     user.loginCount,
@@ -217,8 +220,8 @@ const MasterUserTable = () => {
                                 onChange={(e) => setFilters({ ...filters, role: e.target.value })}
                             >
                                 <MenuItem value="all">All Roles</MenuItem>
-                                {Object.values(ROLES).map(role => (
-                                    <MenuItem key={role} value={role}>{role}</MenuItem>
+                                {roleOptions.map(role => (
+                                    <MenuItem key={role} value={role}>{ROLE_LABELS[role] || role}</MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
@@ -235,7 +238,7 @@ const MasterUserTable = () => {
                                 <MenuItem value="all">All Organizations</MenuItem>
                                 {COMPANIES.map(company => (
                                     <MenuItem key={company.id} value={company.id}>
-                                        {company.initials}
+                                        {formatCompanyLabel(company)}
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -371,14 +374,14 @@ const MasterUserTable = () => {
                                     </TableCell>
                                     <TableCell>
                                         <Chip
-                                            label={user.role}
+                                            label={ROLE_LABELS[user.role] || user.role}
                                             color={getRoleColor(user.role)}
                                             size="small"
                                         />
                                     </TableCell>
                                     <TableCell>
                                         <Chip
-                                            label={company.initials}
+                                            label={formatCompanyLabel(company)}
                                             size="small"
                                             variant="outlined"
                                         />
@@ -489,10 +492,10 @@ const MasterUserTable = () => {
                                 <strong>User:</strong> {selectedUser.name} ({selectedUser.email})
                             </Typography>
                             <Typography variant="body2" sx={{ mb: 1 }}>
-                                <strong>Role:</strong> {selectedUser.role}
+                                <strong>Role:</strong> {ROLE_LABELS[selectedUser.role] || selectedUser.role}
                             </Typography>
                             <Typography variant="body2">
-                                <strong>Organization:</strong> {getCompanyById(selectedUser.companyId).name}
+                                <strong>Organization:</strong> {formatCompanyLabel(getCompanyById(selectedUser.companyId))}
                             </Typography>
                         </Box>
                     )}

@@ -6,12 +6,12 @@ import {
 } from '@mui/material';
 import {
     Edit as EditIcon,
-    Login as LoginIcon,
+    DeleteForever as DeleteIcon,
     AdminPanelSettings as AdminIcon,
     LockReset as ResetIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES, getCompanyById } from '../../../utils/companies';
+import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
 import { ROLES, ROLE_LABELS } from '../../../constants/roles';
 
 const GlobalUserEditor = () => {
@@ -23,13 +23,14 @@ const GlobalUserEditor = () => {
     const [registerDialog, setRegisterDialog] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [newRole, setNewRole] = useState('');
-    const [impersonating, setImpersonating] = useState(false);
+    const [deletingUserId, setDeletingUserId] = useState(null);
     const [regFormData, setRegFormData] = useState({
         name: '',
         email: '',
-        role: ROLES.WORKER,
+        role: ROLES.EMPLOYEE,
         companyId: 1
     });
+    const editableRoles = [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.TEAM_LEAD, ROLES.TECHNICIAN, ROLES.EMPLOYEE];
 
     // Auto-assign to Digitalization Bureau if IT role is selected
     const handleRoleChange = (role) => {
@@ -49,7 +50,7 @@ const GlobalUserEditor = () => {
         try {
             await axios.post('/api/auth/register-user', regFormData);
             setRegisterDialog(false);
-            setRegFormData({ name: '', email: '', role: ROLES.WORKER, companyId: 1 });
+            setRegFormData({ name: '', email: '', role: ROLES.EMPLOYEE, companyId: 1 });
             fetchUsers();
         } catch (error) {
             alert(error.response?.data?.message || 'Registration failed');
@@ -57,10 +58,11 @@ const GlobalUserEditor = () => {
     };
 
     useEffect(() => {
+        const visibleUsers = users.filter(u => u.role !== ROLES.SYSTEM_ADMIN);
         if (companyFilter === 'all') {
-            setFilteredUsers(users);
+            setFilteredUsers(visibleUsers);
         } else {
-            setFilteredUsers(users.filter(u => u.companyId === parseInt(companyFilter)));
+            setFilteredUsers(visibleUsers.filter(u => u.companyId === parseInt(companyFilter)));
         }
     }, [companyFilter, users]);
 
@@ -92,24 +94,18 @@ const GlobalUserEditor = () => {
         }
     };
 
-    const handleSimulateUser = async (user) => {
-        if (!window.confirm(`Are you sure you want to impersonate ${user.name}? You will be logged in as them.`)) return;
-
-        setImpersonating(true);
+    const handleDeleteUser = async (user) => {
+        if (!window.confirm(`Delete ${user.name}? This action cannot be undone.`)) return;
+        setDeletingUserId(user._id);
         try {
-            const res = await axios.post('/api/auth/impersonate', { userId: user._id });
-            const { token, ...userData } = res.data;
-
-            // Save to local storage (replacing current admin session)
-            localStorage.setItem('mesob_token', token);
-            localStorage.setItem('mesob_user', JSON.stringify(userData));
-
-            // Hard reload to refresh context
-            window.location.href = '/';
+            await axios.delete(`/api/users/${user._id}`);
+            setUsers(prev => prev.filter(u => u._id !== user._id));
+            setFilteredUsers(prev => prev.filter(u => u._id !== user._id));
         } catch (error) {
-            console.error('Error impersonating:', error);
-            setImpersonating(false);
-            alert('Impersonation failed');
+            console.error('Error deleting user:', error);
+            alert('Failed to delete user');
+        } finally {
+            setDeletingUserId(null);
         }
     };
 
@@ -139,7 +135,7 @@ const GlobalUserEditor = () => {
                             <MenuItem value="all"><em>Show All Organizations</em></MenuItem>
                             {COMPANIES.map(comp => (
                                 <MenuItem key={comp.id} value={comp.id}>
-                                    {comp.initials} - {comp.name.substring(0, 30)}{comp.name.length > 30 ? '...' : ''}
+                                    {formatCompanyLabel(comp)}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -168,14 +164,25 @@ const GlobalUserEditor = () => {
                                     </TableCell>
                                     <TableCell>
                                         <Chip
-                                            label={user.role}
+                                            label={ROLE_LABELS[user.role] || user.role}
                                             size="small"
                                             color={user.role === 'System Admin' || user.role === 'Admin' ? 'warning' : 'default'}
                                         />
                                     </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Chip label={company.initials} size="small" variant="outlined" />
+                                            <Chip
+                                                label={formatCompanyLabel(company)}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{
+                                                    maxWidth: 260,
+                                                    '& .MuiChip-label': {
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                    }
+                                                }}
+                                            />
                                         </Box>
                                     </TableCell>
                                     <TableCell align="right">
@@ -189,18 +196,25 @@ const GlobalUserEditor = () => {
                                         </Button>
                                         <Button
                                             size="small"
-                                            color="warning"
-                                            startIcon={impersonating ? <CircularProgress size={16} /> : <LoginIcon />}
-                                            onClick={() => handleSimulateUser(user)}
-                                            disabled={impersonating || user.role === 'System Admin'}
+                                            color="error"
+                                            startIcon={deletingUserId === user._id ? <CircularProgress size={16} /> : <DeleteIcon />}
+                                            onClick={() => handleDeleteUser(user)}
+                                            disabled={deletingUserId === user._id || user.role === 'System Admin'}
                                         >
-                                            Simulate
+                                            Delete
                                         </Button>
                                         <Button
                                             size="small"
                                             color="info"
                                             startIcon={<ResetIcon />}
-                                            onClick={() => alert(`Reset link sent to ${user.email} (Mock Action)`)}
+                                            onClick={async () => {
+                                                try {
+                                                    await axios.post(`/api/users/${user._id}/reset-password`);
+                                                    alert(`Temporary password sent to ${user.email}`);
+                                                } catch (error) {
+                                                    alert('Failed to reset password');
+                                                }
+                                            }}
                                             sx={{ ml: 1 }}
                                         >
                                             Reset
@@ -227,8 +241,8 @@ const GlobalUserEditor = () => {
                             label="Role"
                             onChange={(e) => setNewRole(e.target.value)}
                         >
-                            {Object.entries(ROLES).map(([key, value]) => (
-                                <MenuItem key={key} value={value}>{value}</MenuItem>
+                            {editableRoles.map((value) => (
+                                <MenuItem key={value} value={value}>{ROLE_LABELS[value] || value}</MenuItem>
                             ))}
                         </Select>
                     </FormControl>
@@ -269,6 +283,7 @@ const GlobalUserEditor = () => {
                                 <MenuItem value={ROLES.ADMIN}>Administrator</MenuItem>
                                 <MenuItem value={ROLES.TECHNICIAN}>IT Technician</MenuItem>
                                 <MenuItem value={ROLES.TEAM_LEAD}>Team Lead</MenuItem>
+                                <MenuItem value={ROLES.EMPLOYEE}>Employee</MenuItem>
                             </Select>
                         </FormControl>
                         {regFormData.role === ROLES.ADMIN || regFormData.role === ROLES.TECHNICIAN ? (
@@ -284,7 +299,7 @@ const GlobalUserEditor = () => {
                                 onChange={(e) => setRegFormData({ ...regFormData, companyId: e.target.value })}
                                 disabled={regFormData.role === ROLES.ADMIN || regFormData.role === ROLES.TECHNICIAN}
                             >
-                                {COMPANIES.map(c => <MenuItem key={c.id} value={c.id}>{c.initials} - {c.name}</MenuItem>)}
+                                {COMPANIES.map(c => <MenuItem key={c.id} value={c.id}>{formatCompanyLabel(c)}</MenuItem>)}
                             </Select>
                         </FormControl>
                     </Box>

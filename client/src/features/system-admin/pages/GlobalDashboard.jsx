@@ -22,71 +22,33 @@ import {
 } from '@mui/icons-material';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip,
-    ResponsiveContainer, AreaChart, Area, BarChart, Bar
+    ResponsiveContainer
 } from 'recharts';
+import axios from 'axios';
 
 const GlobalDashboard = () => {
     const [systemHealth, setSystemHealth] = useState({});
     const [realtimeStats, setRealtimeStats] = useState({});
     const [alerts, setAlerts] = useState([]);
+    const [performanceData, setPerformanceData] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Mock real-time data
-    const mockSystemHealth = {
-        overall: 98.5,
-        database: 99.2,
-        api: 97.8,
-        storage: 95.4,
-        network: 99.1
-    };
-
-    const mockRealtimeStats = {
-        activeUsers: 847,
-        onlineUsers: 234,
-        totalCompanies: 24,
-        activeTickets: 156,
-        resolvedToday: 89,
-        avgResponseTime: 2.3,
-        systemLoad: 67,
-        storageUsed: 78
-    };
-
-    const mockAlerts = [
-        { id: 1, type: 'warning', title: 'High API Latency', message: 'Response times above 500ms detected', time: '2 mins ago', severity: 'medium' },
-        { id: 2, type: 'info', title: 'Scheduled Maintenance', message: 'Database optimization scheduled for tonight', time: '1 hour ago', severity: 'low' },
-        { id: 3, type: 'success', title: 'Backup Completed', message: 'Daily backup completed successfully', time: '3 hours ago', severity: 'low' },
-        { id: 4, type: 'error', title: 'Failed Login Attempts', message: '15 failed login attempts from IP 192.168.1.100', time: '5 hours ago', severity: 'high' }
-    ];
-
-    const performanceData = [
-        { time: '00:00', users: 120, tickets: 45, response: 180 },
-        { time: '04:00', users: 89, tickets: 23, response: 150 },
-        { time: '08:00', users: 456, tickets: 89, response: 280 },
-        { time: '12:00', users: 678, tickets: 134, response: 320 },
-        { time: '16:00', users: 543, tickets: 98, response: 250 },
-        { time: '20:00', users: 234, tickets: 67, response: 190 },
-        { time: '23:59', users: 156, tickets: 34, response: 160 }
-    ];
-
     useEffect(() => {
-        // Simulate API calls
-        setTimeout(() => {
-            setSystemHealth(mockSystemHealth);
-            setRealtimeStats(mockRealtimeStats);
-            setAlerts(mockAlerts);
-            setLoading(false);
-        }, 1000);
-
-        // Simulate real-time updates
-        const interval = setInterval(() => {
-            setRealtimeStats(prev => ({
-                ...prev,
-                activeUsers: prev.activeUsers + Math.floor(Math.random() * 10 - 5),
-                onlineUsers: prev.onlineUsers + Math.floor(Math.random() * 6 - 3),
-                avgResponseTime: +(prev.avgResponseTime + (Math.random() * 0.4 - 0.2)).toFixed(1)
-            }));
-        }, 5000);
-
+        const load = async () => {
+            try {
+                const res = await axios.get('/api/system-admin/global-dashboard');
+                setSystemHealth(res.data.systemHealth || {});
+                setRealtimeStats(res.data.realtimeStats || {});
+                setAlerts(res.data.alerts || []);
+                setPerformanceData(res.data.performanceData || []);
+            } catch (error) {
+                console.error('Failed to load global dashboard:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+        const interval = setInterval(load, 15000);
         return () => clearInterval(interval);
     }, []);
 
@@ -210,40 +172,36 @@ const GlobalDashboard = () => {
                 <Grid item xs={12} sm={6} md={3}>
                     <MetricCard
                         title="Active Users"
-                        value={realtimeStats.activeUsers?.toLocaleString()}
-                        subtitle={`${realtimeStats.onlineUsers} online now`}
+                        value={realtimeStats.activeUsers?.toLocaleString?.() || 0}
+                        subtitle={`${realtimeStats.onlineUsers || 0} online now`}
                         icon={<PeopleIcon sx={{ color: '#1e4fb1' }} />}
-                        trend="+5.2% today"
                         color="#1e4fb1"
                     />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                     <MetricCard
                         title="Organizations"
-                        value={realtimeStats.totalCompanies}
+                        value={realtimeStats.totalCompanies || 0}
                         subtitle="Registered tenants"
                         icon={<BusinessIcon sx={{ color: '#0061f2' }} />}
-                        trend="+2 this month"
                         color="#0061f2"
                     />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                     <MetricCard
                         title="Active Tickets"
-                        value={realtimeStats.activeTickets}
-                        subtitle={`${realtimeStats.resolvedToday} resolved today`}
+                        value={realtimeStats.activeTickets || 0}
+                        subtitle={`${realtimeStats.resolvedToday || 0} resolved today`}
                         icon={<TicketIcon sx={{ color: '#3f51b5' }} />}
-                        trend="-8% vs yesterday"
                         color="#3f51b5"
                     />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                     <MetricCard
                         title="Avg Response"
-                        value={`${realtimeStats.avgResponseTime}h`}
+                        value={`${realtimeStats.avgResponseTime || 0}h`}
                         subtitle="Resolution time"
                         icon={<SpeedIcon sx={{ color: '#00bcd4' }} />}
-                        trend="-12% improvement"
                         color="#00bcd4"
                     />
                 </Grid>
@@ -409,9 +367,9 @@ const GlobalDashboard = () => {
 
                         <Alert severity="info" sx={{ mt: 3 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                System Status: Operational
+                                System Status: {systemHealth.overall > 90 ? 'Operational' : 'Degraded'}
                             </Typography>
-                            All services are running normally. Next maintenance window: Sunday 2:00 AM
+                            Maintenance mode: {realtimeStats.maintenance ? 'Active' : 'Inactive'}
                         </Alert>
                     </Paper>
                 </Grid>

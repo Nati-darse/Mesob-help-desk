@@ -14,10 +14,16 @@ import {
     Send as SendIcon, Restore as RestoreIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../auth/context/AuthContext';
+import { ROLES } from '../../../constants/roles';
 
 const GlobalSettings = () => {
+    const { user, logout } = useAuth();
+    const isSystemAdmin = user?.role === ROLES.SYSTEM_ADMIN;
     const [loading, setLoading] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const navigate = useNavigate();
     
     // General Settings
     const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -75,37 +81,95 @@ const GlobalSettings = () => {
         resetSystem: false
     });
 
-    // Environment variables (mock for client-side)
-    const [envSettings] = useState({
-        jwtSecret: '••••••••••••••••••••••••••••••••',
-        mongoUri: '••••••••••••••••••••••••••••••••',
-        serverUrl: 'https://mesob-help-desk.onrender.com',
-        nodeEnv: 'production'
+    const [envSettings, setEnvSettings] = useState({
+        jwtSecret: '',
+        mongoUri: '',
+        serverUrl: '',
+        nodeEnv: ''
     });
 
     useEffect(() => {
         loadSettings();
     }, []);
 
+    const parseDomains = (domainsInput) => (
+        String(domainsInput || '')
+            .split(',')
+            .map((item) => item.trim().toLowerCase())
+            .filter(Boolean)
+            .filter((domain, index, list) => list.indexOf(domain) === index)
+    );
+
+    const validateSettings = () => {
+        const maxFileSize = Number(systemSettings.maxFileSize);
+        if (!Number.isFinite(maxFileSize) || maxFileSize < 1 || maxFileSize > 500) {
+            return 'Max file upload size must be between 1 and 500 MB.';
+        }
+
+        const sessionTimeout = Number(systemSettings.sessionTimeout);
+        if (!Number.isFinite(sessionTimeout) || sessionTimeout < 5 || sessionTimeout > 1440) {
+            return 'Session timeout must be between 5 and 1440 minutes.';
+        }
+
+        const loginAttempts = Number(systemSettings.maxLoginAttempts);
+        if (!Number.isFinite(loginAttempts) || loginAttempts < 1 || loginAttempts > 50) {
+            return 'Max login attempts must be between 1 and 50.';
+        }
+
+        const passwordMinLength = Number(securitySettings.passwordMinLength);
+        if (!Number.isFinite(passwordMinLength) || passwordMinLength < 6 || passwordMinLength > 128) {
+            return 'Minimum password length must be between 6 and 128.';
+        }
+
+        const retentionDays = Number(backupSettings.retentionDays);
+        if (!Number.isFinite(retentionDays) || retentionDays < 1 || retentionDays > 3650) {
+            return 'Backup retention days must be between 1 and 3650.';
+        }
+
+        const jwtExpiry = String(securitySettings.jwtExpiry || '').trim();
+        if (!/^\d+\s*[smhdw]$/i.test(jwtExpiry)) {
+            return 'JWT expiry format is invalid. Use values like 30m, 24h, 7d.';
+        }
+
+        const domainsInput = Array.isArray(securitySettings.allowedDomains)
+            ? securitySettings.allowedDomains.join(',')
+            : securitySettings.allowedDomains;
+        const domains = parseDomains(domainsInput);
+        if (domains.length === 0) {
+            return 'At least one allowed domain is required.';
+        }
+
+        return '';
+    };
+
     const loadSettings = async () => {
         setLoading(true);
         try {
-            // Simulate API calls - replace with actual endpoints
-            const maintenanceRes = await axios.get('/api/settings/maintenance').catch(() => ({ data: { maintenance: false } }));
-            setMaintenanceMode(!!maintenanceRes.data.maintenance);
-            
-            // Load other settings from localStorage or API
-            const savedSettings = localStorage.getItem('globalSettings');
-            if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
-                setSystemSettings(prev => ({ ...prev, ...parsed.system }));
-                setEmailSettings(prev => ({ ...prev, ...parsed.email }));
-                setSecuritySettings(prev => ({ ...prev, ...parsed.security }));
-                setNotificationSettings(prev => ({ ...prev, ...parsed.notifications }));
-                setBackupSettings(prev => ({ ...prev, ...parsed.backup }));
-            }
+            const [maintenanceRes, smtpRes, globalRes, envRes] = await Promise.all([
+                axios.get('/api/settings/maintenance'),
+                axios.get('/api/settings/smtp'),
+                axios.get('/api/settings/global'),
+                axios.get('/api/settings/env')
+            ]);
+
+            setMaintenanceMode(Boolean(maintenanceRes?.data?.maintenance));
+            setEmailSettings(prev => ({
+                ...prev,
+                host: smtpRes?.data?.host || '',
+                port: smtpRes?.data?.port || '',
+                user: smtpRes?.data?.user || '',
+                pass: smtpRes?.data?.pass || '',
+                secure: typeof smtpRes?.data?.secure === 'boolean' ? smtpRes.data.secure : true
+            }));
+
+            const data = globalRes?.data || {};
+            if (data.system) setSystemSettings(prev => ({ ...prev, ...data.system }));
+            if (data.security) setSecuritySettings(prev => ({ ...prev, ...data.security }));
+            if (data.notifications) setNotificationSettings(prev => ({ ...prev, ...data.notifications }));
+            if (data.backup) setBackupSettings(prev => ({ ...prev, ...data.backup }));
+            setEnvSettings(envRes?.data || {});
         } catch (error) {
-            showSnackbar('Failed to load settings', 'error');
+            showSnackbar(error?.response?.data?.message || 'Failed to load settings', 'error');
         } finally {
             setLoading(false);
         }
@@ -116,24 +180,41 @@ const GlobalSettings = () => {
     };
 
     const saveSettings = async () => {
+        const validationError = validateSettings();
+        if (validationError) {
+            showSnackbar(validationError, 'warning');
+            return;
+        }
+
         setLoading(true);
         try {
-            // Save maintenance mode
-            await axios.put('/api/settings/maintenance', { maintenance: maintenanceMode }).catch(() => {});
-            
-            // Save other settings to localStorage (replace with API calls)
-            const allSettings = {
+            await axios.put('/api/settings/maintenance', { maintenance: maintenanceMode });
+
+            await axios.put('/api/settings/smtp', {
+                host: emailSettings.host,
+                port: emailSettings.port,
+                user: emailSettings.user,
+                pass: emailSettings.pass,
+                secure: emailSettings.secure
+            });
+
+            await axios.put('/api/settings/global', {
                 system: systemSettings,
-                email: emailSettings,
-                security: securitySettings,
+                security: {
+                    ...securitySettings,
+                    allowedDomains: parseDomains(
+                        Array.isArray(securitySettings.allowedDomains)
+                            ? securitySettings.allowedDomains.join(',')
+                            : securitySettings.allowedDomains
+                    )
+                },
                 notifications: notificationSettings,
                 backup: backupSettings
-            };
-            localStorage.setItem('globalSettings', JSON.stringify(allSettings));
-            
+            });
+
             showSnackbar('Settings saved successfully!');
         } catch (error) {
-            showSnackbar('Failed to save settings', 'error');
+            showSnackbar(error?.response?.data?.message || 'Failed to save settings', 'error');
         } finally {
             setLoading(false);
         }
@@ -152,12 +233,20 @@ const GlobalSettings = () => {
         
         setLoading(true);
         try {
-            // Simulate email test
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await axios.post('/api/settings/test-email', {
+                to: emailSettings.testEmail,
+                smtp: {
+                    host: emailSettings.host,
+                    port: emailSettings.port,
+                    user: emailSettings.user,
+                    pass: emailSettings.pass,
+                    secure: emailSettings.secure
+                }
+            });
             showSnackbar(`Test email sent to ${emailSettings.testEmail}!`);
             setDialogs(prev => ({ ...prev, testEmail: false }));
         } catch (error) {
-            showSnackbar('Failed to send test email', 'error');
+            showSnackbar(error.response?.data?.message || 'Failed to send test email', 'error');
         } finally {
             setLoading(false);
         }
@@ -166,12 +255,15 @@ const GlobalSettings = () => {
     const rotateSecurityKeys = async () => {
         setLoading(true);
         try {
-            // Simulate key rotation
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            showSnackbar('Security keys rotated successfully!');
+            await axios.post('/api/settings/rotate-keys');
+            showSnackbar('Security keys rotated. All active sessions will be signed out.', 'warning');
             setDialogs(prev => ({ ...prev, rotateKeys: false }));
+            setTimeout(() => {
+                logout();
+                navigate('/login');
+            }, 800);
         } catch (error) {
-            showSnackbar('Failed to rotate keys', 'error');
+            showSnackbar(error?.response?.data?.message || 'Failed to rotate keys', 'error');
         } finally {
             setLoading(false);
         }
@@ -180,13 +272,12 @@ const GlobalSettings = () => {
     const createBackup = async () => {
         setLoading(true);
         try {
-            // Simulate backup creation
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            setBackupSettings(prev => ({ ...prev, lastBackup: new Date().toISOString() }));
+            const res = await axios.post('/api/settings/backup');
+            setBackupSettings(prev => ({ ...prev, lastBackup: res.data.lastBackup || new Date().toISOString() }));
             showSnackbar('Backup created successfully!');
             setDialogs(prev => ({ ...prev, backup: false }));
         } catch (error) {
-            showSnackbar('Failed to create backup', 'error');
+            showSnackbar(error?.response?.data?.message || 'Failed to create backup', 'error');
         } finally {
             setLoading(false);
         }
@@ -223,14 +314,12 @@ const GlobalSettings = () => {
     const resetSystem = async () => {
         setLoading(true);
         try {
-            // Simulate system reset
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            localStorage.removeItem('globalSettings');
-            loadSettings();
+            await axios.post('/api/settings/reset');
+            await loadSettings();
             showSnackbar('System settings reset to defaults!');
             setDialogs(prev => ({ ...prev, resetSystem: false }));
         } catch (error) {
-            showSnackbar('Failed to reset system', 'error');
+            showSnackbar(error?.response?.data?.message || 'Failed to reset system', 'error');
         } finally {
             setLoading(false);
         }
@@ -256,7 +345,7 @@ const GlobalSettings = () => {
                             <Box>
                                 <Typography variant="subtitle1" fontWeight="bold">Maintenance Mode</Typography>
                                 <Typography variant="body2" color="text.secondary">
-                                    Lock access for all users except System Admins.
+                                    Lock access for all users except System Admin and Super Admin.
                                 </Typography>
                             </Box>
                             <FormControlLabel
@@ -273,7 +362,7 @@ const GlobalSettings = () => {
 
                         {maintenanceMode && (
                             <Alert severity="warning" sx={{ mt: 2 }}>
-                                ⚠️ The application is currently locked. Non-admin users cannot login.
+                                WARNING: Maintenance mode is ON. Only System Admin and Super Admin can login.
                             </Alert>
                         )}
                     </Paper>
@@ -510,7 +599,13 @@ const GlobalSettings = () => {
                                     fullWidth
                                     label="Allowed Domains (comma separated)"
                                     value={securitySettings.allowedDomains.join(', ')}
-                                    onChange={(e) => setSecuritySettings({...securitySettings, allowedDomains: e.target.value.split(', ')})}
+                                    onChange={(e) => {
+                                        const domains = e.target.value
+                                            .split(',')
+                                            .map((item) => item.trim())
+                                            .filter(Boolean);
+                                        setSecuritySettings({ ...securitySettings, allowedDomains: domains });
+                                    }}
                                     size="small"
                                     helperText="e.g., gov.et, mesob.com"
                                 />
@@ -541,7 +636,7 @@ const GlobalSettings = () => {
                         <Divider sx={{ mb: 3 }} />
 
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                            Last backup: {new Date(backupSettings.lastBackup).toLocaleString()}
+                            Last backup: {backupSettings.lastBackup ? new Date(backupSettings.lastBackup).toLocaleString() : 'Never'}
                         </Typography>
 
                         <Button 
@@ -659,13 +754,10 @@ const GlobalSettings = () => {
                                     color="error"
                                     fullWidth
                                     startIcon={<DeleteIcon />}
-                                    onClick={() => {
-                                        if (window.confirm('Are you sure you want to clear all data? This action cannot be undone!')) {
-                                            showSnackbar('Data clearing initiated... (This is a demo)', 'warning');
-                                        }
-                                    }}
+                                    onClick={() => navigate('/sys-admin/cleanup')}
+                                    disabled={!isSystemAdmin}
                                 >
-                                    Clear All Data
+                                    Open Cleanup Tools
                                 </Button>
                             </Grid>
                         </Grid>
@@ -794,10 +886,19 @@ const GlobalSettings = () => {
                 open={snackbar.open}
                 autoHideDuration={6000}
                 onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-                message={snackbar.message}
-            />
+            >
+                <Alert
+                    onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
 
 export default GlobalSettings;
+

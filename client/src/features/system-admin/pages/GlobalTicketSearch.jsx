@@ -17,7 +17,8 @@ import {
     Person as PersonIcon,
     Schedule as ScheduleIcon
 } from '@mui/icons-material';
-import { COMPANIES, getCompanyById } from '../../../utils/companies';
+import axios from 'axios';
+import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
 
 const GlobalTicketSearch = () => {
     // Real ticket data fetch
@@ -64,10 +65,13 @@ const GlobalTicketSearch = () => {
 
     const applyFilters = () => {
         let filtered = tickets.filter(ticket => {
+            const orgLabel = formatCompanyLabel(getCompanyById(ticket.companyId));
+            const requesterName = ticket.requester?.name || ticket.requester || '';
             const matchesSearch = !searchQuery ||
                 ticket.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 ticket._id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                ticket.requester?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+                requesterName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                orgLabel.toLowerCase().includes(searchQuery.toLowerCase());
 
             const matchesStatus = filters.status === 'all' || ticket.status === filters.status;
             const matchesPriority = filters.priority === 'all' || ticket.priority === filters.priority;
@@ -94,16 +98,20 @@ const GlobalTicketSearch = () => {
         setViewDialog(true);
     };
 
+    const getTicketOrganizationLabel = (ticket) => formatCompanyLabel(getCompanyById(ticket.companyId));
+    const getRequesterName = (ticket) => ticket.requester?.name || ticket.requester || 'Unknown';
+    const getAssigneeName = (ticket) => ticket.technician?.name || ticket.assignee || 'Unassigned';
+
     const handleExport = () => {
         const csvContent = [
-            ['Ticket ID', 'Title', 'Status', 'Priority', 'Company', 'Requester', 'Created Date'].join(','),
+            ['Ticket ID', 'Title', 'Status', 'Priority', 'Organization', 'Requester', 'Created Date'].join(','),
             ...filteredTickets.map(ticket => [
-                ticket.id,
+                ticket._id || ticket.id,
                 `"${ticket.title}"`,
                 ticket.status,
                 ticket.priority,
-                `"${ticket.companyName}"`,
-                ticket.requester,
+                `"${getTicketOrganizationLabel(ticket)}"`,
+                `"${getRequesterName(ticket)}"`,
                 new Date(ticket.createdAt).toLocaleDateString()
             ].join(','))
         ].join('\n');
@@ -264,7 +272,7 @@ const GlobalTicketSearch = () => {
                                 <MenuItem value="all">All Organizations</MenuItem>
                                 {COMPANIES.map(company => (
                                     <MenuItem key={company.id} value={company.id}>
-                                        {company.initials} - {company.name.substring(0, 25)}
+                                        {formatCompanyLabel(company)}
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -365,11 +373,11 @@ const GlobalTicketSearch = () => {
                     </TableHead>
                     <TableBody>
                         {paginatedTickets.map((ticket) => (
-                            <TableRow key={ticket.id} hover>
+                            <TableRow key={ticket._id || ticket.id} hover>
                                 <TableCell>
                                     <Box>
                                         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                            {ticket.id}
+                                            {ticket._id || ticket.id}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
                                             {ticket.title}
@@ -400,7 +408,7 @@ const GlobalTicketSearch = () => {
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <BusinessIcon fontSize="small" color="action" />
                                         <Typography variant="body2">
-                                            {ticket.companyName}
+                                            {getTicketOrganizationLabel(ticket)}
                                         </Typography>
                                     </Box>
                                 </TableCell>
@@ -408,7 +416,7 @@ const GlobalTicketSearch = () => {
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <PersonIcon fontSize="small" color="action" />
                                         <Typography variant="body2">
-                                            {ticket.requester}
+                                            {getRequesterName(ticket)}
                                         </Typography>
                                     </Box>
                                 </TableCell>
@@ -454,7 +462,7 @@ const GlobalTicketSearch = () => {
             {/* Ticket Details Dialog */}
             <Dialog open={viewDialog} onClose={() => setViewDialog(false)} maxWidth="md" fullWidth>
                 <DialogTitle>
-                    Ticket Details - {selectedTicket?.id}
+                    Ticket Details - {selectedTicket?._id || selectedTicket?.id}
                 </DialogTitle>
                 <DialogContent>
                     {selectedTicket && (
@@ -483,15 +491,17 @@ const GlobalTicketSearch = () => {
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Typography variant="subtitle2" color="text.secondary">Organization</Typography>
-                                <Typography variant="body1" sx={{ mb: 2 }}>{selectedTicket.companyName}</Typography>
+                                <Typography variant="body1" sx={{ mb: 2 }}>
+                                    {getTicketOrganizationLabel(selectedTicket)}
+                                </Typography>
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Typography variant="subtitle2" color="text.secondary">Requester</Typography>
-                                <Typography variant="body1" sx={{ mb: 2 }}>{selectedTicket.requester}</Typography>
+                                <Typography variant="body1" sx={{ mb: 2 }}>{getRequesterName(selectedTicket)}</Typography>
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Typography variant="subtitle2" color="text.secondary">Assigned To</Typography>
-                                <Typography variant="body1" sx={{ mb: 2 }}>{selectedTicket.assignee}</Typography>
+                                <Typography variant="body1" sx={{ mb: 2 }}>{getAssigneeName(selectedTicket)}</Typography>
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Typography variant="subtitle2" color="text.secondary">Created</Typography>
