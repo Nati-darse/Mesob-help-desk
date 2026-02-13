@@ -37,6 +37,7 @@
         "unassigned": "Unassigned",
         "onlineTechs": "Online Technicians",
         "pendingReview": "Pending Review",
+        "slaBreaches": "SLA Breaches",
         "liveDispatchInbox": "Live Dispatch Inbox",
         "pendingAction": "Pending Action",
         "general": "General",
@@ -152,5 +153,18 @@
         "excelReportGenerated": "Excel report generated",
         "csvReportGenerated": "CSV report generated",
         "failedToGenerateReport": "Failed to generate report: {{error}}"
+    },
+    "ticketList": {
+        "supportTickets": "Support Tickets",
+        "newTicket": "New Ticket",
+        "title": "Title",
+        "bureau": "Bureau",
+        "category": "Category",
+        "priority": "Priority",
+        "status": "Status",
+        "created": "Created",
+        "actions": "Actions",
+        "noTicketsFound": "No tickets found",
+        "failedToFetch": "Failed to fetch tickets"
     }
 }

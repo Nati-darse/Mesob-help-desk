@@ -37,6 +37,7 @@
         "unassigned": "ያልተመደቡ",
         "onlineTechs": "በመስመር ላይ ያሉ ቴክኒሻኖች",
         "pendingReview": "ግምገማ በመጠባበቅ ላይ",
+        "slaBreaches": "SLA ጥሰቶች",
         "liveDispatchInbox": "ቀጥታ መላኪያ ገቢ ሳጥን",
         "pendingAction": "እርምጃ በመጠባበቅ ላይ",
         "general": "ጠቅላላ",
@@ -152,5 +153,18 @@
         "excelReportGenerated": "የ Excel ሪፖርት ተዘጋጅቷል",
         "csvReportGenerated": "የ CSV ሪፖርት ተዘጋጅቷል",
         "failedToGenerateReport": "ሪፖርት ማዘጋጀት አልተቻለም: {{error}}"
+    },
+    "ticketList": {
+        "supportTickets": "የድጋፍ ቲኬቶች",
+        "newTicket": "አዲስ ቲኬት",
+        "title": "ርዕስ",
+        "bureau": "ቢሮ",
+        "category": "ምድብ",
+        "priority": "ቅድሚያ",
+        "status": "ሁኔታ",
+        "created": "የተፈጠረ",
+        "actions": "እርምጃዎች",
+        "noTicketsFound": "ቲኬቶች አልተገኙም",
+        "failedToFetch": "ቲኬቶችን ማምጣት አልተቻለም"
     }
 }
