@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Container, Box, Typography, Paper, TextField, Button, Avatar, Grid,
-    Divider, Alert, IconButton, CircularProgress
+    Divider, Alert, IconButton, CircularProgress, Tooltip
 } from '@mui/material';
 import { PhotoCamera as PhotoCameraIcon, Save as SaveIcon, Lock as LockIcon } from '@mui/icons-material';
 import { useAuth } from '../features/auth/context/AuthContext';
+import { ROLE_LABELS } from '../constants/roles';
 import axios from 'axios';
+import { isDataUrl, resolveMediaUrl } from '../utils/media';
 
 const Profile = () => {
     const { user, updateUser } = useAuth();
@@ -18,6 +20,16 @@ const Profile = () => {
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const MAX_PROFILE_IMAGE_MB = 5;
+
+    useEffect(() => {
+        setFormData((prev) => ({
+            ...prev,
+            name: user?.name || '',
+            email: user?.email || '',
+            profilePic: user?.profilePic || ''
+        }));
+    }, [user?._id, user?.name, user?.email, user?.profilePic]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -25,15 +37,26 @@ const Profile = () => {
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            // For now, we'll create a temporary URL
-            // In production, you'd upload to a service and get the URL
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({ ...formData, profilePic: reader.result });
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setMessage({ type: 'error', text: 'Please select a valid image file.' });
+            return;
         }
+        if (file.size > MAX_PROFILE_IMAGE_MB * 1024 * 1024) {
+            setMessage({ type: 'error', text: `Profile image must be ${MAX_PROFILE_IMAGE_MB}MB or smaller.` });
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setFormData((prev) => ({ ...prev, profilePic: reader.result }));
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveImage = () => {
+        setFormData((prev) => ({ ...prev, profilePic: '' }));
     };
 
     const handleSubmit = async (e) => {
@@ -51,6 +74,7 @@ const Profile = () => {
                 email: formData.email,
                 profilePic: formData.profilePic
             };
+            if (!formData.profilePic && user?.profilePic) payload.removeProfilePic = true;
             if (formData.password) payload.password = formData.password;
 
             const res = await axios.put('/api/auth/profile', payload);
@@ -58,8 +82,8 @@ const Profile = () => {
             // Update auth context with new user data including profilePic
             updateUser(res.data);
 
-            setMessage({ type: 'success', text: 'Profile updated successfully! Your profile picture will appear across the platform.' });
-            setFormData({ ...formData, password: '', confirmPassword: '' });
+            setMessage({ type: 'success', text: 'Profile updated successfully.' });
+            setFormData((prev) => ({ ...prev, password: '', confirmPassword: '' }));
         } catch (error) {
             setMessage({ type: 'error', text: error.response?.data?.message || 'Update failed' });
         } finally {
@@ -80,14 +104,14 @@ const Profile = () => {
                         <Paper sx={{ p: { xs: 2, sm: 4 }, textAlign: 'center', borderRadius: 4 }}>
                             <Box sx={{ position: 'relative', display: 'inline-block' }}>
                                 <Avatar
-                                    src={formData.profilePic}
+                                    src={resolveMediaUrl(formData.profilePic)}
                                     sx={{ width: 120, height: 120, mx: 'auto', mb: 2, bgcolor: 'primary.main', fontSize: '3rem' }}
                                 >
                                     {formData.name.charAt(0)}
                                 </Avatar>
                                 <IconButton
                                     color="primary"
-                                    sx={{ position: 'absolute', bottom: 10, right: 0, bgcolor: 'background.paper', border: '1px solid divider' }}
+                                    sx={{ position: 'absolute', bottom: 10, right: 0, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
                                     component="label"
                                 >
                                     <input hidden accept="image/*" type="file" onChange={handleFileChange} />
@@ -95,7 +119,9 @@ const Profile = () => {
                                 </IconButton>
                             </Box>
                             <Typography variant="h6" fontWeight="bold">{user?.name}</Typography>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>{user?.role}</Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {ROLE_LABELS[user?.role] || user?.role}
+                            </Typography>
                             <Divider sx={{ my: 2 }} />
                             <Typography variant="caption" color="text.secondary">
                                 Organization: {user?.department || 'Internal'}
@@ -137,10 +163,26 @@ const Profile = () => {
                                         fullWidth
                                         label="Profile Picture URL"
                                         name="profilePic"
-                                        value={formData.profilePic}
+                                        value={isDataUrl(formData.profilePic) ? '' : formData.profilePic}
                                         onChange={handleChange}
-                                        helperText="Provide a URL for your profile image"
+                                        helperText={isDataUrl(formData.profilePic) ? 'Image uploaded from device. URL hidden.' : 'Provide a URL for your profile image'}
+                                        placeholder={isDataUrl(formData.profilePic) ? 'Uploaded image' : ''}
                                     />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Tooltip title="Remove current profile picture">
+                                        <span>
+                                            <Button
+                                                variant="outlined"
+                                                color="inherit"
+                                                onClick={handleRemoveImage}
+                                                disabled={!formData.profilePic}
+                                                sx={{ width: { xs: '100%', sm: 'auto' } }}
+                                            >
+                                                Remove Photo
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
                                 </Grid>
                             </Grid>
 

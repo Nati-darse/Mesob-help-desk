@@ -16,7 +16,7 @@ import {
     CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { useAuth } from '../features/auth/context/AuthContext';
-import { getCompanyById } from '../utils/companies';
+import { formatCompanyLabel, getCompanyById, getCompanyDisplayName } from '../utils/companies';
 import axios from 'axios';
 
 const RequestPage = () => {
@@ -179,7 +179,7 @@ const RequestPage = () => {
                     Get help from our support team quickly and easily
                 </Typography>
                 <Chip 
-                    label={`${company.name} - ${user?.name || 'User'}`} 
+                    label={`${formatCompanyLabel(company)} - ${user?.name || 'User'}`} 
                     color="primary" 
                     variant="outlined"
                     sx={{ fontWeight: 700 }}
@@ -364,13 +364,13 @@ const RequestPage = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                     <BusinessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                     <Typography variant="body2">
-                                        {company.name}
+                                        {formatCompanyLabel(company)}
                                     </Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <LocationIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                     <Typography variant="body2">
-                                        {company.location || 'Office Location'}
+                                        {getCompanyDisplayName(company)}
                                     </Typography>
                                 </Box>
                             </CardContent>

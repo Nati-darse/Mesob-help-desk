@@ -8,7 +8,7 @@ const testAccounts = [
     { email: 'admin@mesob.com', password: 'admin123', role: 'Super Admin', path: '/admin' },
     { email: 'tech@mesob.com', password: 'tech123', role: 'Technician', path: '/tech' },
     { email: 'lead@mesob.com', password: 'lead123', role: 'Team Lead', path: '/team-lead' },
-    { email: 'ermias@eeu.com', password: 'emp123', role: 'Worker', path: '/portal' },
+    { email: 'ermias@eeu.com', password: 'emp123', role: 'Employee', path: '/portal' },
 ];
 
 const LoginDebug = () => {
