@@ -1,28 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, Chip, IconButton, TextField, InputAdornment, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Card, CardContent, LinearProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 // Temporarily commenting out DataGrid to fix white page issue
 // import { DataGrid } from '@mui/x-data-grid';
 import { Search as SearchIcon, Edit as EditIcon, Circle as CircleIcon, Add as AddIcon, CloudUpload as UploadIcon, Business as BusinessIcon, TrendingUp as TrendingIcon, People as PeopleIcon } from '@mui/icons-material';
-import { COMPANIES } from '../../../utils/companies';
+import axios from 'axios';
+import { getCompanyById, getCompanyDisplayName } from '../../../utils/companies';
 
 const CompanyRegistry = () => {
     const [searchText, setSearchText] = useState('');
-    const [companies, setCompanies] = useState(COMPANIES);
+    const [companies, setCompanies] = useState([]);
+    const [stats, setStats] = useState({ totalUsers: 0, uptimeSeconds: 0 });
     const [openModal, setOpenModal] = useState(false);
     const [editingCompany, setEditingCompany] = useState(null);
 
-    // Mock Form State
     const [formData, setFormData] = useState({
         name: '',
+        amharicName: '',
         initials: '',
+        logo: '',
         primaryColor: '#000000',
         maxUsers: 50,
         domain: ''
     });
 
+    const mergeCompany = (company) => {
+        const local = getCompanyById(company.companyId);
+        return {
+            ...local,
+            ...company,
+            name: company.name || local.name,
+            amharicName: company.amharicName || local.amharicName || '',
+            initials: company.initials || local.initials,
+            logo: company.logo || local.logo || ''
+        };
+    };
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get('/api/companies');
+                setCompanies((res.data || []).map(mergeCompany));
+                const overview = await axios.get('/api/system-admin/overview');
+                setStats(overview.data?.metrics || {});
+            } catch (error) {
+                setCompanies([]);
+            }
+        };
+        load();
+    }, []);
+
     const handleOpenCreate = () => {
         setEditingCompany(null);
-        setFormData({ name: '', initials: '', primaryColor: '#000000', maxUsers: 50, domain: '' });
+        setFormData({ name: '', amharicName: '', initials: '', logo: '', primaryColor: '#000000', maxUsers: 50, domain: '' });
         setOpenModal(true);
     };
 
@@ -30,21 +59,52 @@ const CompanyRegistry = () => {
         setEditingCompany(company);
         setFormData({
             name: company.name,
+            amharicName: company.amharicName || '',
             initials: company.initials,
-            primaryColor: '#1976d2', // Mock existing value
-            maxUsers: 100, // Mock existing value
-            domain: `${company.initials.toLowerCase()}.gov.et` // Mock value
+            logo: company.logo || '',
+            primaryColor: company.primaryColor || '#1976d2',
+            maxUsers: company.maxUsers || 100,
+            domain: company.domain || ''
         });
         setOpenModal(true);
     };
 
-    const handleSave = () => {
-        alert('Company Saved (Mock Action)');
-        setOpenModal(false);
+    const handleSave = async () => {
+        try {
+            if (editingCompany) {
+                await axios.put(`/api/companies/${editingCompany.companyId}`, {
+                    name: formData.name,
+                    amharicName: formData.amharicName,
+                    initials: formData.initials,
+                    logo: formData.logo,
+                    primaryColor: formData.primaryColor,
+                    maxUsers: Number(formData.maxUsers),
+                    domain: formData.domain
+                });
+            } else {
+                const nextId = Math.max(0, ...companies.map(c => c.companyId || 0)) + 1;
+                await axios.post('/api/companies', {
+                    companyId: nextId,
+                    name: formData.name,
+                    amharicName: formData.amharicName,
+                    initials: formData.initials,
+                    logo: formData.logo,
+                    primaryColor: formData.primaryColor,
+                    maxUsers: Number(formData.maxUsers),
+                    domain: formData.domain
+                });
+            }
+            const res = await axios.get('/api/companies');
+            setCompanies((res.data || []).map(mergeCompany));
+            setOpenModal(false);
+        } catch (error) {
+            alert('Failed to save company');
+        }
     };
 
     const filteredRows = companies.filter((row) =>
         row.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        (row.amharicName || '').toLowerCase().includes(searchText.toLowerCase()) ||
         row.initials.toLowerCase().includes(searchText.toLowerCase())
     );
 
@@ -87,7 +147,7 @@ const CompanyRegistry = () => {
                                 </Avatar>
                                 <Box>
                                     <Typography variant="h5" fontWeight="bold" color="#4caf50">
-                                        {companies.length}
+                                        {companies.filter(c => c.active !== false).length}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                         Active Systems
@@ -105,7 +165,7 @@ const CompanyRegistry = () => {
                                 </Avatar>
                                 <Box>
                                     <Typography variant="h5" fontWeight="bold" color="#ff9800">
-                                        2,847
+                                        {stats.totalUsers?.toLocaleString?.() || 0}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                         Total Users
@@ -123,7 +183,7 @@ const CompanyRegistry = () => {
                                 </Avatar>
                                 <Box>
                                     <Typography variant="h5" fontWeight="bold" color="#0061f2">
-                                        98.5%
+                                        {stats.uptimeSeconds ? `${Math.floor(stats.uptimeSeconds / 3600)}h` : '0h'}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                         System Uptime
@@ -140,7 +200,7 @@ const CompanyRegistry = () => {
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                     Organization Directory
                 </Typography>
-                <Button variant="contained" startIcon={<AddIcon />} sx={{ borderRadius: 3, px: 3 }}>
+                <Button variant="contained" startIcon={<AddIcon />} sx={{ borderRadius: 3, px: 3 }} onClick={handleOpenCreate}>
                     Onboard New Organization
                 </Button>
             </Box>
@@ -168,6 +228,7 @@ const CompanyRegistry = () => {
                     <Table size="small" sx={{ minWidth: 700 }}>
                         <TableHead>
                             <TableRow>
+                                <TableCell>Logo</TableCell>
                                 <TableCell>Code</TableCell>
                                 <TableCell>Organization Name</TableCell>
                                 <TableCell>Status</TableCell>
@@ -176,13 +237,30 @@ const CompanyRegistry = () => {
                         </TableHead>
                         <TableBody>
                             {filteredRows.map((row) => (
-                                <TableRow key={row.id} hover>
+                                <TableRow key={row.companyId} hover>
+                                    <TableCell>
+                                        <Avatar
+                                            src={row.logo || ''}
+                                            alt={row.initials}
+                                            variant="rounded"
+                                            sx={{ width: 44, height: 44, bgcolor: 'background.default' }}
+                                        >
+                                            {row.initials}
+                                        </Avatar>
+                                    </TableCell>
                                     <TableCell>
                                         <Chip label={row.initials} variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
                                     </TableCell>
-                                    <TableCell>{row.name}</TableCell>
                                     <TableCell>
-                                        <Chip icon={<CircleIcon sx={{ fontSize: 10 }} />} label="Active" color="success" size="small" variant="outlined" />
+                                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                            {getCompanyDisplayName(row)}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {row.name}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip icon={<CircleIcon sx={{ fontSize: 10 }} />} label={row.active === false ? 'Inactive' : 'Active'} color={row.active === false ? 'warning' : 'success'} size="small" variant="outlined" />
                                     </TableCell>
                                     <TableCell>
                                         <IconButton color="primary" size="small" onClick={() => handleOpenEdit(row)}>
@@ -211,9 +289,22 @@ const CompanyRegistry = () => {
                                 sx={{ mb: 2 }}
                             />
                             <TextField
+                                fullWidth label="Amharic Name"
+                                value={formData.amharicName}
+                                onChange={(e) => setFormData({ ...formData, amharicName: e.target.value })}
+                                sx={{ mb: 2 }}
+                            />
+                            <TextField
                                 fullWidth label="Abbreviation / Code"
                                 value={formData.initials}
                                 onChange={(e) => setFormData({ ...formData, initials: e.target.value })}
+                                sx={{ mb: 2 }}
+                            />
+                            <TextField
+                                fullWidth label="Logo URL"
+                                value={formData.logo}
+                                onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                                helperText="Example: /company-logos/EEU.png"
                                 sx={{ mb: 2 }}
                             />
                             <TextField
@@ -226,7 +317,7 @@ const CompanyRegistry = () => {
                         <Grid item xs={12} md={4}>
                             <Typography variant="subtitle2" gutterBottom>Branding & Quotas</Typography>
                             <Paper variant="outlined" sx={{ p: 2, textAlign: 'center', mb: 2 }}>
-                                <Avatar sx={{ width: 64, height: 64, margin: '0 auto', bgcolor: formData.primaryColor }}>
+                                <Avatar src={formData.logo} sx={{ width: 64, height: 64, margin: '0 auto', bgcolor: formData.primaryColor }}>
                                     {formData.initials || 'LOGO'}
                                 </Avatar>
                                 <Button startIcon={<UploadIcon />} size="small" sx={{ mt: 1 }}>Upload Logo</Button>

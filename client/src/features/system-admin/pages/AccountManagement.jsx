@@ -14,7 +14,8 @@ import {
     History as HistoryIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES, getCompanyById } from '../../../utils/companies';
+import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { ROLES, ROLE_LABELS } from '../../../constants/roles';
 
 const AccountManagement = () => {
     const [users, setUsers] = useState([]);
@@ -43,6 +44,7 @@ const AccountManagement = () => {
     };
 
     const filteredUsers = users.filter(user => {
+        if (user.role === ROLES.SYSTEM_ADMIN) return false;
         const companyMatch = companyFilter === 'all' || user.companyId === parseInt(companyFilter);
         const statusMatch = statusFilter === 'all' || 
             (statusFilter === 'active' && user.isActive !== false) ||
@@ -122,7 +124,7 @@ const AccountManagement = () => {
                             <MenuItem value="all">All Organizations</MenuItem>
                             {COMPANIES.map(comp => (
                                 <MenuItem key={comp.id} value={comp.id}>
-                                    {comp.initials} - {comp.name.substring(0, 25)}
+                                    {formatCompanyLabel(comp)}
                                 </MenuItem>
                             ))}
                         </Select>
@@ -149,7 +151,7 @@ const AccountManagement = () => {
                     <TableBody>
                         {filteredUsers.map((user) => {
                             const company = getCompanyById(user.companyId);
-                            const isSystemAdmin = user.role === 'System Admin';
+                            const isSystemAdmin = user.role === ROLES.SYSTEM_ADMIN;
                             
                             return (
                                 <TableRow key={user._id}>
@@ -162,7 +164,7 @@ const AccountManagement = () => {
                                                 {user.email}
                                             </Typography>
                                             <Box sx={{ mt: 0.5 }}>
-                                                <Chip label={user.role} size="small" variant="outlined" />
+                                                <Chip label={ROLE_LABELS[user.role] || user.role} size="small" variant="outlined" />
                                             </Box>
                                         </Box>
                                     </TableCell>
@@ -170,7 +172,18 @@ const AccountManagement = () => {
                                         {getStatusChip(user)}
                                     </TableCell>
                                     <TableCell>
-                                        <Chip label={company.initials} size="small" variant="outlined" />
+                                        <Chip
+                                            label={formatCompanyLabel(company)}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{
+                                                maxWidth: 260,
+                                                '& .MuiChip-label': {
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
+                                                }
+                                            }}
+                                        />
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="caption">

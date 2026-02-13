@@ -89,15 +89,7 @@ const BulkDataCleanup = () => {
             setStats(res.data);
         } catch (error) {
             console.error('Error fetching cleanup stats:', error);
-            // Mock data for demo
-            setStats({
-                oldTickets: 1247,
-                inactiveUsers: 89,
-                orphanedFiles: 156,
-                oldLogs: 5432,
-                tempData: 234,
-                duplicates: 12
-            });
+            setStats({});
         } finally {
             setLoading(false);
         }
@@ -119,28 +111,14 @@ const BulkDataCleanup = () => {
         setCleanupProgress(0);
 
         try {
-            // Simulate progress
-            const interval = setInterval(() => {
-                setCleanupProgress(prev => {
-                    if (prev >= 100) {
-                        clearInterval(interval);
-                        return 100;
-                    }
-                    return prev + 10;
-                });
-            }, 500);
-
-            await axios.post('/api/system-admin/bulk-cleanup', {
+            const res = await axios.post('/api/system-admin/bulk-cleanup', {
                 type: selectedCleanup.id
             });
-
-            setTimeout(() => {
-                setIsProcessing(false);
-                setCleanupDialog(false);
-                fetchCleanupStats();
-                alert(`${selectedCleanup.title} cleanup completed successfully`);
-            }, 5000);
-
+            setCleanupProgress(100);
+            setIsProcessing(false);
+            setCleanupDialog(false);
+            fetchCleanupStats();
+            alert(`${selectedCleanup.title} cleanup completed successfully. Removed: ${res.data?.result?.deleted || 0}`);
         } catch (error) {
             console.error('Cleanup error:', error);
             setIsProcessing(false);
@@ -275,7 +253,7 @@ const BulkDataCleanup = () => {
                     <Grid item xs={12} md={4}>
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
-                                2.4 GB
+                                {stats?.dbSizeBytes ? `${(stats.dbSizeBytes / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 Database Size
@@ -285,7 +263,7 @@ const BulkDataCleanup = () => {
                     <Grid item xs={12} md={4}>
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
-                                1.8 GB
+                                {stats?.attachmentsBytes ? `${(stats.attachmentsBytes / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 File Attachments
@@ -295,7 +273,7 @@ const BulkDataCleanup = () => {
                     <Grid item xs={12} md={4}>
                         <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
-                                76%
+                                {typeof stats?.storageEfficiency === 'number' ? `${stats.storageEfficiency}%` : 'N/A'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 Storage Efficiency

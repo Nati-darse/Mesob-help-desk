@@ -1,64 +1,125 @@
-import React, { useState } from 'react';
-import { Box, Typography, Paper, TextField, MenuItem, Button, Select, FormControl, InputLabel, Grid, Alert, Snackbar, Chip, Card, CardContent, Avatar, LinearProgress, Badge } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, Typography, Paper, TextField, MenuItem, Button, Select, FormControl, InputLabel, Grid, Alert, Snackbar, Chip, Card, CardContent, Avatar, LinearProgress } from '@mui/material';
 import { Send as SendIcon, Campaign as CampaignIcon, Group as GroupIcon, NotificationsActive as BellIcon, TrendingUp as TrendingIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
-import { COMPANIES } from '../../../utils/companies';
-import { ROLE_LABELS } from '../../../constants/roles';
+import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { ROLE_LABELS, ROLES } from '../../../constants/roles';
+import { useAuth } from '../../auth/context/AuthContext';
 import axios from 'axios';
 
 const BroadcastCenter = () => {
+    const { user } = useAuth();
+    const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
+    const isSystemAdmin = user?.role === ROLES.SYSTEM_ADMIN;
+
     const [targetAudience, setTargetAudience] = useState('all');
     const [message, setMessage] = useState('');
     const [priority, setPriority] = useState('info');
     const [toastOpen, setToastOpen] = useState(false);
-    const [history, setHistory] = useState([
-        { id: 1, msg: 'Scheduled Maintenance at 2:00 AM', target: 'All Users', time: 'Yesterday' },
-        { id: 2, msg: 'Ethio Telecom network restored', target: 'Ethio Telecom', time: '2 days ago' },
-    ]);
+    const [lastSent, setLastSent] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(true);
+    const [historyError, setHistoryError] = useState('');
+
+    const roleTargets = useMemo(() => {
+        return Object.entries(ROLE_LABELS).filter(([role]) => !['Worker', 'System Admin'].includes(role));
+    }, []);
+
+    useEffect(() => {
+        if (isSuperAdmin && targetAudience === 'all') {
+            setTargetAudience('company:self');
+        }
+    }, [isSuperAdmin, targetAudience]);
+
+    const describeAudience = (audience) => {
+        if (audience === 'all') return 'all active users';
+        if (audience === 'company:self') return formatCompanyLabel(getCompanyById(user?.companyId));
+        if (audience.startsWith('company:')) {
+            const company = getCompanyById(audience.replace('company:', ''));
+            return company ? formatCompanyLabel(company) : audience;
+        }
+        if (audience.startsWith('role:')) {
+            const role = audience.replace('role:', '');
+            return ROLE_LABELS[role] || role;
+        }
+        return audience;
+    };
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const res = await axios.get('/api/notifications/broadcasts?limit=50');
+                setHistory(res.data || []);
+            } catch (error) {
+                setHistoryError('Failed to load broadcast history');
+            } finally {
+                setLoadingHistory(false);
+            }
+        };
+        loadHistory();
+    }, []);
 
     const handleSend = async () => {
-        if (!message.trim()) return;
+        const trimmedMessage = message.trim();
+        if (!trimmedMessage) return;
 
         try {
             // Parse target audience
             let targetType = 'all';
             let targetValue = '';
+            let targetCompanyId = null;
 
-            if (targetAudience.startsWith('company-')) {
+            if (targetAudience === 'company:self') {
                 targetType = 'company';
-                targetValue = targetAudience.replace('company-', '');
-            } else if (targetAudience.startsWith('role-')) {
+                targetValue = String(user?.companyId || '');
+            } else if (targetAudience.startsWith('company:')) {
+                targetType = 'company';
+                targetValue = targetAudience.replace('company:', '');
+            } else if (targetAudience.startsWith('role:')) {
                 targetType = 'role';
-                // Map local role keys to actual DB role strings if needed
-                const roleMap = {
-                    super_admin: 'Super Admin',
-                    sys_admin: 'System Admin',
-                    technician: 'Technician',
-                    employee: 'Employee'
-                };
-                const key = targetAudience.replace('role-', '');
-                targetValue = roleMap[key] || 'Employee';
+                targetValue = targetAudience.replace('role:', '');
+                if (isSuperAdmin) {
+                    targetCompanyId = Number(user?.companyId);
+                }
             }
 
-            await axios.post('/api/notifications/broadcast', {
-                message,
+            const payload = {
+                message: trimmedMessage,
                 priority,
                 targetType,
-                targetValue
-            });
-
-            setToastOpen(true);
-            const newLog = {
-                id: Date.now(),
-                msg: message,
-                target: targetAudience === 'all' ? 'All Users' : targetValue || targetAudience,
-                time: 'Just now'
+                targetValue,
+                targetCompanyId
             };
-            setHistory([newLog, ...history]);
+
+            const res = await axios.post('/api/notifications/broadcast', payload);
+
+            setLastSent({
+                message: trimmedMessage,
+                target: describeAudience(targetAudience)
+            });
+            setToastOpen(true);
+            setHistory((prev) => [res.data, ...prev]);
             setMessage('');
         } catch (error) {
             console.error(error);
             alert('Failed to broadcast message');
         }
+    };
+
+    const getTargetLabel = (item) => {
+        if (item.targetType === 'all') return 'All Users';
+        if (item.targetType === 'company') {
+            const company = getCompanyById(Number(item.targetValue));
+            return company ? formatCompanyLabel(company) : `Company ${item.targetValue}`;
+        }
+        if (item.targetType === 'role') {
+            return ROLE_LABELS[item.targetValue] || item.targetValue;
+        }
+        return item.targetValue || 'Unknown';
+    };
+
+    const formatTime = (dateValue) => {
+        if (!dateValue) return '';
+        return new Date(dateValue).toLocaleString();
     };
 
     return (
@@ -69,7 +130,9 @@ const BroadcastCenter = () => {
                     Command Center
                 </Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-                    Real-time broadcast system for all 19 government organizations
+                    {isSystemAdmin
+                        ? 'Real-time broadcast system across all organizations'
+                        : 'Real-time broadcast system for your organization'}
                 </Typography>
 
                 {/* Stats Overview */}
@@ -170,18 +233,28 @@ const BroadcastCenter = () => {
                                 label="Target Audience"
                                 onChange={(e) => setTargetAudience(e.target.value)}
                             >
-                                <MenuItem value="all">
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <GroupIcon fontSize="small" /> All Active Users (Global)
-                                    </Box>
-                                </MenuItem>
-                                <MenuItem disabled>--- Specific Company ---</MenuItem>
-                                {COMPANIES.map(c => (
-                                    <MenuItem key={c.id} value={`company-${c.id}`}>{c.name}</MenuItem>
-                                ))}
+                                {!isSuperAdmin && (
+                                    <MenuItem value="all">
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <GroupIcon fontSize="small" /> All Active Users (Global)
+                                        </Box>
+                                    </MenuItem>
+                                )}
+                                {isSuperAdmin ? (
+                                    <MenuItem value="company:self">
+                                        {formatCompanyLabel(getCompanyById(user?.companyId))}
+                                    </MenuItem>
+                                ) : (
+                                    <>
+                                        <MenuItem disabled>--- Specific Company ---</MenuItem>
+                                        {COMPANIES.map(c => (
+                                            <MenuItem key={c.id} value={`company:${c.id}`}>{formatCompanyLabel(c)}</MenuItem>
+                                        ))}
+                                    </>
+                                )}
                                 <MenuItem disabled>--- Specific Role ---</MenuItem>
-                                {Object.entries(ROLE_LABELS).map(([key, val]) => (
-                                    <MenuItem key={key} value={`role-${key}`}>{val}</MenuItem>
+                                {roleTargets.map(([key, val]) => (
+                                    <MenuItem key={key} value={`role:${key}`}>{val}</MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
@@ -216,6 +289,7 @@ const BroadcastCenter = () => {
                             fullWidth
                             startIcon={<SendIcon />}
                             onClick={handleSend}
+                            disabled={!message.trim()}
                             color={priority === 'error' ? 'error' : priority === 'warning' ? 'warning' : 'primary'}
                         >
                             Broadcast Message
@@ -227,12 +301,17 @@ const BroadcastCenter = () => {
                 <Grid item xs={12} md={5}>
                     <Paper sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
                         <Typography variant="h6" sx={{ mb: 2 }}>Recent Broadcasts</Typography>
+                        {loadingHistory && <LinearProgress sx={{ mb: 2 }} />}
+                        {historyError && <Alert severity="error" sx={{ mb: 2 }}>{historyError}</Alert>}
+                        {!loadingHistory && history.length === 0 && (
+                            <Alert severity="info">No broadcasts yet.</Alert>
+                        )}
                         {history.map((item) => (
-                            <Box key={item.id} sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                                <Typography variant="subtitle2" gutterBottom>{item.msg}</Typography>
+                            <Box key={item._id || item.id} sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                                <Typography variant="subtitle2" gutterBottom>{item.message || item.msg}</Typography>
                                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 1, mt: 1 }}>
-                                    <Chip label={item.target} size="small" variant="outlined" />
-                                    <Typography variant="caption" color="text.secondary">{item.time}</Typography>
+                                    <Chip label={getTargetLabel(item)} size="small" variant="outlined" />
+                                    <Typography variant="caption" color="text.secondary">{formatTime(item.createdAt) || item.time}</Typography>
                                 </Box>
                             </Box>
                         ))}
@@ -240,7 +319,7 @@ const BroadcastCenter = () => {
                 </Grid>
             </Grid>
 
-            {/* Toast Mock */}
+            {/* Toast */}
             <Snackbar
                 open={toastOpen}
                 autoHideDuration={4000}
@@ -248,7 +327,7 @@ const BroadcastCenter = () => {
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
             >
                 <Alert severity={priority} variant="filled" onClose={() => setToastOpen(false)}>
-                    📡 Sending: "{message}" to {targetAudience}
+                    {lastSent ? `Sent: "${lastSent.message}" to ${lastSent.target}` : 'Broadcast sent'}
                 </Alert>
             </Snackbar>
         </Box>

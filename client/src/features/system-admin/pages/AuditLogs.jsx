@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Typography, Paper, TextField, MenuItem, Chip, List, ListItem, ListItemAvatar, Avatar, ListItemText, Divider, IconButton } from '@mui/material';
 import {
     History as HistoryIcon,
@@ -8,19 +8,54 @@ import {
     Edit as EditIcon,
     FilterList as FilterIcon
 } from '@mui/icons-material';
-
-const MOCK_LOGS = [
-    { id: 1, user: 'SysAdmin', action: 'Login', target: 'System', time: '2 mins ago', type: 'info' },
-    { id: 2, user: 'SuperAdmin', action: 'Deleted Ticket', target: 'T-10293', time: '15 mins ago', type: 'warning' },
-    { id: 3, user: 'Tech_Ermias', action: 'Updated Status', target: 'T-10292', time: '45 mins ago', type: 'info' },
-    { id: 4, user: 'SysAdmin', action: 'Changed Role', target: 'User: Abebe', time: '1 hour ago', type: 'error' },
-    { id: 5, user: 'System', action: 'Backup Complete', target: 'Database', time: '2 hours ago', type: 'success' },
-    { id: 6, user: 'Unknown', action: 'Failed Login', target: 'IP: 192.168.1.55', time: '3 hours ago', type: 'error' },
-    { id: 7, user: 'Manager_Sarah', action: 'Exported Report', target: 'Weekly Stats', time: '5 hours ago', type: 'info' },
-];
+import axios from 'axios';
 
 const AuditLogs = () => {
     const [filterType, setFilterType] = useState('All');
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await axios.get('/api/audit-logs?limit=200');
+                setLogs(res.data || []);
+            } catch (e) {
+                setError('Failed to load audit logs');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    const getType = (action) => {
+        if (!action) return 'info';
+        if (action.includes('DELETE') || action.includes('RESET') || action.includes('ROTATE')) return 'warning';
+        if (action.includes('PASSWORD') || action.includes('ROLE') || action.includes('IMPERSONATE')) return 'error';
+        if (action.includes('BACKUP')) return 'success';
+        return 'info';
+    };
+
+    const getActionLabel = (action) => {
+        if (!action) return 'Action';
+        return action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase());
+    };
+
+    const filteredLogs = useMemo(() => {
+        if (filterType === 'All') return logs;
+        if (filterType === 'Security') {
+            return logs.filter(l => String(l.action || '').includes('PASSWORD') || String(l.action || '').includes('ROLE') || String(l.action || '').includes('IMPERSONATE'));
+        }
+        if (filterType === 'System') {
+            return logs.filter(l => String(l.action || '').includes('SETTINGS') || String(l.action || '').includes('BACKUP') || String(l.action || '').includes('MAINTENANCE') || String(l.action || '').includes('SMTP'));
+        }
+        if (filterType === 'User') {
+            return logs.filter(l => String(l.action || '').includes('USER') || String(l.action || '').includes('LOGIN'));
+        }
+        return logs;
+    }, [logs, filterType]);
 
     const getIcon = (type) => {
         switch (type) {
@@ -56,42 +91,57 @@ const AuditLogs = () => {
 
             <Paper>
                 <List>
-                    {MOCK_LOGS.map((log, index) => (
-                        <React.Fragment key={log.id}>
-                            <ListItem alignItems="flex-start" sx={{ py: 2, '&:hover': { bgcolor: 'action.hover' } }}>
-                                <ListItemAvatar>
-                                    <Avatar sx={{ bgcolor: (theme) => log.type === 'error' ? (theme.palette.mode === 'dark' ? 'rgba(244,67,54,0.2)' : '#ffebee') : (theme.palette.mode === 'dark' ? 'rgba(30,79,177,0.2)' : '#e3f2fd') }}>
-                                        {getIcon(log.type)}
-                                    </Avatar>
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={
-                                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.5 }}>
-                                            <Typography variant="subtitle1" fontWeight="bold">
-                                                {log.user}
+                    {loading && (
+                        <ListItem>
+                            <ListItemText primary="Loading audit logs..." />
+                        </ListItem>
+                    )}
+                    {!loading && error && (
+                        <ListItem>
+                            <ListItemText primary={error} />
+                        </ListItem>
+                    )}
+                    {!loading && !error && filteredLogs.map((log, index) => {
+                        const type = getType(log.action);
+                        const performedBy = log.performedBy?.name || log.performedBy?.email || 'System';
+                        const target = log.targetUser?.name || log.targetUser?.email || log.metadata?.ticketId || log.metadata?.path || 'System';
+                        return (
+                            <React.Fragment key={log._id || `${log.action}-${index}`}>
+                                <ListItem alignItems="flex-start" sx={{ py: 2, '&:hover': { bgcolor: 'action.hover' } }}>
+                                    <ListItemAvatar>
+                                        <Avatar sx={{ bgcolor: (theme) => type === 'error' ? (theme.palette.mode === 'dark' ? 'rgba(244,67,54,0.2)' : '#ffebee') : (theme.palette.mode === 'dark' ? 'rgba(30,79,177,0.2)' : '#e3f2fd') }}>
+                                            {getIcon(type)}
+                                        </Avatar>
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                        primary={
+                                            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.5 }}>
+                                                <Typography variant="subtitle1" fontWeight="bold">
+                                                    {performedBy}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {getActionLabel(log.action)}
+                                                </Typography>
+                                                <Chip
+                                                    label={target}
+                                                    size="small"
+                                                    variant="outlined"
+                                                    color={type === 'error' ? 'error' : 'default'}
+                                                    sx={{ height: 20 }}
+                                                />
+                                            </Box>
+                                        }
+                                        secondary={
+                                            <Typography variant="caption" color="text.secondary">
+                                                {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown time'}
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {log.action}
-                                            </Typography>
-                                            <Chip
-                                                label={log.target}
-                                                size="small"
-                                                variant="outlined"
-                                                color={log.type === 'error' ? 'error' : 'default'}
-                                                sx={{ height: 20 }}
-                                            />
-                                        </Box>
-                                    }
-                                    secondary={
-                                        <Typography variant="caption" color="text.secondary">
-                                            {log.time} • ID: {`LOG-${1000 + log.id}`}
-                                        </Typography>
-                                    }
-                                />
-                            </ListItem>
-                            {index < MOCK_LOGS.length - 1 && <Divider variant="inset" component="li" />}
-                        </React.Fragment>
-                    ))}
+                                        }
+                                    />
+                                </ListItem>
+                                {index < filteredLogs.length - 1 && <Divider variant="inset" component="li" />}
+                            </React.Fragment>
+                        );
+                    })}
                 </List>
             </Paper>
         </Box>
