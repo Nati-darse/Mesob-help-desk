@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
     Container, Grid, Box, Typography, Paper, Card, CardContent,
     Avatar, Chip, Button, IconButton, Badge, Stack,
@@ -27,8 +27,10 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../auth/context/AuthContext';
-import { getCompanyById } from '../../../utils/companies';
+import { formatCompanyLabel, getCompanyById } from '../../../utils/companies';
 import { useTranslation } from 'react-i18next';
+import { getStatusColor } from '../../../utils/ticketStatus';
+import { FixedSizeList as VirtualList } from 'react-window';
 
 const AdminCommandCenter = () => {
     const theme = useTheme();
@@ -90,22 +92,31 @@ const AdminCommandCenter = () => {
             const res = await axios.get('/api/dashboard/admin-stats');
             return res.data;
         },
-        refetchInterval: 5000 // Real-time pulse
+        staleTime: 10000,
+        refetchInterval: 15000 // Real-time pulse
     });
 
     const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
         queryKey: ['tickets', 'all'],
         queryFn: async () => {
-            console.log('[AdminCommandCenter] Fetching tickets...');
             const res = await axios.get('/api/tickets?pageSize=100');
-            console.log('[AdminCommandCenter] Tickets received:', res.data.length);
-            console.log('[AdminCommandCenter] Sample ticket:', res.data[0]);
             return res.data;
         },
-        refetchInterval: 5000,
+        staleTime: 10000,
+        refetchInterval: 15000,
         onError: (error) => {
             console.error('[AdminCommandCenter] Error fetching tickets:', error);
         }
+    });
+
+    const { data: unassignedTickets = [], isLoading: unassignedTicketsLoading } = useQuery({
+        queryKey: ['tickets', 'unassigned', 'adminCommandCenter'],
+        queryFn: async () => {
+            const res = await axios.get('/api/tickets?onlyUnassigned=true&pageSize=200');
+            return res.data;
+        },
+        staleTime: 10000,
+        refetchInterval: 15000
     });
 
     // Assignment Mutation
@@ -113,7 +124,15 @@ const AdminCommandCenter = () => {
         mutationFn: async ({ ticketId, technicianId }) => {
             return await axios.put(`/api/tickets/${ticketId}/assign`, { technicianId });
         },
-        onSuccess: () => {
+        onSuccess: (_response, variables) => {
+            queryClient.setQueryData(['tickets', 'unassigned', 'adminCommandCenter'], (prev = []) =>
+                prev.filter((ticket) => ticket._id !== variables.ticketId)
+            );
+            queryClient.setQueryData(['admin-stats'], (prev) => {
+                if (!prev) return prev;
+                const nextUnassigned = Math.max(0, (prev.unassignedTickets || 0) - 1);
+                return { ...prev, unassignedTickets: nextUnassigned };
+            });
             queryClient.invalidateQueries(['admin-stats']);
             queryClient.invalidateQueries(['tickets']);
             setAssignDialogOpen(false);
@@ -122,19 +141,6 @@ const AdminCommandCenter = () => {
     });
 
     // Derived State
-    const unassignedTickets = useMemo(() => {
-        const filtered = tickets.filter(t => t.status === 'New' || !t.technician);
-        console.log('[AdminCommandCenter] Total tickets:', tickets.length);
-        console.log('[AdminCommandCenter] Unassigned tickets:', filtered.length);
-        console.log('[AdminCommandCenter] Unassigned details:', filtered.map(t => ({
-            id: t._id,
-            title: t.title,
-            status: t.status,
-            technician: t.technician
-        })));
-        return filtered;
-    }, [tickets]);
-
     const onlineTechs = useMemo(() =>
         stats?.technicians?.filter(t => t.isAvailable) || [],
         [stats]);
@@ -143,19 +149,36 @@ const AdminCommandCenter = () => {
         tickets.filter(t => t.status === 'Resolved' && t.reviewStatus === 'Pending'),
         [tickets]);
 
-    const handleOpenAssign = (ticket) => {
-        setSelectedTicket(ticket);
-        setAssignDialogOpen(true);
+    const isSlaBreached = (ticket) => {
+        if (ticket.slaBreached) return true;
+        if (!ticket.slaDueAt) return false;
+        return new Date(ticket.slaDueAt).getTime() < Date.now();
     };
 
-    const handleConfirmAssignment = (techId) => {
+    const getCompanyLabel = (companyId) => {
+        const company = getCompanyById(companyId);
+        return company ? formatCompanyLabel(company) : 'Unknown Company';
+    };
+
+    const slaBreaches = useMemo(() => {
+        if (typeof stats?.slaBreaches === 'number') return stats.slaBreaches;
+        return tickets.filter(t => isSlaBreached(t)).length;
+    }, [stats, tickets]);
+
+
+    const handleOpenAssign = useCallback((ticket) => {
+        setSelectedTicket(ticket);
+        setAssignDialogOpen(true);
+    }, []);
+
+    const handleConfirmAssignment = useCallback((techId) => {
         assignMutation.mutate({
             ticketId: selectedTicket._id,
             technicianId: techId
         });
-    };
+    }, [assignMutation, selectedTicket]);
 
-    if (statsLoading) return <LinearProgress />;
+    if (statsLoading || ticketsLoading || unassignedTicketsLoading) return <LinearProgress />;
 
     return (
         <Box sx={{
@@ -220,9 +243,10 @@ const AdminCommandCenter = () => {
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     {[
                         { label: t('adminCommandCenter.liveRequests'), value: stats?.openTickets || 0, icon: <UrgentIcon />, color: '#d32f2f', path: '/admin/dashboard' },
-                        { label: t('adminCommandCenter.unassigned'), value: stats?.unassignedTickets || 0, icon: <AssignIcon />, color: '#ed6c02', path: '/admin/assign' },
+                        { label: t('adminCommandCenter.unassigned'), value: unassignedTickets.length, icon: <AssignIcon />, color: '#ed6c02', path: '/admin/assign' },
                         { label: t('adminCommandCenter.onlineTechs'), value: onlineTechs.length, icon: <TechIcon />, color: '#2e7d32' },
-                        { label: t('adminCommandCenter.pendingReview'), value: pendingReviewTickets.length, icon: <DoneIcon />, color: '#0288d1', path: '/admin/reviews' }
+                        { label: t('adminCommandCenter.pendingReview'), value: pendingReviewTickets.length, icon: <DoneIcon />, color: '#0288d1', path: '/admin/reviews' },
+                        { label: t('adminCommandCenter.slaBreaches') || 'SLA Breaches', value: slaBreaches, icon: <SpeedIcon />, color: '#d32f2f' }
                     ].map((kpi, idx) => (
                         <Grid item xs={12} sm={6} md={3} key={idx}>
                             <Paper
@@ -282,73 +306,97 @@ const AdminCommandCenter = () => {
                             </Box>
 
                             <List sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                {unassignedTickets.map((ticket) => (
-                                    <ListItem
-                                        key={ticket._id}
-                                        sx={{
-                                            bgcolor: 'action.hover',
-                                            borderRadius: 4,
-                                            border: '1px solid', borderColor: 'divider',
-                                            p: 2,
-                                            transition: '0.2s',
-                                            flexDirection: { xs: 'column', md: 'row' },
-                                            alignItems: { xs: 'flex-start', md: 'center' },
-                                            '&:hover': { bgcolor: 'background.paper', borderColor: '#1a237e', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
-                                        }}
-                                    >
-                                        <ListItemAvatar sx={{ minWidth: 80 }}>
-                                            <Badge
-                                                overlap="circular"
-                                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                                badgeContent={<Box sx={{ width: 12, height: 12, bgcolor: ticket.priority === 'Critical' ? 'error.main' : 'warning.main', borderRadius: '50%', border: '2px solid white' }} />}
-                                            >
-                                                <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', border: '1px solid', borderColor: 'divider' }}>
-                                                    {getCompanyById(ticket.companyId)?.initials || '??'}
-                                                </Avatar>
-                                            </Badge>
-                                        </ListItemAvatar>
-                                        <ListItemText
-                                            primary={
-                                                <Typography variant="subtitle1" fontWeight={800} color="text.primary">
-                                                    {ticket.title}
-                                                </Typography>
-                                            }
-                                            secondary={
-                                                <Stack spacing={0.5} sx={{ mt: 1 }}>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {getCompanyById(ticket.companyId)?.name} • {ticket.category}
-                                                    </Typography>
-                                                    <Stack direction="row" spacing={1} alignItems="center">
-                                                        <Chip
-                                                            label={ticket.priority}
-                                                            size="small"
-                                                            color={ticket.priority === 'Critical' ? 'error' : 'default'}
-                                                            sx={{ height: 20, fontSize: '0.65rem', fontWeight: 900 }}
-                                                        />
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {new Date(ticket.createdAt).toLocaleTimeString()} · {ticket.buildingWing || t('adminCommandCenter.general')}
+                                <VirtualList
+                                    height={Math.min(unassignedTickets.length * 240, 760)}
+                                    itemCount={unassignedTickets.length}
+                                    itemSize={240}
+                                    width="100%"
+                                >
+                                    {({ index, style }) => {
+                                        const ticket = unassignedTickets[index];
+                                        return (
+                                            <Box style={style} sx={{ px: 0.5, pb: 1 }}>
+                                                <ListItem
+                                                    key={ticket._id}
+                                                    sx={{
+                                                        bgcolor: 'action.hover',
+                                                        borderRadius: 4,
+                                                        border: '1px solid', borderColor: 'divider',
+                                                        p: 2,
+                                                        transition: '0.2s',
+                                                        display: 'grid',
+                                                        gridTemplateColumns: { xs: '1fr', md: '56px 1fr auto' },
+                                                        alignItems: 'flex-start',
+                                                        columnGap: 2,
+                                                        rowGap: 1,
+                                                        '&:hover': { bgcolor: 'background.paper', borderColor: '#1a237e', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
+                                                    }}
+                                                >
+                                                    <Box>
+                                                        <Badge
+                                                            overlap="circular"
+                                                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                                            badgeContent={<Box sx={{ width: 12, height: 12, bgcolor: ticket.priority === 'Critical' ? 'error.main' : 'warning.main', borderRadius: '50%', border: '2px solid white' }} />}
+                                                        >
+                                                            <Avatar sx={{ bgcolor: 'background.paper', color: 'text.primary', border: '1px solid', borderColor: 'divider' }}>
+                                                                {getCompanyById(ticket.companyId)?.initials || '?'}
+                                                            </Avatar>
+                                                        </Badge>
+                                                    </Box>
+                                                    <Box>
+                                                        <Typography variant="subtitle1" fontWeight={800} color="text.primary">
+                                                            {ticket.title}
                                                         </Typography>
-                                                    </Stack>
-                                                </Stack>
-                                            }
-                                        />
-                                        <ListItemSecondaryAction sx={{ right: { xs: 16, md: 24 }, position: { xs: 'static', md: 'absolute' }, mt: { xs: 2, md: 0 } }}>
-                                            <Button
-                                                variant="contained"
-                                                onClick={() => handleOpenAssign(ticket)}
-                                                sx={{
-                                                    borderRadius: 3,
-                                                    px: 3,
-                                                    fontWeight: 800,
-                                                    bgcolor: '#1a237e',
-                                                    '&:hover': { bgcolor: '#0d1442', boxShadow: '0 4px 12px rgba(26, 35, 126, 0.2)' }
-                                                }}
-                                            >
-                                                {t('adminCommandCenter.dispatch')}
-                                            </Button>
-                                        </ListItemSecondaryAction>
-                                    </ListItem>
-                                ))}
+                                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                                            {getCompanyLabel(ticket.companyId)} • {ticket.category}
+                                                        </Typography>
+                                                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, flexWrap: 'wrap' }}>
+                                                            <Chip
+                                                                label={ticket.priority}
+                                                                size="small"
+                                                                color={ticket.priority === 'Critical' ? 'error' : 'default'}
+                                                                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 900 }}
+                                                            />
+                                                            <Chip
+                                                                label={ticket.status}
+                                                                size="small"
+                                                                variant="outlined"
+                                                                color={getStatusColor(ticket.status)}
+                                                                sx={{ height: 20, fontSize: '0.65rem', fontWeight: 900 }}
+                                                            />
+                                                            {isSlaBreached(ticket) && (
+                                                                <Chip
+                                                                    label="SLA BREACH"
+                                                                    size="small"
+                                                                    color="error"
+                                                                    sx={{ height: 20, fontSize: '0.6rem', fontWeight: 900 }}
+                                                                />
+                                                            )}
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {new Date(ticket.createdAt).toLocaleTimeString()} • {ticket.buildingWing || t('adminCommandCenter.general')}
+                                                            </Typography>
+                                                        </Stack>
+                                                    </Box>
+                                                    <Box sx={{ textAlign: { xs: 'left', md: 'right' }, mt: { xs: 1, md: 0 } }}>
+                                                        <Button
+                                                            variant="contained"
+                                                            onClick={() => handleOpenAssign(ticket)}
+                                                            sx={{
+                                                                borderRadius: 3,
+                                                                px: 3,
+                                                                fontWeight: 800,
+                                                                bgcolor: '#1a237e',
+                                                                '&:hover': { bgcolor: '#0d1442', boxShadow: '0 4px 12px rgba(26, 35, 126, 0.2)' }
+                                                            }}
+                                                        >
+                                                            {t('adminCommandCenter.dispatch')}
+                                                        </Button>
+                                                    </Box>
+                                                </ListItem>
+                                            </Box>
+                                        );
+                                    }}
+                                </VirtualList>
                                 {unassignedTickets.length === 0 && (
                                     <Box sx={{ py: 10, textAlign: 'center' }}>
                                         <DoneIcon sx={{ fontSize: 60, color: '#ccc', mb: 2 }} />

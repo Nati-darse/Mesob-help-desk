@@ -3,7 +3,7 @@ import {
     Container, Typography, Box, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Chip, Button, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-    Tooltip, CircularProgress, Alert, Snackbar
+    Tooltip, CircularProgress, Alert, Snackbar, useMediaQuery, useTheme, Rating
 } from '@mui/material';
 import {
     CheckCircle as ApproveIcon,
@@ -13,9 +13,13 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { getReviewStatusColor } from '../../../utils/ticketStatus';
+import { formatCompanyLabel, getCompanyById } from '../../../utils/companies';
 
 const TicketReviews = () => {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [reviewDialog, setReviewDialog] = useState({ open: false, ticket: null, action: null });
@@ -75,6 +79,8 @@ const TicketReviews = () => {
         setNotification({ open: true, message, severity });
     };
 
+    const getTicketCompanyLabel = (ticket) => formatCompanyLabel(getCompanyById(ticket.companyId));
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
@@ -104,6 +110,57 @@ const TicketReviews = () => {
                         Good job! All resolved tickets have been processed.
                     </Typography>
                 </Paper>
+            ) : isMobile ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {tickets.map((ticket) => (
+                        <Paper key={ticket._id} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="subtitle1" fontWeight="bold">
+                                {ticket.title}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                #{ticket._id.slice(-6)} • {getTicketCompanyLabel(ticket)}
+                            </Typography>
+                            <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                <Chip
+                                    label={ticket.reviewStatus || 'Pending'}
+                                    color={getReviewStatusColor(ticket.reviewStatus || 'Pending')}
+                                    size="small"
+                                    variant="outlined"
+                                />
+                                <Chip label={ticket.technician?.name || 'Unknown'} size="small" />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                {ticket.workLog?.[ticket.workLog?.length - 1]?.note || 'No notes provided'}
+                            </Typography>
+                            <Box sx={{ mt: 1 }}>
+                                <Rating value={ticket.rating || 0} readOnly size="small" />
+                                {ticket.feedback && (
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                        "{ticket.feedback}"
+                                    </Typography>
+                                )}
+                            </Box>
+                            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                <Button
+                                    fullWidth
+                                    variant="outlined"
+                                    color="error"
+                                    onClick={() => handleActionClick(ticket, 'reject')}
+                                >
+                                    Reject
+                                </Button>
+                                <Button
+                                    fullWidth
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => handleActionClick(ticket, 'approve')}
+                                >
+                                    Approve
+                                </Button>
+                            </Box>
+                        </Paper>
+                    ))}
+                </Box>
             ) : (
                 <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
                     <Table size="small" sx={{ minWidth: 700 }}>
@@ -113,6 +170,8 @@ const TicketReviews = () => {
                                 <TableCell>Technician</TableCell>
                                 <TableCell>Resolved At</TableCell>
                                 <TableCell>Resolution Details</TableCell>
+                                <TableCell>Requester Feedback</TableCell>
+                                <TableCell>Review</TableCell>
                                 <TableCell align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
@@ -124,7 +183,7 @@ const TicketReviews = () => {
                                             {ticket.title}
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                            #{ticket._id.slice(-6)} • {ticket.companyId}
+                                            #{ticket._id.slice(-6)} • {getTicketCompanyLabel(ticket)}
                                         </Typography>
                                     </TableCell>
                                     <TableCell>
@@ -137,6 +196,20 @@ const TicketReviews = () => {
                                         <Typography variant="body2" noWrap>
                                             {ticket.workLog?.[ticket.workLog?.length - 1]?.note || 'No notes provided'}
                                         </Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ maxWidth: 280 }}>
+                                        <Rating value={ticket.rating || 0} readOnly size="small" />
+                                        <Typography variant="body2" color="text.secondary" noWrap>
+                                            {ticket.feedback || 'No feedback provided'}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={ticket.reviewStatus || 'Pending'}
+                                            color={getReviewStatusColor(ticket.reviewStatus || 'Pending')}
+                                            size="small"
+                                            variant="outlined"
+                                        />
                                     </TableCell>
                                     <TableCell align="right">
                                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
@@ -171,6 +244,17 @@ const TicketReviews = () => {
                     {reviewDialog.action === 'approve' ? 'Approve Resolution' : 'Reject Resolution'}
                 </DialogTitle>
                 <DialogContent sx={{ minWidth: { xs: 'auto', sm: 400 } }}>
+                    {reviewDialog.ticket && (
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" fontWeight="bold">
+                                Requester Feedback
+                            </Typography>
+                            <Rating value={reviewDialog.ticket.rating || 0} readOnly size="small" />
+                            <Typography variant="body2" color="text.secondary">
+                                {reviewDialog.ticket.feedback || 'No feedback provided'}
+                            </Typography>
+                        </Box>
+                    )}
                     <Alert severity={reviewDialog.action === 'approve' ? 'success' : 'warning'} sx={{ mb: 2 }}>
                         {reviewDialog.action === 'approve'
                             ? 'This will close the ticket permanently.'

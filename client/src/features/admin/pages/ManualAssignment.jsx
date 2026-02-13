@@ -4,7 +4,7 @@ import {
     Container, Typography, Box, Grid, Paper, List, ListItem, ListItemText, Button,
     Chip, Avatar, Stack, Divider, Dialog, DialogTitle, DialogContent, DialogActions,
     Alert, CircularProgress, IconButton, Tooltip, Badge, LinearProgress, Card, CardContent,
-    TextField, InputAdornment, Tabs, Tab
+    TextField, InputAdornment, Tabs, Tab, MenuItem
 } from '@mui/material';
 import {
     CheckCircle as CheckIcon,
@@ -17,8 +17,9 @@ import {
     Search as SearchIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { getCompanyById } from '../../../utils/companies';
+import { formatCompanyLabel, getCompanyById, getCompanyDisplayName } from '../../../utils/companies';
 import { useAuth } from '../../auth/context/AuthContext';
+import { getStatusColor } from '../../../utils/ticketStatus';
 
 const ManualAssignment = () => {
     const [tickets, setTickets] = useState([]);
@@ -31,6 +32,12 @@ const ManualAssignment = () => {
     const [aiSuggestions, setAiSuggestions] = useState({});
     const [techFilter, setTechFilter] = useState('all');
     const [techSearch, setTechSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [ticketSearch, setTicketSearch] = useState('');
+    const [priorityFilter, setPriorityFilter] = useState('all');
+    const [slaFilter, setSlaFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('age'); // age | priority
+    const [sortDir, setSortDir] = useState('desc'); // desc | asc
     const [analyzing, setAnalyzing] = useState(false);
     const { user } = useAuth();
     const socketRef = useRef(null);
@@ -66,40 +73,25 @@ const ManualAssignment = () => {
         }
     }, [user]);
 
+    useEffect(() => {
+        const handle = setTimeout(() => setDebouncedSearch(techSearch), 300);
+        return () => clearTimeout(handle);
+    }, [techSearch]);
+
     const fetchData = async () => {
         setLoading(true);
         try {
             // Tickets fetch
             try {
-                console.log('[ManualAssignment] Fetching tickets...');
-                const ticketsRes = await axios.get('/api/tickets?pageSize=100');
-                console.log('[ManualAssignment] Tickets received:', ticketsRes.data.length);
-                
-                const unassigned = ticketsRes.data.filter(t => t.status === 'New' || !t.technician);
-                console.log('[ManualAssignment] Unassigned tickets:', unassigned.length);
-                console.log('[ManualAssignment] Unassigned details:', unassigned.map(t => ({
-                    id: t._id,
-                    title: t.title,
-                    status: t.status,
-                    technician: t.technician
-                })));
-                
+                const ticketsRes = await axios.get('/api/tickets?onlyUnassigned=true&pageSize=200');
+                const unassigned = ticketsRes.data;
                 setTickets(unassigned);
-
-                // Get all to calculate workload later if needed
-                const allTickets = ticketsRes.data;
 
                 // Techs fetch
                 try {
-                    const techsRes = await axios.get('/api/users/technicians');
+                    const techsRes = await axios.get('/api/users/technicians?includeWorkload=true');
                     const techsWithWorkload = techsRes.data.map(tech => {
-                        const assignedCount = allTickets.filter(t =>
-                            t.technician &&
-                            (t.technician._id === tech._id || t.technician === tech._id) &&
-                            t.status !== 'Resolved' &&
-                            t.status !== 'Closed'
-                        ).length;
-
+                        const assignedCount = tech.currentTickets || 0;
                         return {
                             ...tech,
                             currentTickets: assignedCount,
@@ -191,6 +183,26 @@ const ManualAssignment = () => {
         }
     };
 
+    const handleAutoAssign = async () => {
+        if (!selectedTicket) return;
+
+        setAssigning(true);
+        try {
+            await axios.put(`/api/tickets/${selectedTicket._id}/assign`, {
+                autoAssign: true
+            });
+
+            setTickets(tickets.filter(t => t._id !== selectedTicket._id));
+            setAssignDialogOpen(false);
+            setSelectedTicket(null);
+            setSelectedTech(null);
+        } catch (error) {
+            console.error('Error auto-assigning ticket:', error);
+        } finally {
+            setAssigning(false);
+        }
+    };
+
     const getPriorityColor = (priority) => {
         switch (priority) {
             case 'Critical': return 'error';
@@ -199,6 +211,13 @@ const ManualAssignment = () => {
             case 'Low': return 'success';
             default: return 'default';
         }
+    };
+
+    const isSlaBreached = (ticket) => {
+        if (!ticket || ticket.status === 'Closed' || ticket.status === 'Resolved') return false;
+        if (ticket.slaBreached) return true;
+        if (!ticket.slaDueAt) return false;
+        return new Date(ticket.slaDueAt).getTime() < Date.now();
     };
 
     const getAvailabilityBadge = (tech) => {
@@ -212,10 +231,15 @@ const ManualAssignment = () => {
         }
     };
 
+    const getCompanyLabel = (companyId) => {
+        const company = getCompanyById(companyId);
+        return company ? formatCompanyLabel(company) : 'Unknown Company';
+    };
+
     const filteredTechnicians = useMemo(() => {
         return technicians.filter(tech => {
-            const matchesSearch = tech.name.toLowerCase().includes(techSearch.toLowerCase()) ||
-                tech.department?.toLowerCase().includes(techSearch.toLowerCase());
+            const matchesSearch = tech.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                tech.department?.toLowerCase().includes(debouncedSearch.toLowerCase());
 
             const currentStatus = tech.dutyStatus || (tech.isAvailable ? 'Online' : 'Offline');
             const matchesStatus = techFilter === 'all' ||
@@ -223,7 +247,53 @@ const ManualAssignment = () => {
 
             return matchesSearch && matchesStatus;
         });
-    }, [technicians, techFilter, techSearch]);
+    }, [technicians, techFilter, debouncedSearch]);
+
+    const filteredTickets = useMemo(() => {
+        let list = [...tickets];
+        const search = ticketSearch.trim().toLowerCase();
+
+        if (search) {
+            list = list.filter(t => {
+                const company = getCompanyById(t.companyId);
+                const companySearchText = [
+                    company?.name,
+                    getCompanyDisplayName(company),
+                    company?.initials,
+                    company ? formatCompanyLabel(company) : ''
+                ].filter(Boolean).join(' ');
+                return (
+                    t.title?.toLowerCase().includes(search) ||
+                    t.category?.toLowerCase().includes(search) ||
+                    companySearchText.toLowerCase().includes(search)
+                );
+            });
+        }
+
+        if (priorityFilter !== 'all') {
+            list = list.filter(t => t.priority === priorityFilter);
+        }
+
+        if (slaFilter !== 'all') {
+            list = list.filter(t => (slaFilter === 'breached' ? isSlaBreached(t) : !isSlaBreached(t)));
+        }
+
+        const priorityRank = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+        list.sort((a, b) => {
+            if (sortBy === 'priority') {
+                const aRank = priorityRank[a.priority] || 0;
+                const bRank = priorityRank[b.priority] || 0;
+                return sortDir === 'desc' ? bRank - aRank : aRank - bRank;
+            }
+            const aTime = new Date(a.createdAt).getTime();
+            const bTime = new Date(b.createdAt).getTime();
+            return sortDir === 'desc' ? bTime - aTime : aTime - bTime;
+        });
+
+        return list;
+    }, [tickets, ticketSearch, priorityFilter, slaFilter, sortBy, sortDir]);
+
+    const hasTechnicians = technicians.length > 0;
 
     if (loading) {
         return (
@@ -238,7 +308,7 @@ const ManualAssignment = () => {
             {/* Header */}
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
                 <Box>
-                    <Typography variant="h3" fontWeight="bold" gutterBottom>
+                    <Typography variant="h3" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.75rem', sm: '2.25rem' } }}>
                         Smart Assignment Center
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
@@ -255,21 +325,102 @@ const ManualAssignment = () => {
             <Grid container spacing={4}>
                 {/* Unassigned Tickets */}
                 <Grid item xs={12} lg={7}>
-                    <Paper sx={{ p: 3, height: '100%' }}>
+                    <Paper sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <AssignmentIcon sx={{ mr: 1, color: 'primary.main' }} />
                             <Typography variant="h5" fontWeight="bold">
-                                Unassigned Tickets ({tickets.length})
+                                Unassigned Tickets ({filteredTickets.length})
                             </Typography>
                         </Box>
+
+                        <Paper sx={{ p: 2, mb: 3, bgcolor: 'action.hover', borderRadius: 2 }}>
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={5}>
+                                    <TextField
+                                        size="small"
+                                        fullWidth
+                                        placeholder="Search tickets..."
+                                        value={ticketSearch}
+                                        onChange={(e) => setTicketSearch(e.target.value)}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon size={18} />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={4} md={2.5}>
+                                    <TextField
+                                        select
+                                        size="small"
+                                        fullWidth
+                                        label="Priority"
+                                        value={priorityFilter}
+                                        onChange={(e) => setPriorityFilter(e.target.value)}
+                                    >
+                                        <MenuItem value="all">All</MenuItem>
+                                        <MenuItem value="Critical">Critical</MenuItem>
+                                        <MenuItem value="High">High</MenuItem>
+                                        <MenuItem value="Medium">Medium</MenuItem>
+                                        <MenuItem value="Low">Low</MenuItem>
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12} sm={4} md={2.5}>
+                                    <TextField
+                                        select
+                                        size="small"
+                                        fullWidth
+                                        label="SLA"
+                                        value={slaFilter}
+                                        onChange={(e) => setSlaFilter(e.target.value)}
+                                    >
+                                        <MenuItem value="all">All</MenuItem>
+                                        <MenuItem value="breached">Breached</MenuItem>
+                                        <MenuItem value="ok">Within SLA</MenuItem>
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12} sm={4} md={2}>
+                                    <TextField
+                                        select
+                                        size="small"
+                                        fullWidth
+                                        label="Sort"
+                                        value={sortBy}
+                                        onChange={(e) => setSortBy(e.target.value)}
+                                    >
+                                        <MenuItem value="age">Age</MenuItem>
+                                        <MenuItem value="priority">Priority</MenuItem>
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12} sm={4} md={1}>
+                                    <TextField
+                                        select
+                                        size="small"
+                                        fullWidth
+                                        label="Order"
+                                        value={sortDir}
+                                        onChange={(e) => setSortDir(e.target.value)}
+                                    >
+                                        <MenuItem value="desc">↓</MenuItem>
+                                        <MenuItem value="asc">↑</MenuItem>
+                                    </TextField>
+                                </Grid>
+                            </Grid>
+                        </Paper>
 
                         {tickets.length === 0 ? (
                             <Alert severity="success" sx={{ mt: 2 }}>
                                 All tickets have been assigned! Great job!
                             </Alert>
+                        ) : filteredTickets.length === 0 ? (
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                No tickets match the current filters.
+                            </Alert>
                         ) : (
                             <List>
-                                {tickets.map((ticket) => (
+                                {filteredTickets.map((ticket) => (
                                     <ListItem
                                         key={ticket._id}
                                         sx={{
@@ -277,11 +428,13 @@ const ManualAssignment = () => {
                                             borderColor: 'divider',
                                             borderRadius: 2,
                                             mb: 2,
-                                            p: 2,
+                                            p: { xs: 1.5, sm: 2 },
                                             cursor: 'pointer',
+                                            transition: 'all 0.15s ease',
                                             '&:hover': {
                                                 borderColor: 'primary.main',
-                                                bgcolor: 'action.hover'
+                                                bgcolor: 'action.hover',
+                                                boxShadow: 1
                                             }
                                         }}
                                         onClick={() => setSelectedTicket(ticket)}
@@ -293,9 +446,9 @@ const ManualAssignment = () => {
                                                         {ticket.title}
                                                     </Typography>
                                                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                        {getCompanyById(ticket.companyId)?.name || 'Unknown Company'}
+                                                        {getCompanyLabel(ticket.companyId)}
                                                     </Typography>
-                                                    <Stack direction="row" spacing={1}>
+                                                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                                                         <Chip
                                                             label={ticket.priority}
                                                             color={getPriorityColor(ticket.priority)}
@@ -306,11 +459,25 @@ const ManualAssignment = () => {
                                                             variant="outlined"
                                                             size="small"
                                                         />
+                                                        <Chip
+                                                            label={ticket.status}
+                                                            variant="outlined"
+                                                            size="small"
+                                                            color={getStatusColor(ticket.status)}
+                                                        />
+                                                        {isSlaBreached(ticket) && (
+                                                            <Chip
+                                                                label="SLA BREACH"
+                                                                size="small"
+                                                                color="error"
+                                                                sx={{ height: 20, fontSize: '0.6rem', fontWeight: 900 }}
+                                                            />
+                                                        )}
                                                     </Stack>
                                                 </Box>
                                             </Grid>
                                             <Grid item xs={12} md={4}>
-                                                <Box sx={{ textAlign: 'right' }}>
+                                                <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
                                                     <Typography variant="caption" color="text.secondary">
                                                         Created: {new Date(ticket.createdAt).toLocaleDateString()}
                                                     </Typography>
@@ -329,6 +496,8 @@ const ManualAssignment = () => {
                                                                         setSelectedTicket(ticket);
                                                                         setAssignDialogOpen(true);
                                                                     }}
+                                                                    sx={{ width: { xs: '100%', sm: 'auto' } }}
+                                                                    disabled={!hasTechnicians}
                                                                 >
                                                                     Assign
                                                                 </Button>
@@ -347,7 +516,7 @@ const ManualAssignment = () => {
 
                 {/* Available Technicians */}
                 <Grid item xs={12} lg={5}>
-                    <Paper sx={{ p: 3, height: '100%' }}>
+                    <Paper sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                             <PersonIcon sx={{ mr: 1, color: 'success.main' }} />
                             <Typography variant="h5" fontWeight="bold">
@@ -479,12 +648,18 @@ const ManualAssignment = () => {
                                 {selectedTicket.title}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
-                                {getCompanyById(selectedTicket.companyId)?.name}
+                                {getCompanyLabel(selectedTicket.companyId)}
                             </Typography>
 
                             <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 3, mb: 2 }}>
                                 Recommended Technicians (AI):
                             </Typography>
+
+                            {!hasTechnicians && (
+                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                    No technicians are currently available. Please add technicians or check availability.
+                                </Alert>
+                            )}
 
                             {aiSuggestions[selectedTicket._id]?.map((tech, index) => (
                                 <Card
@@ -526,6 +701,11 @@ const ManualAssignment = () => {
                                                 </Typography>
                                             </Box>
                                         </Box>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={Math.round(tech.aiScore)}
+                                            sx={{ height: 6, borderRadius: 3, mb: 1 }}
+                                        />
                                         <Stack direction="row" spacing={0.5} flexWrap="wrap">
                                             {tech.aiReasons.map((reason, i) => (
                                                 <Chip
@@ -596,9 +776,17 @@ const ManualAssignment = () => {
                         Cancel
                     </Button>
                     <Button
+                        onClick={handleAutoAssign}
+                        variant="outlined"
+                        disabled={assigning || !hasTechnicians || !aiSuggestions[selectedTicket?._id]?.length}
+                        startIcon={assigning ? <CircularProgress size={16} /> : <AIIcon />}
+                    >
+                        Auto Assign Best
+                    </Button>
+                    <Button
                         onClick={handleAssign}
                         variant="contained"
-                        disabled={!selectedTech || assigning}
+                        disabled={!selectedTech || assigning || !hasTechnicians}
                         startIcon={assigning ? <CircularProgress size={16} /> : <CheckIcon />}
                     >
                         {assigning ? 'Assigning...' : 'Assign Ticket'}

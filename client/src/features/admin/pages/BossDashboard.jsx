@@ -1,94 +1,123 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Container, Typography, Box, Grid, Card, CardContent, Paper, CircularProgress,
-    Avatar, Chip, LinearProgress, IconButton, Tooltip
+    Container, Typography, Box, Grid, Card, Paper, CircularProgress,
+    Avatar, Chip, LinearProgress, IconButton, Tooltip, Alert
 } from '@mui/material';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell,
-    LineChart, Line, Area, AreaChart, PieChart, Pie
+    PieChart, Pie
 } from 'recharts';
 import {
-    TrendingUp as TrendingIcon,
     AccessTime as TimeIcon,
-    Engineering as TechIcon,
     Warning as WarningIcon,
     CheckCircle as CheckIcon,
-    People as PeopleIcon,
     Assignment as TicketIcon,
     Refresh as RefreshIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES, getCompanyById } from '../../../utils/companies';
+import { getCompanyDisplayName } from '../../../utils/companies';
+import { useAuth } from '../../auth/context/AuthContext';
 
 const BossDashboard = () => {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState('');
     const [stats, setStats] = useState(null);
     const [realTimeData, setRealTimeData] = useState([]);
     const [lastUpdate, setLastUpdate] = useState(new Date());
+    const [companies, setCompanies] = useState([]);
+
+    const fetchStats = useCallback(async () => {
+        try {
+            setRefreshing(true);
+            const [statsRes, companiesRes] = await Promise.all([
+                axios.get('/api/dashboard/admin-stats'),
+                axios.get('/api/companies')
+            ]);
+            setStats(statsRes.data || {});
+            setCompanies(Array.isArray(companiesRes.data) ? companiesRes.data : []);
+            setError('');
+            setLastUpdate(new Date());
+        } catch (fetchError) {
+            console.error('Error fetching admin analytics data:', fetchError);
+            setError(fetchError?.response?.data?.message || 'Failed to load analytics data.');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const res = await axios.get('/api/dashboard/admin-stats');
-                setStats(res.data);
-            } catch (error) {
-                console.error('Error fetching admin stats:', error);
-                // Use mock data for demo
-                setStats({
-                    totalTickets: 1247,
-                    openTickets: 89,
-                    resolvedToday: 45,
-                    avgResolutionTime: 2.3,
-                    ticketsByCompany: COMPANIES.map(company => ({
-                        _id: company.id,
-                        count: Math.floor(Math.random() * 50) + 10
-                    })),
-                    ticketsByPriority: [
-                        { priority: 'Critical', count: 12, color: '#f44336' },
-                        { priority: 'High', count: 34, color: '#ff9800' },
-                        { priority: 'Medium', count: 78, color: '#2196f3' },
-                        { priority: 'Low', count: 145, color: '#4caf50' }
-                    ],
-                    technicianPerformance: [
-                        { name: 'Tech A', resolved: 23, avgTime: 1.8 },
-                        { name: 'Tech B', resolved: 19, avgTime: 2.1 },
-                        { name: 'Tech C', resolved: 31, avgTime: 1.5 },
-                        { name: 'Tech D', resolved: 27, avgTime: 2.4 }
-                    ]
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchStats();
         const interval = setInterval(fetchStats, 30000); // Refresh every 30 seconds
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchStats]);
 
-    // Real-time data simulation
+    // Real-time data polling
     useEffect(() => {
-        const generateRealTimeData = () => {
-            const now = new Date();
-            const newData = {
-                time: now.toLocaleTimeString(),
-                requests: Math.floor(Math.random() * 100) + 50,
-                activeUsers: Math.floor(Math.random() * 200) + 100
-            };
-
-            setRealTimeData(prev => {
-                const updated = [...prev, newData];
-                return updated.slice(-20); // Keep last 20 data points
-            });
-
-            setLastUpdate(now);
+        const loadRealtime = async () => {
+            try {
+                const res = await axios.get('/api/dashboard/realtime');
+                const now = new Date();
+                const newData = {
+                    time: now.toLocaleTimeString(),
+                    requests: res.data.requestsPerMinute || 0,
+                    activeUsers: res.data.activeUsers || 0
+                };
+                setRealTimeData(prev => [...prev, newData].slice(-20));
+                setLastUpdate(now);
+            } catch (error) {
+                // ignore
+            }
         };
 
-        const interval = setInterval(generateRealTimeData, 5000);
-        generateRealTimeData(); // Initial data
-
+        const interval = setInterval(loadRealtime, 5000);
+        loadRealtime();
         return () => clearInterval(interval);
     }, []);
+
+    const companyMap = useMemo(() => {
+        const map = new Map();
+        companies.forEach((company) => {
+            const id = company.companyId ?? company.id;
+            map.set(String(id), company);
+        });
+        return map;
+    }, [companies]);
+
+    // Prepare chart data from real API aggregation only
+    const chartData = useMemo(() => {
+        const byCompany = Array.isArray(stats?.ticketsByCompany) ? stats.ticketsByCompany : [];
+        return byCompany
+            .map((entry) => {
+                const companyId = entry?._id;
+                const meta = companyMap.get(String(companyId));
+                return {
+                    name: meta?.initials || `C${companyId}`,
+                    fullName: meta ? getCompanyDisplayName(meta) : `Company ${companyId}`,
+                    count: entry?.count || 0,
+                    companyId
+                };
+            })
+            .sort((a, b) => b.count - a.count);
+    }, [stats, companyMap]);
+
+    const scopeSubtitle = useMemo(() => {
+        const isGlobalScope = ['Super Admin', 'System Admin'].includes(user?.role);
+        if (isGlobalScope) return 'Real-time overview across all organizations';
+
+        const currentCompany = companyMap.get(String(user?.companyId));
+        if (currentCompany) {
+            return `Real-time overview for ${getCompanyDisplayName(currentCompany)}`;
+        }
+        return 'Real-time overview for your organization';
+    }, [user?.role, user?.companyId, companyMap]);
+
+    const performanceMax = useMemo(() => {
+        const resolvedValues = (stats?.technicianPerformance || []).map((tech) => tech?.resolved || 0);
+        return Math.max(1, ...resolvedValues);
+    }, [stats]);
 
     if (loading) {
         return (
@@ -97,17 +126,6 @@ const BossDashboard = () => {
             </Box>
         );
     }
-
-    // Prepare chart data
-    const chartData = COMPANIES.map(company => {
-        const companyTickets = stats?.ticketsByCompany?.find(t => t._id === company.id);
-        return {
-            name: company.initials,
-            fullName: company.name,
-            count: companyTickets?.count || 0,
-            companyId: company.id
-        };
-    });
 
     const StatCard = ({ title, value, subtitle, icon, color, trend }) => (
         <Card sx={{
@@ -151,12 +169,13 @@ const BossDashboard = () => {
                         Analytics Dashboard
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        Real-time overview of all 24 entities • Last updated: {lastUpdate.toLocaleTimeString()}
+                        {scopeSubtitle} | Last updated: {lastUpdate.toLocaleTimeString()}
                     </Typography>
                 </Box>
                 <Tooltip title="Refresh Data">
                     <IconButton
-                        onClick={() => window.location.reload()}
+                        onClick={fetchStats}
+                        disabled={refreshing}
                         sx={{
                             bgcolor: 'background.paper',
                             border: '1px solid',
@@ -169,12 +188,18 @@ const BossDashboard = () => {
                 </Tooltip>
             </Box>
 
+            {error && (
+                <Alert severity="error" sx={{ mb: 3, mx: 2 }}>
+                    {error}
+                </Alert>
+            )}
+
             <Grid container spacing={3} sx={{ mb: 4, px: 2 }}>
                 <Grid item xs={12} sm={6} md={3}>
                     <StatCard
                         title="Total Tickets"
                         value={stats?.totalTickets || 0}
-                        subtitle="All time across all entities"
+                        subtitle="All time in current scope"
                         icon={<TicketIcon />}
                         color="#1e4fb1"
                     />
@@ -192,7 +217,7 @@ const BossDashboard = () => {
                     <StatCard
                         title="Resolved Today"
                         value={stats?.resolvedToday || 0}
-                        subtitle="Completed in last 24h"
+                        subtitle="Resolved since 00:00 today"
                         icon={<CheckIcon />}
                         color="#4caf50"
                     />
@@ -217,41 +242,49 @@ const BossDashboard = () => {
                                 Tickets by Company
                             </Typography>
                         </Box>
-                        <ResponsiveContainer width="100%" height={360}>
-                            <BarChart data={chartData} margin={{ top: 10, right: 30, left: 30, bottom: 60 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="name"
-                                    angle={-45}
-                                    textAnchor="end"
-                                    height={100}
-                                />
-                                <YAxis />
-                                <RechartsTooltip
-                                    content={({ active, payload }) => {
-                                        if (active && payload && payload.length) {
-                                            const data = payload[0].payload;
-                                            return (
-                                                <Box sx={{ p: 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-                                                    <Typography variant="body2" fontWeight="bold">
-                                                        {data.fullName}
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                        Tickets: {data.count}
-                                                    </Typography>
-                                                </Box>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                                <Bar dataKey="count" fill="#1e4fb1" radius={[8, 8, 0, 0]}>
-                                    {chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={`hsl(${index * 15}, 70%, 50%)`} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {chartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={360}>
+                                <BarChart data={chartData} margin={{ top: 10, right: 30, left: 30, bottom: 60 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis
+                                        dataKey="name"
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={100}
+                                    />
+                                    <YAxis />
+                                    <RechartsTooltip
+                                        content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload;
+                                                return (
+                                                    <Box sx={{ p: 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+                                                        <Typography variant="body2" fontWeight="bold">
+                                                            {data.fullName}
+                                                        </Typography>
+                                                        <Typography variant="body2">
+                                                            Tickets: {data.count}
+                                                        </Typography>
+                                                    </Box>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    <Bar dataKey="count" fill="#1e4fb1" radius={[8, 8, 0, 0]}>
+                                        {chartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={`hsl(${index * 15}, 70%, 50%)`} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <Box sx={{ height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    No ticket data found for the current scope.
+                                </Typography>
+                            </Box>
+                        )}
                     </Paper>
                 </Box>
             </Box>
@@ -275,20 +308,24 @@ const BossDashboard = () => {
                                         bgcolor: 'action.hover',
                                         borderRadius: 2,
                                         borderLeft: '4px solid',
-                                        borderColor: activity.status === 'Critical' ? 'error.main' : 'primary.main'
+                                        borderColor: activity.priority === 'Critical'
+                                            ? 'error.main'
+                                            : activity.priority === 'High'
+                                                ? 'warning.main'
+                                                : 'primary.main'
                                     }}>
                                         <Box>
                                             <Typography variant="subtitle2" fontWeight="bold">
                                                 {activity.title}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary">
-                                                {activity.requester?.name || 'Unknown'} • {new Date(activity.createdAt).toLocaleString()}
+                                                {activity.requester?.name || 'Unknown'} | {new Date(activity.createdAt).toLocaleString()}
                                             </Typography>
                                         </Box>
                                         <Chip
-                                            label={activity.status}
+                                            label={`${activity.priority || 'N/A'} | ${activity.status}`}
                                             size="small"
-                                            color={activity.status === 'Resolved' ? 'success' : 'primary'}
+                                            color={activity.status === 'Resolved' || activity.status === 'Closed' ? 'success' : 'primary'}
                                             variant="outlined"
                                         />
                                     </Box>
@@ -350,27 +387,35 @@ const BossDashboard = () => {
                                 Top Performers
                             </Typography>
                             <Box sx={{ height: 320, overflowY: 'auto' }}>
-                                {stats?.technicianPerformance?.map((tech, index) => (
-                                    <Box key={tech.name} sx={{ mb: 2 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="body2" fontWeight="bold">
-                                                {tech.name}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {tech.resolved} tickets • {tech.avgTime}h avg
-                                            </Typography>
+                                {(stats?.technicianPerformance || []).length > 0 ? (
+                                    (stats?.technicianPerformance || []).map((tech) => (
+                                        <Box key={tech.name} sx={{ mb: 2 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                <Typography variant="body2" fontWeight="bold">
+                                                    {tech.name}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {tech.resolved} tickets | {tech.avgTime}h avg
+                                                </Typography>
+                                            </Box>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={(tech.resolved / performanceMax) * 100}
+                                                sx={{
+                                                    height: 8,
+                                                    borderRadius: 4,
+                                                    bgcolor: 'grey.200'
+                                                }}
+                                            />
                                         </Box>
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={(tech.resolved / 35) * 100}
-                                            sx={{
-                                                height: 8,
-                                                borderRadius: 4,
-                                                bgcolor: 'grey.200'
-                                            }}
-                                        />
+                                    ))
+                                ) : (
+                                    <Box sx={{ textAlign: 'center', py: 10 }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            No technician resolution data available yet.
+                                        </Typography>
                                     </Box>
-                                ))}
+                                )}
                             </Box>
                         </Paper>
                     </Box>

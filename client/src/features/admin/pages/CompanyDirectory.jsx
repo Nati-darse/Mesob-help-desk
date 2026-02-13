@@ -14,15 +14,28 @@ import {
     Close as CloseIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES } from '../../../utils/companies';
+import { getCompanyById, getCompanyDisplayName } from '../../../utils/companies';
 
 const CompanyDirectory = () => {
     const [tickets, setTickets] = useState([]);
+    const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('all');
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
+
+    const mergeCompany = (company) => {
+        const local = getCompanyById(company.companyId);
+        return {
+            ...local,
+            ...company,
+            name: company.name || local.name,
+            amharicName: company.amharicName || local.amharicName || '',
+            initials: company.initials || local.initials,
+            logo: company.logo || local.logo || ''
+        };
+    };
 
     useEffect(() => {
         const fetchTickets = async () => {
@@ -31,13 +44,21 @@ const CompanyDirectory = () => {
                 setTickets(res.data);
             } catch (error) {
                 console.error('Error fetching tickets:', error);
-                // Use mock data for demo
                 setTickets([]);
             } finally {
                 setLoading(false);
             }
         };
+        const fetchCompanies = async () => {
+            try {
+                const res = await axios.get('/api/companies');
+                setCompanies((res.data || []).map(mergeCompany));
+            } catch (error) {
+                setCompanies([]);
+            }
+        };
         fetchTickets();
+        fetchCompanies();
     }, []);
 
     const getTicketStats = (companyId) => {
@@ -79,9 +100,11 @@ const CompanyDirectory = () => {
         return { status: 'normal', color: 'info', label: 'Active' };
     };
 
-    const filteredCompanies = COMPANIES.filter(company => {
-        const matchesSearch = company.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const stats = getTicketStats(company.id);
+    const filteredCompanies = companies.filter(company => {
+        const matchesSearch = company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (company.amharicName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            company.initials.toLowerCase().includes(searchQuery.toLowerCase());
+        const stats = getTicketStats(company.companyId);
 
         if (filter === 'all') return matchesSearch;
         if (filter === 'critical') return matchesSearch && stats.critical > 0;
@@ -133,7 +156,7 @@ const CompanyDirectory = () => {
                 <Grid item xs={12} sm={6} md={3}>
                     <Paper sx={{ p: 3, textAlign: 'center' }}>
                         <Typography variant="h2" color="primary.main" fontWeight="bold">
-                            {COMPANIES.length}
+                            {companies.length}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             Total Entities
@@ -143,7 +166,7 @@ const CompanyDirectory = () => {
                 <Grid item xs={12} sm={6} md={3}>
                     <Paper sx={{ p: 3, textAlign: 'center' }}>
                         <Typography variant="h2" color="success.main" fontWeight="bold">
-                            {COMPANIES.filter(c => getTicketStats(c.id).open === 0).length}
+                            {companies.filter(c => getTicketStats(c.companyId).open === 0).length}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             No Active Tickets
@@ -153,7 +176,7 @@ const CompanyDirectory = () => {
                 <Grid item xs={12} sm={6} md={3}>
                     <Paper sx={{ p: 3, textAlign: 'center' }}>
                         <Typography variant="h2" color="warning.main" fontWeight="bold">
-                            {COMPANIES.filter(c => getTicketStats(c.id).critical > 0).length}
+                            {companies.filter(c => getTicketStats(c.companyId).critical > 0).length}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             Critical Issues
@@ -209,11 +232,11 @@ const CompanyDirectory = () => {
             {/* Companies Grid */}
             <Grid container spacing={3}>
                 {filteredCompanies.map((company) => {
-                    const stats = getTicketStats(company.id);
+                    const stats = getTicketStats(company.companyId);
                     const health = getHealthStatus(stats);
 
                     return (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={company.id}>
+                        <Grid item xs={12} sm={6} md={4} lg={3} key={company.companyId}>
                             <Card
                                 sx={{
                                     cursor: 'pointer',
@@ -233,15 +256,18 @@ const CompanyDirectory = () => {
                                             mr: 2,
                                             width: 48,
                                             height: 48
-                                        }}>
-                                            <BusinessIcon />
+                                        }}
+                                            src={company.logo || ''}
+                                            alt={company.initials}
+                                        >
+                                            {company.initials || <BusinessIcon />}
                                         </Avatar>
                                         <Box sx={{ flex: 1, minWidth: 0 }}>
                                             <Typography variant="h6" fontWeight="bold" noWrap>
                                                 {company.initials}
                                             </Typography>
                                             <Typography variant="caption" color="text.secondary" noWrap>
-                                                {company.name}
+                                                {getCompanyDisplayName(company)}
                                             </Typography>
                                         </Box>
                                         <Chip
@@ -312,7 +338,7 @@ const CompanyDirectory = () => {
                     <>
                         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
                             <Typography variant="h6" fontWeight="bold">
-                                {selectedCompany.name}
+                                {getCompanyDisplayName(selectedCompany)}
                             </Typography>
                             <IconButton onClick={handleCloseDetails}>
                                 <CloseIcon />
@@ -329,13 +355,18 @@ const CompanyDirectory = () => {
                                             height: 64,
                                             mx: 'auto',
                                             mb: 2
-                                        }}>
-                                            <BusinessIcon sx={{ fontSize: 32 }} />
+                                        }}
+                                            src={selectedCompany.logo || ''}
+                                        >
+                                            {selectedCompany.initials || <BusinessIcon sx={{ fontSize: 32 }} />}
                                         </Avatar>
                                         <Typography variant="h6" fontWeight="bold">
                                             {selectedCompany.initials}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
+                                            {getCompanyDisplayName(selectedCompany)}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
                                             {selectedCompany.name}
                                         </Typography>
                                     </Box>
@@ -347,17 +378,17 @@ const CompanyDirectory = () => {
                                         </Typography>
                                         <Box sx={{ mb: 1 }}>
                                             <Typography variant="body2" color="text.secondary">
-                                                Total Tickets: {getTicketStats(selectedCompany.id).total}
+                                                Total Tickets: {getTicketStats(selectedCompany.companyId).total}
                                             </Typography>
                                         </Box>
                                         <Box sx={{ mb: 1 }}>
                                             <Typography variant="body2" color="text.secondary">
-                                                Avg Resolution: {getTicketStats(selectedCompany.id).avgResolutionTime}h
+                                                Avg Resolution: {getTicketStats(selectedCompany.companyId).avgResolutionTime}h
                                             </Typography>
                                         </Box>
                                         <Box sx={{ mb: 1 }}>
                                             <Typography variant="body2" color="text.secondary">
-                                                Satisfaction Rate: {getTicketStats(selectedCompany.id).satisfactionRate}%
+                                                Satisfaction Rate: {getTicketStats(selectedCompany.companyId).satisfactionRate}%
                                             </Typography>
                                         </Box>
                                     </Box>

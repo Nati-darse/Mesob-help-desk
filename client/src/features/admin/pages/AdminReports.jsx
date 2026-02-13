@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../auth/context/AuthContext';
 import axios from 'axios';
 import { exportToExcel, exportToCSV, formatDate, formatDuration, calculateStats } from '../../../utils/excelExport';
+import { formatCompanyLabel, getCompanyById } from '../../../utils/companies';
 
 const AdminReports = () => {
     const { user } = useAuth();
@@ -179,7 +180,7 @@ const AdminReports = () => {
                     { key: 'category', label: 'Category' },
                     { key: 'priority', label: 'Priority' },
                     { key: 'status', label: 'Status' },
-                    { key: 'company', label: 'Company ID' },
+                    { key: 'company', label: 'Organization' },
                     { key: 'department', label: 'Department' },
                     { key: 'created', label: 'Created Date' },
                     { key: 'updated', label: 'Last Updated' },
@@ -195,7 +196,7 @@ const AdminReports = () => {
                     category: ticket.category,
                     priority: ticket.priority,
                     status: ticket.status,
-                    company: ticket.companyId,
+                    company: formatCompanyLabel(getCompanyById(ticket.companyId)),
                     department: ticket.department,
                     created: formatDate(ticket.createdAt),
                     updated: formatDate(ticket.updatedAt),
