@@ -3,13 +3,14 @@ import { Add as AddIcon, ConfirmationNumber as TicketIcon, AccessTime as TimeIco
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useTickets } from '../../tickets/hooks/useTickets';
-import { getCompanyById } from '../../../utils/companies';
+import { getCompanyById, getCompanyDisplayName } from '../../../utils/companies';
 import TruncatedText from '../../../components/TruncatedText';
 import { Newspaper as NewsIcon, Business as CompanyIcon, NotificationsActive as AlertIcon } from '@mui/icons-material';
 import React, { useMemo, memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { getStatusColor } from '../../../utils/ticketStatus';
 
 const StatCard = memo(({ icon, value, label, color }) => {
     return (
@@ -35,7 +36,7 @@ const UserDashboard = () => {
     const { data: tickets = [], isLoading } = useTickets();
 
     const company = useMemo(() => getCompanyById(user?.companyId || 1), [user?.companyId]);
-    const companyName = company.name;
+    const companyName = getCompanyDisplayName(company);
     const companyInitials = company.initials;
 
     const activeTickets = useMemo(
@@ -216,9 +217,18 @@ const UserDashboard = () => {
                                                 <Chip
                                                     label={ticket.status}
                                                     size="small"
-                                                    color={ticket.status === 'New' ? 'primary' : 'info'}
+                                                    color={getStatusColor(ticket.status)}
                                                     sx={{ fontWeight: 600 }}
                                                 />
+                                                {ticket.reviewStatus === 'Pending' && (
+                                                    <Chip
+                                                        label="Pending Admin Review"
+                                                        size="small"
+                                                        color="warning"
+                                                        variant="outlined"
+                                                        sx={{ fontWeight: 600 }}
+                                                    />
+                                                )}
                                                 <Typography variant="caption" color="text.secondary">
                                                     {new Date(ticket.createdAt).toLocaleDateString()}
                                                 </Typography>

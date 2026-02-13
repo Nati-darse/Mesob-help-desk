@@ -21,16 +21,20 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useTickets } from '../../tickets/hooks/useTickets';
-import { getCompanyById } from '../../../utils/companies';
+import { getCompanyById, getCompanyDisplayName } from '../../../utils/companies';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import { getStatusColor, getReviewStatusColor } from '../../../utils/ticketStatus';
 
 const CATEGORIES = ['Software', 'Hardware', 'Network', 'Account', 'Building', 'Other'];
 
 const TeamLeadDashboard = () => {
     const { user } = useAuth();
     const { t } = useTranslation();
-    const { data: tickets = [], refetch } = useTickets();
+    const { data: tickets = [], refetch } = useTickets({
+        includeDetails: true,
+        pageSize: 200,
+    });
     const company = useMemo(() => getCompanyById(user?.companyId || 1), [user?.companyId]);
 
     // Form State
@@ -42,6 +46,10 @@ const TeamLeadDashboard = () => {
         priority: 'Medium'
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [attachments, setAttachments] = useState([]);
+    const [imageData, setImageData] = useState('');
+    const [imageName, setImageName] = useState('');
+    const [imageMime, setImageMime] = useState('');
 
     // Feedback Dialog State
     const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -49,11 +57,20 @@ const TeamLeadDashboard = () => {
     const [rating, setRating] = useState(5);
     const [comment, setComment] = useState('');
 
-    const activeTickets = tickets.filter(t => t.status !== 'Closed');
+    const activeTickets = useMemo(
+        () => tickets.filter((ticket) => ticket.status !== 'Closed'),
+        [tickets]
+    );
 
     // Stats
-    const resolvedCount = tickets.filter(t => t.status === 'Resolved').length;
-    const pendingCount = activeTickets.filter(t => t.status !== 'Resolved').length;
+    const needsConfirmationCount = useMemo(
+        () => tickets.filter((ticket) => ticket.status === 'Resolved' && ticket.reviewStatus === 'Pending').length,
+        [tickets]
+    );
+    const pendingCount = useMemo(
+        () => tickets.filter((ticket) => ['New', 'Assigned', 'In Progress'].includes(ticket.status)).length,
+        [tickets]
+    );
 
     const handleQuickSubmit = async (e) => {
         e.preventDefault();
@@ -64,17 +81,35 @@ const TeamLeadDashboard = () => {
             return;
         }
 
-        console.log('Submitting ticket with user:', user);
         setIsSubmitting(true);
         try {
-            await axios.post('/api/tickets', {
-                title: requestData.title,
-                description: requestData.description || `Request from Team Leader ${user?.name}`,
-                category: requestData.category,
-                priority: requestData.priority,
-                buildingWing: `Floor: ${requestData.floor}`,
-                companyId: user.companyId
-            });
+            if (imageData) {
+                await axios.post('/api/tickets', {
+                    title: requestData.title,
+                    description: requestData.description || `Request from Team Leader ${user?.name}`,
+                    category: requestData.category,
+                    priority: requestData.priority,
+                    buildingWing: `Floor: ${requestData.floor}`,
+                    companyId: user.companyId,
+                    imageData,
+                    imageName,
+                    imageMime,
+                });
+            } else {
+                const formData = new FormData();
+                formData.append('title', requestData.title);
+                formData.append('description', requestData.description || `Request from Team Leader ${user?.name}`);
+                formData.append('category', requestData.category);
+                formData.append('priority', requestData.priority);
+                formData.append('buildingWing', `Floor: ${requestData.floor}`);
+                formData.append('companyId', user.companyId);
+
+                for (let i = 0; i < attachments.length; i++) {
+                    formData.append('attachments', attachments[i]);
+                }
+
+                await axios.post('/api/tickets', formData);
+            }
             setRequestData({
                 title: '',
                 description: '',
@@ -82,6 +117,10 @@ const TeamLeadDashboard = () => {
                 category: 'Hardware',
                 priority: 'Medium'
             });
+            setAttachments([]);
+            setImageData('');
+            setImageName('');
+            setImageMime('');
             refetch();
         } catch (error) {
             console.error('Submission error:', error);
@@ -131,7 +170,7 @@ const TeamLeadDashboard = () => {
                     {t('teamLeadDashboard.teamOperationsCenter')}
                 </Typography>
                 <Typography variant="h6" color="text.secondary">
-                    {t('teamLeadDashboard.manageRequests', { company: company.name, initials: company.initials })}
+                    {t('teamLeadDashboard.manageRequests', { company: getCompanyDisplayName(company), initials: company.initials })}
                 </Typography>
             </Box>
 
@@ -153,7 +192,7 @@ const TeamLeadDashboard = () => {
                     <Card sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(76,175,80,0.15)' : '#E8F5E9', borderRadius: 3, boxShadow: 'none' }}>
                         <CardContent sx={{ textAlign: 'center', py: 3 }}>
                             <Typography variant="h2" sx={{ fontWeight: 800, color: '#2E7D32' }}>
-                                {resolvedCount}
+                                {needsConfirmationCount}
                             </Typography>
                             <Typography variant="overline" sx={{ letterSpacing: 1, fontWeight: 'bold' }}>
                                 {t('teamLeadDashboard.needsConfirmation')}
@@ -261,6 +300,39 @@ const TeamLeadDashboard = () => {
                             </Grid>
 
                             <Grid item xs={12}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Attach an image (optional)
+                                    </Typography>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const files = e.target.files;
+                                            setAttachments(files || []);
+                                            const file = files && files[0];
+                                            if (!file) {
+                                                setImageData('');
+                                                setImageName('');
+                                                setImageMime('');
+                                                return;
+                                            }
+                                            setImageName(file.name || 'attachment');
+                                            setImageMime(file.type || 'image/jpeg');
+                                            const reader = new FileReader();
+                                            reader.onload = () => {
+                                                const result = String(reader.result || '');
+                                                const base64 = result.includes(',') ? result.split(',')[1] : result;
+                                                setImageData(base64);
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }}
+                                        style={{ padding: '8px 0', maxWidth: '100%' }}
+                                    />
+                                </Box>
+                            </Grid>
+
+                            <Grid item xs={12}>
                                 <Button
                                     fullWidth
                                     variant="contained"
@@ -345,7 +417,7 @@ const TeamLeadDashboard = () => {
                                                 </Box>
                                                 <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                                                     <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <BuildingIcon fontSize="inherit" /> {ticket.buildingWing}
+                                                        <BuildingIcon fontSize="inherit" /> {ticket.buildingWing || 'General'}
                                                     </Typography>
                                                     <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                         <PersonIcon fontSize="inherit" /> {t('teamLeadDashboard.by')} {ticket.requester?.name || 'User'}
@@ -365,7 +437,7 @@ const TeamLeadDashboard = () => {
                                                 {ticket.status === 'Resolved' && ticket.reviewStatus === 'Pending' ? (
                                                     <Chip
                                                         label={t('teamLeadDashboard.pendingReview')}
-                                                        color="info"
+                                                        color={getReviewStatusColor('Pending')}
                                                         variant="outlined"
                                                         sx={{ fontWeight: 700, px: 1 }}
                                                     />
@@ -384,7 +456,7 @@ const TeamLeadDashboard = () => {
                                                     <Stack alignItems="end">
                                                         <Chip
                                                             label={ticket.status}
-                                                            color={ticket.status === 'In Progress' ? 'primary' : 'default'}
+                                                            color={getStatusColor(ticket.status)}
                                                             size="small"
                                                             variant={ticket.status === 'New' ? 'outlined' : 'filled'}
                                                         />

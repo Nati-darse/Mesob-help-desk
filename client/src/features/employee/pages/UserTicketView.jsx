@@ -5,7 +5,8 @@ import { ArrowBack as BackIcon, Send as SendIcon, Star as StarIcon, StarOutline 
 import { Stack, IconButton, Alert } from '@mui/material';
 import axios from 'axios';
 import { useAuth } from '../../auth/context/AuthContext';
-import { getCompanyById } from '../../../utils/companies';
+import { formatCompanyLabel, getCompanyById } from '../../../utils/companies';
+import { getStatusColor } from '../../../utils/ticketStatus';
 
 const statusSteps = ['New', 'Assigned', 'In Progress', 'Resolved', 'Closed'];
 
@@ -81,13 +82,13 @@ const UserTicketView = () => {
                     <Box>
                         <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>{ticket.title}</Typography>
                         <Typography variant="subtitle2" color="primary.main" sx={{ fontWeight: 700, mb: 0.5 }}>
-                            {getCompanyById(ticket.companyId || user?.companyId || 1).name}
+                            {formatCompanyLabel(getCompanyById(ticket.companyId || user?.companyId || 1))}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             #{id.toUpperCase()} • Created on {new Date(ticket.createdAt).toLocaleDateString()}
                         </Typography>
                     </Box>
-                    <Chip label={ticket.status} color="primary" sx={{ fontWeight: 700 }} />
+                    <Chip label={ticket.status} color={getStatusColor(ticket.status)} sx={{ fontWeight: 700 }} />
                 </Box>
 
                 <Divider sx={{ my: 4 }} />
@@ -172,7 +173,14 @@ const UserTicketView = () => {
             )}
 
             {ticket.reviewStatus !== 'None' && (
-                <Alert severity={ticket.reviewStatus === 'Approved' ? 'success' : 'info'} sx={{ mb: 4, borderRadius: 3 }}>
+                <Alert
+                    severity={
+                        ticket.reviewStatus === 'Approved' ? 'success' :
+                            ticket.reviewStatus === 'Rejected' ? 'error' :
+                                ticket.reviewStatus === 'Pending' ? 'warning' : 'info'
+                    }
+                    sx={{ mb: 4, borderRadius: 3 }}
+                >
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                         Review Status: {ticket.reviewStatus}
                     </Typography>

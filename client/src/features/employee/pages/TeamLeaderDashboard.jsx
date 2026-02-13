@@ -20,7 +20,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useTickets } from '../../tickets/hooks/useTickets';
-import { getCompanyById } from '../../../utils/companies';
+import { getCompanyById, getCompanyDisplayName } from '../../../utils/companies';
 import axios from 'axios';
 
 const TeamLeaderDashboard = () => {
@@ -194,7 +194,7 @@ const TeamLeaderDashboard = () => {
                         Manage technician requests and track service progress for your team
                     </Typography>
                     <Chip
-                        label={`${company.name} - ${company.initials}`}
+                        label={`${company.initials} - ${getCompanyDisplayName(company)}`}
                         color="primary"
                         variant="outlined"
                         sx={{ fontWeight: 700, px: 2 }}
@@ -255,7 +255,7 @@ const TeamLeaderDashboard = () => {
                                     <TextField
                                         fullWidth
                                         label="Office / Company"
-                                        value={company.name}
+                                        value={getCompanyDisplayName(company)}
                                         disabled
                                         variant="filled"
                                     />
