@@ -1,4 +1,8 @@
 const User = require('../models/User');
+const Ticket = require('../models/Ticket');
+const { logAudit } = require('../utils/auditLogger');
+const { generateSecurePassword } = require('../utils/passwordValidator');
+const { sendEmail } = require('../services/notificationService');
 
 // @desc    Get all technicians
 // @route   GET /api/users/technicians
@@ -7,10 +11,35 @@ exports.getTechnicians = async (req, res) => {
     try {
         // Return all technicians globally (Mesob pool)
         const filter = { role: 'Technician' };
+        const includeWorkload = req.query.includeWorkload === 'true';
         const technicians = await User.find(filter)
             .select('name email department isAvailable dutyStatus companyId')
             .lean();
-        res.json(technicians);
+        if (!includeWorkload) {
+            return res.json(technicians);
+        }
+
+        const techIds = technicians.map((tech) => tech._id);
+        const match = {
+            technician: { $in: techIds },
+            status: { $nin: ['Resolved', 'Closed'] }
+        };
+        if (req.tenantId) {
+            match.companyId = req.tenantId;
+        }
+
+        const counts = await Ticket.aggregate([
+            { $match: match },
+            { $group: { _id: '$technician', count: { $sum: 1 } } }
+        ]);
+
+        const countMap = new Map(counts.map((c) => [String(c._id), c.count]));
+        const withWorkload = technicians.map((tech) => ({
+            ...tech,
+            currentTickets: countMap.get(String(tech._id)) || 0
+        }));
+
+        res.json(withWorkload);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -29,6 +58,13 @@ exports.updateAvailability = async (req, res) => {
         user.isAvailable = isAvailable;
         await user.save();
 
+        await logAudit({
+            action: 'USER_AVAILABILITY',
+            req,
+            targetUser: user._id,
+            metadata: { isAvailable }
+        });
+
         res.json({ success: true, isAvailable: user.isAvailable });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -40,7 +76,7 @@ exports.updateAvailability = async (req, res) => {
 // @access  Private (System Admin)
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}).sort({ createdAt: -1 });
+        const users = await User.find({ role: { $ne: 'System Admin' } }).sort({ createdAt: -1 });
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -61,6 +97,13 @@ exports.updateUserRole = async (req, res) => {
 
         user.role = role;
         await user.save();
+
+        await logAudit({
+            action: 'USER_ROLE_CHANGE',
+            req,
+            targetUser: user._id,
+            metadata: { newRole: role }
+        });
 
         res.json(user);
     } catch (error) {
@@ -90,13 +133,10 @@ exports.deleteUser = async (req, res) => {
         }
 
         // Create audit log before deletion
-        const AuditLog = require('../models/AuditLog');
-        await AuditLog.create({
+        await logAudit({
             action: 'DELETE_USER',
-            performedBy: req.user._id,
+            req,
             targetUser: userToDelete._id,
-            ipAddress: req.ip || req.connection.remoteAddress,
-            userAgent: req.headers['user-agent'],
             metadata: {
                 adminName: req.user.name,
                 adminEmail: req.user.email,
@@ -121,6 +161,45 @@ exports.deleteUser = async (req, res) => {
                 role: userToDelete.role
             }
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Reset user password (System Admin / Super Admin)
+// @route   POST /api/users/:id/reset-password
+// @access  Private (System Admin, Super Admin)
+exports.resetUserPassword = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('+password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const tempPassword = generateSecurePassword();
+        user.password = tempPassword;
+        user.isFirstLogin = true;
+        await user.save();
+
+        await logAudit({
+            action: 'PASSWORD_CHANGE',
+            req,
+            targetUser: user._id,
+            metadata: { reset: true }
+        });
+
+        try {
+            await sendEmail(
+                user.email,
+                'Mesob Help Desk - Password Reset',
+                `Your password has been reset. Temporary password: ${tempPassword}`,
+                `<p>Your password has been reset.</p><p><b>Temporary Password:</b> ${tempPassword}</p>`
+            );
+        } catch (error) {
+            // ignore email failure
+        }
+
+        res.json({ success: true, temporaryPassword: tempPassword });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

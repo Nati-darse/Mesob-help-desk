@@ -1,6 +1,24 @@
 const Ticket = require('../models/Ticket');
 const User = require('../models/User');
 const cache = require('../services/cache');
+const { getRequestsPerMinute } = require('../utils/metrics');
+
+const ACTIVE_TICKET_STATUSES = ['New', 'Assigned', 'In Progress'];
+
+const normalizeCompanyId = (value) => {
+    if (value === undefined || value === null || value === '') return null;
+    const n = Number(value);
+    return Number.isNaN(n) ? value : n;
+};
+
+const getAdminScopeQuery = (req) => {
+    const isGlobalAdmin = ['System Admin', 'Super Admin'].includes(req.user?.role);
+    if (isGlobalAdmin) return {};
+
+    const companyId = normalizeCompanyId(req.tenantId ?? req.user?.companyId);
+    if (companyId === null) return {};
+    return { companyId };
+};
 
 // @desc    Get dashboard statistics
 // @route   GET /api/dashboard/stats
@@ -63,25 +81,37 @@ exports.getStats = async (req, res) => {
 // @access  Private (Admin/Super Admin)
 exports.getAdminStats = async (req, res) => {
     try {
-        const cacheKey = 'admin-stats';
-        const cached = await cache.get(cacheKey);
-        if (cached) {
-            return res.json(cached);
-        }
+        const scopeQuery = getAdminScopeQuery(req);
+        const now = new Date();
 
         // 1. Basic Counts
-        const totalTickets = await Ticket.countDocuments({});
-        const openTickets = await Ticket.countDocuments({ status: { $ne: 'Closed' } });
+        const totalTickets = await Ticket.countDocuments(scopeQuery);
+        const openTickets = await Ticket.countDocuments({
+            ...scopeQuery,
+            status: { $in: ACTIVE_TICKET_STATUSES }
+        });
+        const slaBreaches = await Ticket.countDocuments({
+            ...scopeQuery,
+            status: { $in: ACTIVE_TICKET_STATUSES },
+            $or: [
+                { slaBreached: true },
+                { slaDueAt: { $lt: now } }
+            ]
+        });
 
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
         const resolvedToday = await Ticket.countDocuments({
+            ...scopeQuery,
             status: 'Resolved',
             updatedAt: { $gte: startOfToday }
         });
 
         // 2. Average Resolution Time & Total Downtime
-        const resolvedTickets = await Ticket.find({ status: 'Resolved' });
+        const resolvedTickets = await Ticket.find({
+            ...scopeQuery,
+            status: { $in: ['Resolved', 'Closed'] }
+        });
         let totalResolutionHours = 0;
         resolvedTickets.forEach(ticket => {
             if (ticket.updatedAt && ticket.createdAt) {
@@ -94,7 +124,11 @@ exports.getAdminStats = async (req, res) => {
             : 0;
 
         // 3. Tickets by Company
-        const ticketsByCompany = await Ticket.aggregate([
+        const ticketsByCompanyPipeline = [];
+        if (scopeQuery.companyId !== undefined) {
+            ticketsByCompanyPipeline.push({ $match: { companyId: scopeQuery.companyId } });
+        }
+        ticketsByCompanyPipeline.push(
             {
                 $group: {
                     _id: '$companyId',
@@ -102,17 +136,23 @@ exports.getAdminStats = async (req, res) => {
                 }
             },
             { $sort: { _id: 1 } }
-        ]);
+        );
+        const ticketsByCompany = await Ticket.aggregate(ticketsByCompanyPipeline);
 
         // 4. Tickets by Priority
-        const ticketsByPriority = await Ticket.aggregate([
+        const ticketsByPriorityPipeline = [];
+        if (scopeQuery.companyId !== undefined) {
+            ticketsByPriorityPipeline.push({ $match: { companyId: scopeQuery.companyId } });
+        }
+        ticketsByPriorityPipeline.push(
             {
                 $group: {
                     _id: '$priority',
                     count: { $sum: 1 }
                 }
             }
-        ]).then(items => {
+        );
+        const ticketsByPriority = await Ticket.aggregate(ticketsByPriorityPipeline).then(items => {
             // Map colors to priority
             const colors = { 'Critical': '#f44336', 'High': '#ff9800', 'Medium': '#2196f3', 'Low': '#4caf50' };
             return items.map(item => ({
@@ -124,8 +164,13 @@ exports.getAdminStats = async (req, res) => {
 
         // 5. Technician Performance
         // This is complex. We'll aggregate resolved tickets by technician
+        const technicianPerformanceMatch = {
+            ...scopeQuery,
+            status: { $in: ['Resolved', 'Closed'] },
+            technician: { $exists: true }
+        };
         const technicianPerformance = await Ticket.aggregate([
-            { $match: { status: 'Resolved', technician: { $exists: true } } },
+            { $match: technicianPerformanceMatch },
             {
                 $lookup: {
                     from: 'users',
@@ -162,20 +207,26 @@ exports.getAdminStats = async (req, res) => {
 
         // 6. Unassigned Tickets (status is 'New' OR no technician assigned)
         const unassignedTickets = await Ticket.countDocuments({
+            ...scopeQuery,
             $or: [
                 { status: 'New' },
                 { technician: { $exists: false } },
                 { technician: null }
-            ]
+            ],
+            status: { $nin: ['Resolved', 'Closed'] }
         });
 
         // 7. Technician Availability
-        const techAvailability = await User.find({ role: 'Technician' })
+        const techFilter = { role: 'Technician' };
+        if (scopeQuery.companyId !== undefined) {
+            techFilter.companyId = scopeQuery.companyId;
+        }
+        const techAvailability = await User.find(techFilter)
             .select('name isAvailable department')
             .lean();
 
         // 8. Recent Activity (Latest 10 tickets)
-        const recentTickets = await Ticket.find({})
+        const recentTickets = await Ticket.find(scopeQuery)
             .sort({ createdAt: -1 })
             .limit(10)
             .populate('requester', 'name')
@@ -185,6 +236,7 @@ exports.getAdminStats = async (req, res) => {
         const result = {
             totalTickets,
             openTickets,
+            slaBreaches,
             resolvedToday,
             unassignedTickets,
             avgResolutionTime: Number(avgResolutionTime),
@@ -195,8 +247,33 @@ exports.getAdminStats = async (req, res) => {
             recentActivity: recentTickets
         };
 
-        await cache.set(cacheKey, result, 60);
         res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get realtime admin stats
+// @route   GET /api/dashboard/realtime
+// @access  Private (Admin/Super Admin/System Admin)
+exports.getRealtimeStats = async (req, res) => {
+    try {
+        const scopeQuery = getAdminScopeQuery(req);
+        const activeUserQuery = { dutyStatus: { $ne: 'Offline' } };
+        if (scopeQuery.companyId !== undefined) {
+            activeUserQuery.companyId = scopeQuery.companyId;
+        }
+        const activeUsers = await User.countDocuments(activeUserQuery);
+        const openTickets = await Ticket.countDocuments({
+            ...scopeQuery,
+            status: { $in: ACTIVE_TICKET_STATUSES }
+        });
+        const requestsPerMinute = getRequestsPerMinute();
+        res.json({
+            activeUsers,
+            openTickets,
+            requestsPerMinute
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -146,7 +146,7 @@ exports.getAssignedTickets = async (req, res) => {
 exports.getTicketById = async (req, res) => {
     try {
         const ticket = await Ticket.findById(req.params.id)
-            .populate('requester', 'name email department')
+            .populate('requester', 'name email department phone')
             .populate('comments.user', 'name role');
 
         if (!ticket || String(ticket.technician) !== String(req.user.id)) {
@@ -172,13 +172,29 @@ exports.updateTicket = async (req, res) => {
 };
 
 exports.addInternalNotes = async (req, res) => {
-    // Simplified placeholder
-    res.json({ message: 'Not implemented' });
+    try {
+        const { note } = req.body;
+        const ticket = await Ticket.findById(req.params.id);
+        if (!ticket) return res.status(404).json({ message: 'Not found' });
+        ticket.workLog.push({ note, technician: req.user._id });
+        await ticket.save();
+        res.json(ticket);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
 exports.addCustomerUpdate = async (req, res) => {
-    // Simplified placeholder
-    res.json({ message: 'Not implemented' });
+    try {
+        const { text } = req.body;
+        const ticket = await Ticket.findById(req.params.id);
+        if (!ticket) return res.status(404).json({ message: 'Not found' });
+        ticket.comments.push({ user: req.user._id, text });
+        await ticket.save();
+        res.json(ticket);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
 exports.resolveTicket = async (req, res) => {
