@@ -37,7 +37,7 @@ const Register = () => {
             case ROLES.TECHNICIAN:
                 return '/tech';
             case ROLES.TEAM_LEAD:
-                return '/teamleaderdashboard';
+                return '/team-lead';
             case ROLES.EMPLOYEE:
                 return '/portal';
             default:

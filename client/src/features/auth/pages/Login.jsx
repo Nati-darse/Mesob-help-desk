@@ -20,15 +20,13 @@ const Login = () => {
         // Normalize role string (trim whitespace)
         const normalizedRole = String(role).trim();
         
-        console.log('🔍 Login - User Role:', normalizedRole);
-        console.log('🔍 Login - Role Constants:', ROLES);
         
         // Direct string comparison for reliability
         if (normalizedRole === 'System Admin') return '/sys-admin';
         if (normalizedRole === 'Super Admin') return '/admin';
         if (normalizedRole === 'Technician') return '/tech';
         if (normalizedRole === 'Team Lead') return '/team-lead';
-        if (normalizedRole === 'Worker') return '/portal';
+        if (normalizedRole === 'Employee' || normalizedRole === 'Worker') return '/portal';
         
         // Fallback
         console.warn('⚠️ Unknown role:', normalizedRole, '- redirecting to login');
@@ -44,9 +42,7 @@ const Login = () => {
             const result = await login(email, password);
             
             if (result.success) {
-                console.log('✅ Login successful:', result.user);
                 const redirectPath = getRedirectPath(result.user.role);
-                console.log('🚀 Redirecting to:', redirectPath);
                 
                 // Small delay to ensure state is updated
                 setTimeout(() => {
