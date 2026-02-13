@@ -23,8 +23,8 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['Worker', 'Technician', 'Team Lead', 'Admin', 'System Admin', 'Super Admin'],
-        default: 'Worker',
+        enum: ['Employee', 'Technician', 'Team Lead', 'Admin', 'System Admin', 'Super Admin'],
+        default: 'Employee',
     },
     department: {
         type: String,
@@ -60,6 +60,10 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now,
+    },
+    lastLogin: {
+        type: Date,
+        default: null,
     },
 });
 

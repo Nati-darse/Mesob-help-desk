@@ -18,6 +18,11 @@ const notificationSchema = new mongoose.Schema({
     targetValue: {
         type: String // companyId, role name, or userId
     },
+    // Optional company scope for role/specific broadcasts
+    targetCompanyId: {
+        type: Number,
+        default: null
+    },
     sender: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -29,5 +34,8 @@ const notificationSchema = new mongoose.Schema({
         expires: 60 * 60 * 24 * 7 // Auto-delete after 7 days
     }
 });
+
+notificationSchema.index({ targetType: 1, targetValue: 1, createdAt: -1 });
+notificationSchema.index({ targetCompanyId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

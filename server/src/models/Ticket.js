@@ -68,6 +68,21 @@ const ticketSchema = new mongoose.Schema({
         max: 5,
     },
     feedback: String,
+    reviewStatus: {
+        type: String,
+        enum: ['None', 'Pending', 'Approved', 'Rejected'],
+        default: 'None',
+    },
+    reviewNotes: {
+        type: String,
+    },
+    slaDueAt: {
+        type: Date,
+    },
+    slaBreached: {
+        type: Boolean,
+        default: false,
+    },
     workLog: [{
         note: String,
         technician: {
@@ -90,10 +105,12 @@ const ticketSchema = new mongoose.Schema({
 });
 
 ticketSchema.index({ companyId: 1, status: 1, createdAt: -1 });
+ticketSchema.index({ status: 1, reviewStatus: 1, updatedAt: -1 });
+ticketSchema.index({ technician: 1, status: 1, companyId: 1 });
+ticketSchema.index({ slaBreached: 1, slaDueAt: 1, companyId: 1 });
 
-ticketSchema.pre('save', function (next) {
+ticketSchema.pre('save', function () {
     this.updatedAt = Date.now();
-    next();
 });
 
 module.exports = mongoose.model('Ticket', ticketSchema);
