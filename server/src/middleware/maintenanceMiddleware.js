@@ -1,4 +1,4 @@
-const GlobalSetting = require('../models/GlobalSetting');
+const { getMaintenanceModeSync } = require('../utils/settingsCache');
 
 const checkMaintenance = async (req, res, next) => {
   try {
@@ -11,8 +11,7 @@ const checkMaintenance = async (req, res, next) => {
       return next();
     }
 
-    const setting = await GlobalSetting.findOne({ key: 'maintenance' });
-    const isMaintenance = setting ? setting.value : false;
+    const isMaintenance = getMaintenanceModeSync();
 
     if (isMaintenance) {
       // Allow Admins to bypass

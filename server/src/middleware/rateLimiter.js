@@ -1,15 +1,17 @@
 const rateLimit = require('express-rate-limit');
+const { getLoginAttemptsLimit, isRateLimitingEnabled } = require('../utils/settingsCache');
 
 // Login rate limiter - 5 attempts per 15 minutes
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5,
+    max: () => getLoginAttemptsLimit(),
     message: {
         message: 'Too many login attempts from this IP, please try again after 15 minutes'
     },
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful logins
+    skip: () => !isRateLimitingEnabled(),
 });
 
 // Registration rate limiter - 3 registrations per hour
@@ -21,6 +23,7 @@ const registerLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => !isRateLimitingEnabled(),
 });
 
 // General API rate limiter - 100 requests per 15 minutes
@@ -32,6 +35,7 @@ const apiLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => !isRateLimitingEnabled(),
 });
 
 // Strict limiter for sensitive operations - 3 attempts per hour
@@ -43,6 +47,7 @@ const strictLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => !isRateLimitingEnabled(),
 });
 
 module.exports = {
