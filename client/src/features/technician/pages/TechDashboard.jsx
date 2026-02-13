@@ -17,6 +17,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import axios from 'axios';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { exportToExcel, exportToCSV, formatDate, formatDuration, calculateStats } from '../../../utils/excelExport';
+import { formatCompanyLabel, getCompanyById } from '../../../utils/companies';
 import { useTranslation } from 'react-i18next';
 
 const TechDashboard = () => {
@@ -37,7 +38,9 @@ const TechDashboard = () => {
     const { data: assignedTickets = [], isLoading: ticketsLoading } = useQuery({
         queryKey: ['tickets'],
         queryFn: async () => {
-            const { data } = await axios.get('/api/technician/assigned');
+            const { data } = await axios.get('/api/technician/assigned', {
+                params: { includeResolved: true }
+            });
             return data;
         },
         refetchInterval: 15000 // Fallback polling
@@ -147,7 +150,7 @@ const TechDashboard = () => {
                 'Category': ticket.category,
                 'Priority': ticket.priority,
                 'Status': ticket.status,
-                'Company': ticket.companyId,
+                'Company': formatCompanyLabel(getCompanyById(ticket.companyId)),
                 'Department': ticket.department,
                 'Created': formatDate(ticket.createdAt),
                 'Updated': formatDate(ticket.updatedAt),
@@ -162,7 +165,7 @@ const TechDashboard = () => {
                 { key: 'Category', label: 'Category' },
                 { key: 'Priority', label: 'Priority' },
                 { key: 'Status', label: 'Status' },
-                { key: 'Company', label: 'Company' },
+                { key: 'Company', label: 'Organization' },
                 { key: 'Department', label: 'Department' },
                 { key: 'Created', label: 'Created Date' },
                 { key: 'Updated', label: 'Last Updated' },
@@ -219,7 +222,7 @@ const TechDashboard = () => {
 
     const getPendingTicketsCount = () => {
         return assignedTickets.filter(ticket =>
-            ticket.status === 'Open' || ticket.status === 'In Progress'
+            ticket.status === 'Assigned' || ticket.status === 'In Progress' || ticket.status === 'New'
         ).length;
     };
 

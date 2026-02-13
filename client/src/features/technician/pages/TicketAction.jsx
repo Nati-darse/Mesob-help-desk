@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowBack as BackIcon, Save as SaveIcon, CheckCircle as CheckIcon, History as HistoryIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { useAuth } from '../../auth/context/AuthContext';
-import { getCompanyById } from '../../../utils/companies';
+import { formatCompanyLabel, getCompanyById } from '../../../utils/companies';
 
 const techStatuses = ['Diagnosing', 'Parts Pending', 'Testing', 'Resolved'];
 
@@ -93,7 +93,7 @@ const TicketAction = () => {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                             <Box>
                                 <Typography variant="caption" color="primary" sx={{ fontWeight: 900, textTransform: 'uppercase' }}>
-                                    {company.name}
+                                    {formatCompanyLabel(company)}
                                 </Typography>
                                 <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>{ticket.title}</Typography>
                             </Box>

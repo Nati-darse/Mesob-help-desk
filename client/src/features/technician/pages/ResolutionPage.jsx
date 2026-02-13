@@ -26,6 +26,8 @@ import { useAuth } from '../../auth/context/AuthContext';
 import axios from 'axios';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const ResolutionPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -157,6 +159,16 @@ const ResolutionPage = () => {
         }
     };
 
+    const formatLocation = (t) => {
+        if (!t) return 'N/A';
+        const parts = [];
+        if (t.buildingWing) parts.push(t.buildingWing);
+        if (t.floorNumber) parts.push(`Floor ${t.floorNumber}`);
+        if (t.roomNumber) parts.push(`Room ${t.roomNumber}`);
+        if (parts.length > 0) return parts.join(', ');
+        return t.location || 'N/A';
+    };
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -176,8 +188,8 @@ const ResolutionPage = () => {
     return (
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
             <Grid container spacing={3}>
-                {/* Left: Ticket Details */}
-                <Grid item xs={12} md={8}>
+                {/* Ticket Details */}
+                <Grid item xs={12}>
                     <Paper sx={{ p: { xs: 2, sm: 3 }, minHeight: { xs: 'auto', md: 600 } }}>
                         {/* Header */}
                         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 3 }}>
@@ -249,6 +261,71 @@ const ResolutionPage = () => {
                             </Typography>
                         </Box>
 
+                        {ticket.attachments && ticket.attachments.length > 0 && (
+                            <Box sx={{ mb: 3 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Attachments
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                    {ticket.attachments.map((file, index) => {
+                                        const filePath = typeof file === 'string'
+                                            ? file
+                                            : (file.path || file.filename);
+                                        const href = filePath.startsWith('http')
+                                            ? filePath
+                                            : `${API_BASE_URL.replace(/\/$/, '')}/${filePath.replace(/^\/+/, '')}`;
+                                        const name = typeof file === 'string' ? `File ${index + 1}` : (file.filename || `File ${index + 1}`);
+                                        const type = typeof file === 'string' ? '' : (file.mimetype || '');
+                                        const isImage = type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filePath);
+
+                                        if (isImage) {
+                                            return (
+                                                <Box key={index} sx={{ width: 160 }}>
+                                                    <Box
+                                                        component="a"
+                                                        href={href}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        sx={{
+                                                            display: 'block',
+                                                            borderRadius: 2,
+                                                            overflow: 'hidden',
+                                                            border: '1px solid',
+                                                            borderColor: 'divider',
+                                                            bgcolor: 'background.paper'
+                                                        }}
+                                                    >
+                                                        <Box
+                                                            component="img"
+                                                            src={href}
+                                                            alt={name}
+                                                            sx={{ display: 'block', width: '100%', height: 120, objectFit: 'cover' }}
+                                                        />
+                                                    </Box>
+                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }} noWrap>
+                                                        {name}
+                                                    </Typography>
+                                                </Box>
+                                            );
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={index}
+                                                variant="outlined"
+                                                size="small"
+                                                href={href}
+                                                target="_blank"
+                                                sx={{ textTransform: 'none' }}
+                                            >
+                                                {name}
+                                            </Button>
+                                        );
+                                    })}
+                                </Box>
+                            </Box>
+                        )}
+
                         {/* Timeline */}
                         <Box sx={{ mb: 3 }}>
                             <Typography variant="h6" gutterBottom>
@@ -284,68 +361,69 @@ const ResolutionPage = () => {
                                 <Typography variant="h6" gutterBottom>
                                     Resolution Workflow
                                 </Typography>
-                                <Grid container spacing={2}>
-                                    <Grid item xs={12} md={6}>
-                                        <FormControl fullWidth size="small">
-                                            <InputLabel>Category</InputLabel>
-                                            <Select
-                                                value={resolutionData.category}
-                                                onChange={(e) => setResolutionData({...resolutionData, category: e.target.value})}
-                                            >
-                                                <MenuItem value="Hardware">Hardware</MenuItem>
-                                                <MenuItem value="Software">Software</MenuItem>
-                                                <MenuItem value="Network">Network</MenuItem>
-                                                <MenuItem value="User Error">User Error</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <FormControl fullWidth size="small">
-                                            <InputLabel>Resolution Code</InputLabel>
-                                            <Select
-                                                value={resolutionData.resolutionCode}
-                                                onChange={(e) => setResolutionData({...resolutionData, resolutionCode: e.target.value})}
-                                            >
-                                                <MenuItem value="FIXED">Fixed</MenuItem>
-                                                <MenuItem value="REPLACED">Replaced</MenuItem>
-                                                <MenuItem value="WORKAROUND">Workaround</MenuItem>
-                                                <MenuItem value="ESCALATED">Escalated</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            label="Time Spent (hours)"
-                                            type="number"
-                                            size="small"
-                                            value={resolutionData.timeSpent}
-                                            onChange={(e) => setResolutionData({...resolutionData, timeSpent: e.target.value})}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            label="Parts Used"
-                                            size="small"
-                                            value={resolutionData.partsUsed}
-                                            onChange={(e) => setResolutionData({...resolutionData, partsUsed: e.target.value})}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            fullWidth
-                                            multiline
-                                            rows={3}
-                                            label="Next Steps"
-                                            size="small"
-                                            value={resolutionData.nextSteps}
-                                            onChange={(e) => setResolutionData({...resolutionData, nextSteps: e.target.value})}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Button 
-                                            variant="contained" 
+                                <Box
+                                    sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                                        gap: 2
+                                    }}
+                                >
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        label="Category"
+                                        size="small"
+                                        value={resolutionData.category}
+                                        onChange={(e) => setResolutionData({ ...resolutionData, category: e.target.value })}
+                                    >
+                                        <MenuItem value="Hardware">Hardware</MenuItem>
+                                        <MenuItem value="Software">Software</MenuItem>
+                                        <MenuItem value="Network">Network</MenuItem>
+                                        <MenuItem value="User Error">User Error</MenuItem>
+                                    </TextField>
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        label="Resolution Code"
+                                        size="small"
+                                        value={resolutionData.resolutionCode}
+                                        onChange={(e) => setResolutionData({ ...resolutionData, resolutionCode: e.target.value })}
+                                    >
+                                        <MenuItem value="FIXED">Fixed</MenuItem>
+                                        <MenuItem value="REPLACED">Replaced</MenuItem>
+                                        <MenuItem value="WORKAROUND">Workaround</MenuItem>
+                                        <MenuItem value="ESCALATED">Escalated</MenuItem>
+                                    </TextField>
+                                    <TextField
+                                        fullWidth
+                                        label="Time Spent (hours)"
+                                        type="number"
+                                        size="small"
+                                        value={resolutionData.timeSpent}
+                                        onChange={(e) => setResolutionData({ ...resolutionData, timeSpent: e.target.value })}
+                                        sx={{ gridColumn: '1 / -1' }}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        label="Parts Used"
+                                        size="small"
+                                        value={resolutionData.partsUsed}
+                                        onChange={(e) => setResolutionData({ ...resolutionData, partsUsed: e.target.value })}
+                                        sx={{ gridColumn: '1 / -1' }}
+                                    />
+                                    <TextField
+                                        fullWidth
+                                        multiline
+                                        rows={3}
+                                        label="Next Steps"
+                                        size="small"
+                                        value={resolutionData.nextSteps}
+                                        onChange={(e) => setResolutionData({ ...resolutionData, nextSteps: e.target.value })}
+                                        sx={{ gridColumn: '1 / -1' }}
+                                    />
+                                    <Box sx={{ gridColumn: '1 / -1' }}>
+                                        <Button
+                                            variant="contained"
                                             color="success"
                                             startIcon={<CheckIcon />}
                                             onClick={handleResolve}
@@ -354,18 +432,18 @@ const ResolutionPage = () => {
                                         >
                                             Mark as Resolved
                                         </Button>
-                                    </Grid>
-                                </Grid>
+                                    </Box>
+                                </Box>
                             </Box>
                         )}
                     </Paper>
                 </Grid>
 
-                {/* Right: Communication Panel */}
-                <Grid item xs={12} md={4}>
+                {/* Communication Panel */}
+                <Grid item xs={12}>
                     <Grid container spacing={2}>
                         {/* Internal Notes */}
-                        <Grid item xs={12}>
+                        <Grid item xs={12} md={4}>
                             <Card sx={{ p: { xs: 2, sm: 3 }, background: (theme) => theme.palette.action.hover }}>
                                 <Typography variant="h6" gutterBottom>
                                     Internal Notes (IT Only)
@@ -383,7 +461,7 @@ const ResolutionPage = () => {
                                     variant="outlined" 
                                     startIcon={<SaveIcon />}
                                     onClick={handleSaveInternalNotes}
-                                    sx={{ mt: 1, width: { xs: '100%', sm: 'auto' } }}
+                                    sx={{ mt: 2, width: { xs: '100%', sm: 'auto' } }}
                                 >
                                     Save Notes
                                 </Button>
@@ -391,7 +469,7 @@ const ResolutionPage = () => {
                         </Grid>
 
                         {/* Customer Updates */}
-                        <Grid item xs={12}>
+                        <Grid item xs={12} md={4}>
                             <Card sx={{ p: { xs: 2, sm: 3 } }}>
                                 <Typography variant="h6" gutterBottom>
                                     Customer Update
@@ -418,7 +496,7 @@ const ResolutionPage = () => {
                         </Grid>
 
                         {/* Contact Info */}
-                        <Grid item xs={12}>
+                        <Grid item xs={12} md={4}>
                             <Card sx={{ p: { xs: 2, sm: 3 } }}>
                                 <Typography variant="h6" gutterBottom>
                                     Contact Information
@@ -431,10 +509,10 @@ const ResolutionPage = () => {
                                         <strong>Email:</strong> {ticket.requester?.email || 'N/A'}
                                     </Typography>
                                     <Typography variant="body2" gutterBottom>
-                                        <strong>Phone:</strong> {ticket.requester?.phone || 'N/A'}
+                                        <strong>Phone:</strong> {ticket.requester?.phone || 'Not provided'}
                                     </Typography>
                                     <Typography variant="body2">
-                                        <strong>Location:</strong> {ticket.location || 'N/A'}
+                                        <strong>Location:</strong> {formatLocation(ticket)}
                                     </Typography>
                                 </Box>
                                 <Button 

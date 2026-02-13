@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
     Container, Typography, Box, Grid, Card, CardContent, Chip, Avatar,
     Button, IconButton, Tooltip, Badge, LinearProgress, Paper, Tabs, Tab,
@@ -23,6 +23,8 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuth } from '../../auth/context/AuthContext';
 import axios from 'axios';
+import { getStatusColor } from '../../../utils/ticketStatus';
+import { formatCompanyLabel, getCompanyById, getCompanyDisplayName } from '../../../utils/companies';
 
 const TechWorkspace = () => {
     const { user, updateUser } = useAuth();
@@ -101,6 +103,13 @@ const TechWorkspace = () => {
         const slaStatus = getSLABadge(ticket.priority, ticket.createdAt);
         const isSLABreach = slaStatus === 'SLA BREACH';
         const isAssignedToMe = ticket.technician === user?._id || (ticket.technician?._id === user?._id);
+        const company = {
+            ...(ticket.companyId ? getCompanyById(ticket.companyId) : {}),
+            ...(ticket.company || {})
+        };
+        const companyLabel = (company?.initials || company?.name || company?.amharicName)
+            ? formatCompanyLabel(company)
+            : 'Unknown Company';
 
         const handleAccept = async (e) => {
             e.stopPropagation();
@@ -154,7 +163,7 @@ const TechWorkspace = () => {
                                     {ticket.title}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                    {ticket.company?.initials || 'Unknown'} • Ticket #{ticket._id?.slice(-6)}
+                                    {companyLabel} • Ticket #{ticket._id?.slice(-6)}
                                 </Typography>
                             </Box>
                         </Box>
@@ -186,6 +195,7 @@ const TechWorkspace = () => {
                                 label={ticket.status}
                                 size="small"
                                 variant="outlined"
+                                color={getStatusColor(ticket.status)}
                             />
                         </Box>
 
@@ -414,12 +424,23 @@ const TechWorkspace = () => {
                                         Current Context
                                     </Typography>
                                     <Box sx={{ mb: 2 }}>
-                                        <Typography variant="subtitle2" color="primary">
-                                            {selectedTicket.company?.name || 'Unknown Company'}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {selectedTicket.company?.initials || 'N/A'}
-                                        </Typography>
+                                        {(() => {
+                                            const company = {
+                                                ...(selectedTicket.companyId ? getCompanyById(selectedTicket.companyId) : {}),
+                                                ...(selectedTicket.company || {})
+                                            };
+                                            const displayName = getCompanyDisplayName(company);
+                                            return (
+                                                <>
+                                                    <Typography variant="subtitle2" color="primary">
+                                                        {displayName || 'Unknown Company'}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {company?.initials || 'N/A'}
+                                                    </Typography>
+                                                </>
+                                            );
+                                        })()}
                                     </Box>
                                     <Divider sx={{ my: 2 }} />
                                     <Box>
@@ -427,10 +448,10 @@ const TechWorkspace = () => {
                                             <strong>Employee:</strong> {selectedTicket.requester?.name || 'N/A'}
                                         </Typography>
                                         <Typography variant="body2" gutterBottom>
-                                            <strong>Location:</strong> {selectedTicket.location || 'N/A'}
+                                            <strong>Location:</strong> {selectedTicket.buildingWing || selectedTicket.floorNumber || selectedTicket.roomNumber ? `${selectedTicket.buildingWing || ''}${selectedTicket.floorNumber ? `, Floor ${selectedTicket.floorNumber}` : ''}${selectedTicket.roomNumber ? `, Room ${selectedTicket.roomNumber}` : ''}`.replace(/^,\s*/,'') : (selectedTicket.location || 'N/A')}
                                         </Typography>
                                         <Typography variant="body2">
-                                            <strong>IT Policy:</strong> {selectedTicket.company?.initials} Standard Procedures
+                                            <strong>IT Policy:</strong> {(selectedTicket.company?.initials || getCompanyById(selectedTicket.companyId)?.initials || 'Company')} Standard Procedures
                                         </Typography>
                                     </Box>
                                 </Card>
@@ -444,3 +465,4 @@ const TechWorkspace = () => {
 };
 
 export default TechWorkspace;
+
