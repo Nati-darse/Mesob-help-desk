@@ -6,9 +6,10 @@ import { useAuth } from '../../auth/context/AuthContext';
 import FeedbackForm from '../components/FeedbackForm';
 import { ROLES } from '../../../constants/roles';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { getStatusColor, getReviewStatusColor } from '../../../utils/ticketStatus';
 
 const priorityColors = { Low: 'success', Medium: 'info', High: 'primary', Critical: 'error' };
-const statusColors = { New: 'primary', Assigned: 'secondary', 'In Progress': 'info', Resolved: 'success', Closed: 'default' };
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const TicketDetails = () => {
     const { id } = useParams();
@@ -120,7 +121,7 @@ const TicketDetails = () => {
                     <Paper elevation={0} sx={{ p: { xs: 2, md: 4 }, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'start', sm: 'center' }, gap: 2, mb: 2 }}>
                             <Typography variant="h4" sx={{ fontWeight: 'bold', fontSize: { xs: '1.5rem', md: '2.125rem' } }}>{ticket.title}</Typography>
-                            <Chip label={ticket.status} color={statusColors[ticket.status]} />
+                            <Chip label={ticket.status} color={getStatusColor(ticket.status)} />
                         </Box>
 
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 4 }}>
@@ -136,19 +137,62 @@ const TicketDetails = () => {
                         {ticket.attachments && ticket.attachments.length > 0 && (
                             <Box sx={{ mb: 4 }}>
                                 <Typography variant="h6" gutterBottom>Attachments</Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    {ticket.attachments.map((file, index) => (
-                                        <Button
-                                            key={index}
-                                            variant="outlined"
-                                            size="small"
-                                            href={`/${file}`}
-                                            target="_blank"
-                                            sx={{ textTransform: 'none' }}
-                                        >
-                                            View File {index + 1}
-                                        </Button>
-                                    ))}
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                    {ticket.attachments.map((file, index) => {
+                                        const filePath = typeof file === 'string'
+                                            ? file
+                                            : (file.path || file.filename);
+                                        const href = filePath.startsWith('http')
+                                            ? filePath
+                                            : `${API_BASE_URL.replace(/\/$/, '')}/${filePath.replace(/^\/+/, '')}`;
+                                        const name = typeof file === 'string' ? `File ${index + 1}` : (file.filename || `File ${index + 1}`);
+                                        const type = typeof file === 'string' ? '' : (file.mimetype || '');
+                                        const isImage = type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filePath);
+
+                                        if (isImage) {
+                                            return (
+                                                <Box key={index} sx={{ width: 160 }}>
+                                                    <Box
+                                                        component="a"
+                                                        href={href}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        sx={{
+                                                            display: 'block',
+                                                            borderRadius: 2,
+                                                            overflow: 'hidden',
+                                                            border: '1px solid',
+                                                            borderColor: 'divider',
+                                                            bgcolor: 'background.paper'
+                                                        }}
+                                                    >
+                                                        <Box
+                                                            component="img"
+                                                            src={href}
+                                                            alt={name}
+                                                            sx={{ display: 'block', width: '100%', height: 120, objectFit: 'cover' }}
+                                                        />
+                                                    </Box>
+                                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }} noWrap>
+                                                        {name}
+                                                    </Typography>
+                                                </Box>
+                                            );
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={index}
+                                                variant="outlined"
+                                                size="small"
+                                                href={href}
+                                                target="_blank"
+                                                sx={{ textTransform: 'none' }}
+                                            >
+                                                {name}
+                                            </Button>
+                                        );
+                                    })}
                                 </Box>
                             </Box>
                         )}
@@ -209,6 +253,24 @@ const TicketDetails = () => {
                                 {ticket.feedback && (
                                     <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
                                         "{ticket.feedback}"
+                                    </Typography>
+                                    )}
+                            </Box>
+                        )}
+
+                        {ticket.reviewStatus && ticket.reviewStatus !== 'None' && (
+                            <Box sx={{ mt: 3, p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Review Status
+                                </Typography>
+                                <Chip
+                                    label={ticket.reviewStatus}
+                                    color={getReviewStatusColor(ticket.reviewStatus)}
+                                    size="small"
+                                />
+                                {ticket.reviewNotes && (
+                                    <Typography variant="body2" sx={{ mt: 1 }}>
+                                        {ticket.reviewNotes}
                                     </Typography>
                                 )}
                             </Box>

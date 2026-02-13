@@ -4,7 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useTickets } from '../hooks/useTickets';
 import { ROLES } from '../../../constants/roles';
-import { getCompanyById } from '../../../utils/companies';
+import { formatCompanyLabel, getCompanyById } from '../../../utils/companies';
 import TruncatedText from '../../../components/TruncatedText';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +37,7 @@ const TicketRow = memo(({ ticket, user }) => {
             {user?.role !== ROLES.EMPLOYEE && (
                 <TableCell sx={{ maxWidth: 200, display: { xs: 'none', sm: 'table-cell' } }}>
                     <TruncatedText
-                        text={getCompanyById(ticket.companyId || 1).name}
+                        text={formatCompanyLabel(getCompanyById(ticket.companyId || 1))}
                         variant="body2"
                         sx={{ color: 'text.secondary' }}
                     />

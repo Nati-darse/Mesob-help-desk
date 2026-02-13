@@ -45,9 +45,7 @@ const CreateTicket = () => {
         }
 
         try {
-            await axios.post('/api/tickets', formDataToSend, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            await axios.post('/api/tickets', formDataToSend);
             setSuccess(true);
             setTimeout(() => navigate('/tickets'), 2000);
         } catch (error) {
