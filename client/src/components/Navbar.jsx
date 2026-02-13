@@ -16,7 +16,8 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    useMediaQuery
+    useMediaQuery,
+    Badge
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -29,19 +30,21 @@ import {
     AdminPanelSettings as AdminIcon,
     Person as PersonIcon,
     Logout as LogoutIcon,
-    Login as LoginIcon
+    Login as LoginIcon,
+    NotificationsNone as NotificationsIcon
 } from '@mui/icons-material';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { useColorMode } from '../context/ColorModeContext';
-import { getCompanyById } from '../utils/companies';
+import { formatCompanyLabel, getCompanyById } from '../utils/companies';
 import TruncatedText from './TruncatedText';
 import LanguageSelector from './LanguageSelector';
 import logo from '../assets/logo.png';
-import { ROLES } from '../constants/roles';
+import { ROLES, ROLE_LABELS } from '../constants/roles';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { resolveMediaUrl } from '../utils/media';
 
-const Navbar = () => {
+const Navbar = ({ unreadCount = 0, onOpenNotifications }) => {
     const { user, logout } = useAuth();
     const { mode, toggleColorMode } = useColorMode();
     const navigate = useNavigate();
@@ -73,6 +76,11 @@ const Navbar = () => {
 
     const handleMobileNavOpen = () => setMobileNavOpen(true);
     const handleMobileNavClose = () => setMobileNavOpen(false);
+    const handleOpenNotifications = () => {
+        if (onOpenNotifications) {
+            onOpenNotifications();
+        }
+    };
 
     const handleNav = (path) => {
         navigate(path);
@@ -89,7 +97,9 @@ const Navbar = () => {
         ...(user
             ? [
                 { label: t('nav.dashboard'), to: '/redirect', icon: <DashboardIcon /> },
-                { label: t('nav.tickets'), to: '/tickets', icon: <TicketIcon /> }
+                ...(user?.role === ROLES.TECHNICIAN
+                    ? []
+                    : [{ label: t('nav.tickets'), to: '/tickets', icon: <TicketIcon /> }])
             ]
             : [{ label: t('auth.login'), to: '/login', icon: <LoginIcon /> }])
     ];
@@ -121,7 +131,7 @@ const Navbar = () => {
                             <>
                                 <Typography variant="h6" sx={{ color: 'divider', fontWeight: 300 }}>|</Typography>
                                 <TruncatedText
-                                    text={company.name}
+                                    text={formatCompanyLabel(company)}
                                     variant="h6"
                                     sx={{ color: 'text.secondary', fontWeight: 600 }}
                                     maxWidth="300px"
@@ -149,7 +159,9 @@ const Navbar = () => {
                                     <Button color="secondary" component={RouterLink} to="/admin" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 700 }}>SuperAdmin</Button>
                                 )}
                                 <Button color="primary" component={RouterLink} to="/redirect" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{t('nav.dashboard')}</Button>
-                                <Button color="primary" component={RouterLink} to="/tickets" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{t('nav.tickets')}</Button>
+                                {user?.role !== ROLES.TECHNICIAN && (
+                                    <Button color="primary" component={RouterLink} to="/tickets" sx={{ px: { xs: 1, sm: 2 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{t('nav.tickets')}</Button>
+                                )}
 
                                 {/* Dark Mode Toggle */}
                                 <Tooltip title={mode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
@@ -158,12 +170,21 @@ const Navbar = () => {
                                     </IconButton>
                                 </Tooltip>
 
+                                {/* Notification Center */}
+                                <Tooltip title="Notifications">
+                                    <IconButton onClick={handleOpenNotifications} color="inherit" sx={{ ml: 0.5 }}>
+                                        <Badge color="error" badgeContent={unreadCount} invisible={unreadCount === 0}>
+                                            <NotificationsIcon />
+                                        </Badge>
+                                    </IconButton>
+                                </Tooltip>
+
                                 {/* Language Selector */}
                                 <LanguageSelector />
 
                                 {/* Profile Avatar with Dropdown */}
                                 <Avatar
-                                    src={user.profilePic}
+                                    src={resolveMediaUrl(user.profilePic)}
                                     alt={user.name}
                                     onClick={handleMenuOpen}
                                     sx={{
@@ -209,7 +230,7 @@ const Navbar = () => {
                                             {user.name}
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                            {user.role}
+                                            {ROLE_LABELS[user.role] || user.role}
                                         </Typography>
                                     </Box>
                                     <Divider />
@@ -268,6 +289,16 @@ const Navbar = () => {
                         <>
                             <Divider />
                             <List>
+                                <ListItem disablePadding>
+                                    <ListItemButton onClick={() => { handleMobileNavClose(); handleOpenNotifications(); }}>
+                                        <ListItemIcon>
+                                            <Badge color="error" badgeContent={unreadCount} invisible={unreadCount === 0}>
+                                                <NotificationsIcon />
+                                            </Badge>
+                                        </ListItemIcon>
+                                        <ListItemText primary="Notifications" />
+                                    </ListItemButton>
+                                </ListItem>
                                 <ListItem disablePadding>
                                     <ListItemButton onClick={() => handleNav('/profile')}>
                                         <ListItemIcon><PersonIcon /></ListItemIcon>

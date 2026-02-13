@@ -9,14 +9,12 @@ const RoleBasedRedirect = () => {
 
   useEffect(() => {
     if (!user) {
-      console.log('🔍 RoleBasedRedirect - No user, redirecting to login');
       navigate('/login');
       return;
     }
 
     // Redirect based on user role
     const normalizedRole = String(user.role).trim();
-    console.log('🔍 RoleBasedRedirect - User Role:', normalizedRole);
 
     let redirectPath = '/login';
 
@@ -29,13 +27,12 @@ const RoleBasedRedirect = () => {
       redirectPath = '/tech';
     } else if (normalizedRole === 'Team Lead') {
       redirectPath = '/team-lead';
-    } else if (normalizedRole === 'Worker') {
+    } else if (normalizedRole === 'Employee' || normalizedRole === 'Worker') {
       redirectPath = '/portal';
     } else {
       console.warn('⚠️ Unknown role:', normalizedRole);
     }
 
-    console.log('🚀 RoleBasedRedirect - Redirecting to:', redirectPath);
     navigate(redirectPath, { replace: true });
   }, [user, navigate]);
 

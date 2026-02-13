@@ -4,8 +4,7 @@ export const ROLES = {
     ADMIN: 'Admin',
     TECHNICIAN: 'Technician', // Fixed: Changed from 'TECHNICIAN' to 'Technician'
     TEAM_LEAD: 'Team Lead',
-    WORKER: 'Worker',
-    EMPLOYEE: 'Worker', // Alias for Worker
+    EMPLOYEE: 'Employee',
 };
 
 export const ROLE_LABELS = {
@@ -14,6 +13,8 @@ export const ROLE_LABELS = {
     'Admin': 'Administrator',
     'Technician': 'IT Technician', // Fixed: Changed from 'TECHNICIAN' to 'Technician'
     'Team Lead': 'Team Leader',
+    'Employee': 'Employee',
+    // Legacy fallback for older records
     'Worker': 'Employee',
 };
 
@@ -23,8 +24,9 @@ export const ROLE_ROUTES = {
     'Admin': '/admin/dashboard',
     'Technician': '/tech', // Fixed: Changed from 'TECHNICIAN' to 'Technician'
     'Team Lead': '/team-lead',
+    'Employee': '/portal',
+    // Legacy fallback for older records
     'Worker': '/portal',
-    'Employee': '/portal', // Alias for Worker
 };
 
 // Role hierarchy for permission checking
@@ -34,6 +36,8 @@ export const ROLE_HIERARCHY = {
     'Admin': 3,
     'Team Lead': 2,
     'Technician': 1,
+    'Employee': 0,
+    // Legacy fallback
     'Worker': 0
 };
 

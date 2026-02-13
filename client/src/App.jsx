@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Box, ThemeProvider, CssBaseline } from '@mui/material';
+import { Box, ThemeProvider, CssBaseline, Snackbar, Alert, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, IconButton, Typography } from '@mui/material';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { io } from 'socket.io-client';
 import { useEffect, useRef, useState } from 'react';
@@ -63,6 +63,28 @@ const queryClient = new QueryClient({
   }
 });
 
+const playUrgentBeep = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.05;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    setTimeout(() => {
+      osc.stop();
+      ctx.close();
+    }, 200);
+  } catch {
+    // ignore
+  }
+};
+
 const AppContent = () => {
   const { mode } = useColorMode();
   const { user, updateUser } = useAuth();
@@ -72,6 +94,42 @@ const AppContent = () => {
   const theme = getTheme(mode, isSystemAdmin, isSuperAdmin);
   const qc = useQueryClient();
   const socketRef = useRef(null);
+  const [broadcastQueue, setBroadcastQueue] = useState([]);
+  const [activeBroadcast, setActiveBroadcast] = useState(null);
+  const [broadcastHistory, setBroadcastHistory] = useState([]);
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
+  const getBroadcastStorageKey = () => {
+    const userId = user?._id || 'anon';
+    const role = user?.role || 'unknown';
+    const company = user?.companyId || '0';
+    return `mesob_broadcast_history_${userId}_${role}_${company}`;
+  };
+
+  const isBroadcastRelevant = (notification) => {
+    if (!notification || !user) return false;
+    const targetType = notification.targetType;
+    const targetValue = notification.targetValue;
+    const targetCompanyId = notification.targetCompanyId;
+
+    if (targetType === 'all') return true;
+
+    if (targetType === 'company') {
+      const companyTarget = targetValue ?? targetCompanyId;
+      return companyTarget != null && String(user.companyId) === String(companyTarget);
+    }
+
+    if (targetType === 'role' && targetValue) {
+      if (String(user.role) !== String(targetValue)) return false;
+      if (targetCompanyId == null) return true;
+      return String(user.companyId) === String(targetCompanyId);
+    }
+
+    if (targetType === 'specific' && targetValue) {
+      return String(user._id) === String(targetValue);
+    }
+
+    return false;
+  };
 
   // Check if user needs to change password on first login
   useEffect(() => {
@@ -79,6 +137,41 @@ const AppContent = () => {
       setShowPasswordDialog(true);
     }
   }, [user]);
+
+  const unreadCount = broadcastHistory.filter((item) => !item?.read).length;
+
+  const handleOpenNotifications = () => {
+    setNotificationCenterOpen(true);
+  };
+
+  useEffect(() => {
+    if (!activeBroadcast && broadcastQueue.length > 0) {
+      const next = broadcastQueue[0];
+      setActiveBroadcast(next);
+      setBroadcastQueue((prev) => prev.slice(1));
+      setBroadcastHistory((prev) => {
+        const nextItem = { ...next, read: false };
+        const updated = [nextItem, ...prev];
+        try {
+          localStorage.setItem(getBroadcastStorageKey(), JSON.stringify(updated.slice(0, 50)));
+        } catch (err) {
+          // ignore storage failures
+        }
+        return updated;
+      });
+
+      if (next?.priority === 'error') {
+        try {
+          playUrgentBeep();
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [broadcastQueue, activeBroadcast]);
 
   const handlePasswordChangeSuccess = () => {
     setShowPasswordDialog(false);
@@ -92,11 +185,56 @@ const AppContent = () => {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
+      setBroadcastQueue([]);
+      setActiveBroadcast(null);
+      setBroadcastHistory([]);
+      setNotificationCenterOpen(false);
       return;
     }
-    const s = io(import.meta.env.VITE_SERVER_URL || 'https://mesob-help-desk.onrender.com', {
+
+    try {
+      const stored = localStorage.getItem(getBroadcastStorageKey());
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(isBroadcastRelevant).map((item) => ({
+            ...item,
+            read: Boolean(item.read)
+          }));
+          setBroadcastHistory(filtered);
+        } else {
+          setBroadcastHistory([]);
+        }
+      } else {
+        setBroadcastHistory([]);
+      }
+    } catch {
+      // ignore
+    }
+    const socketBaseUrl = import.meta.env.VITE_SERVER_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    let authToken = user?.token;
+    if (!authToken) {
+      try {
+        const stored = JSON.parse(sessionStorage.getItem('mesob_user') || '{}');
+        authToken = stored?.token;
+      } catch {
+        authToken = null;
+      }
+    }
+    if (!authToken) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      return;
+    }
+
+    const s = io(socketBaseUrl, {
       transports: ['websocket'],
-      auth: { companyId: user.companyId },
+      auth: {
+        token: authToken,
+        companyId: user.companyId
+      },
       extraHeaders: { 'x-tenant-id': String(user.companyId || '') }
     });
     socketRef.current = s;
@@ -109,19 +247,13 @@ const AppContent = () => {
     });
 
     s.on('broadcast_message', (notification) => {
-      // Filter if relevant to me
-      let isRelevant = false;
-      if (notification.targetType === 'all') isRelevant = true;
-      if (notification.targetType === 'company' && String(user.companyId) === String(notification.targetValue)) isRelevant = true;
-      if (notification.targetType === 'role' && user.role === notification.targetValue) isRelevant = true;
-
-      if (isRelevant) {
-        qc.setQueryData(['notifications'], (prev) => {
-          const list = Array.isArray(prev) ? prev : [];
-          // data might come from API with _id, ensure structure
-          return [notification, ...list];
-        });
-      }
+      if (!isBroadcastRelevant(notification)) return;
+      qc.setQueryData(['notifications'], (prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        // data might come from API with _id, ensure structure
+        return [notification, ...list];
+      });
+      setBroadcastQueue((prev) => [...prev, notification]);
     });
     return () => {
       s.disconnect();
@@ -129,14 +261,26 @@ const AppContent = () => {
     };
   }, [user, qc]);
 
+  useEffect(() => {
+    if (!notificationCenterOpen) return;
+    setBroadcastHistory((prev) => {
+      const updated = prev.map((item) => ({ ...item, read: true }));
+      try {
+        localStorage.setItem(getBroadcastStorageKey(), JSON.stringify(updated.slice(0, 50)));
+      } catch (err) {
+        // ignore
+      }
+      return updated;
+    });
+  }, [notificationCenterOpen]);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <Navbar />
-          <Box component="main" sx={{ flexGrow: 1, width: '100%' }}>
-            <Routes>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Navbar unreadCount={unreadCount} onOpenNotifications={handleOpenNotifications} />
+        <Box component="main" sx={{ flexGrow: 1, width: '100%' }}>
+          <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
@@ -212,9 +356,60 @@ const AppContent = () => {
                 <Route path="/tickets/new" element={<CreateTicket />} />
                 <Route path="/tickets/:id" element={<TicketDetails />} />
               </Route>
-            </Routes>
-          </Box>
+          </Routes>
         </Box>
+      </Box>
+        {/* Global Broadcast Toasts */}
+        <Snackbar
+          open={Boolean(activeBroadcast)}
+          autoHideDuration={5000}
+          onClose={() => setActiveBroadcast(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          {activeBroadcast ? (
+            <Alert
+              severity={activeBroadcast.priority || 'info'}
+              variant="filled"
+              onClose={() => setActiveBroadcast(null)}
+              onClick={handleOpenNotifications}
+              sx={{ cursor: 'pointer' }}
+            >
+              {activeBroadcast.message || 'New broadcast message'}
+            </Alert>
+          ) : null}
+        </Snackbar>
+
+        {/* Notification Center */}
+        <Dialog
+          open={notificationCenterOpen}
+          onClose={() => setNotificationCenterOpen(false)}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle>
+            Broadcast Notifications
+            <IconButton onClick={() => setNotificationCenterOpen(false)} sx={{ position: 'absolute', right: 8, top: 8 }}>
+              X
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {broadcastHistory.length === 0 ? (
+              <Typography color="text.secondary">No broadcasts yet.</Typography>
+            ) : (
+              <List>
+                {broadcastHistory.map((item) => (
+                  <ListItem key={item._id || item.id}>
+                    <ListItemText
+                      primary={item.message || 'Broadcast'}
+                      secondary={item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* First Login Password Change Dialog */}
         {user && (
           <ChangePasswordDialog
@@ -223,7 +418,6 @@ const AppContent = () => {
             onSuccess={handlePasswordChangeSuccess}
           />
         )}
-      </Router>
     </ThemeProvider>
   );
 };
@@ -233,7 +427,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ColorModeProvider>
         <AuthProvider>
-          <AppContent />
+          <Router>
+            <AppContent />
+          </Router>
         </AuthProvider>
       </ColorModeProvider>
     </QueryClientProvider>
@@ -241,3 +437,4 @@ function App() {
 }
 
 export default App;
+

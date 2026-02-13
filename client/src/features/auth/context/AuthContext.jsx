@@ -26,9 +26,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            console.log('🔐 Attempting login for:', email);
             const res = await axios.post('/api/auth/login', { email, password });
-            console.log('✅ Login successful:', res.data.role);
 
             // Ensure profilePic is included in user data
             const userData = {
@@ -41,10 +39,16 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true, user: userData };
         } catch (error) {
-            console.error('❌ Login failed:', error.response?.data || error.message);
+            console.error('Login failed:', error.response?.data || error.message);
+            const status = error.response?.status;
+            const serverMessage = error.response?.data?.message;
+            let message = serverMessage || 'Login failed';
+            if (status === 503 || (serverMessage && serverMessage.toLowerCase().includes('maintenance'))) {
+                message = 'Maintenance mode is active. Only System Admin and Super Admin can log in right now.';
+            }
             return {
                 success: false,
-                message: error.response?.data?.message || 'Login failed'
+                message
             };
         }
     };
@@ -94,3 +98,6 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+
+
+
