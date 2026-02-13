@@ -42,7 +42,7 @@ async function verifyRoles() {
         });
 
         // Check for invalid roles
-        const validRoles = ['Worker', 'Technician', 'Team Lead', 'Admin', 'System Admin', 'Super Admin'];
+        const validRoles = ['Employee', 'Technician', 'Team Lead', 'Admin', 'System Admin', 'Super Admin'];
         const invalidUsers = allUsers.filter(user => !validRoles.includes(user.role));
 
         if (invalidUsers.length > 0) {

@@ -48,7 +48,7 @@ const testUsers = [
         email: 'ermias@eeu.com',
         password: 'emp123',
         department: 'Operations',
-        role: 'Worker',
+        role: 'Employee',
         companyId: 1, // Ethiopian Electric Utility Services
         isAvailable: false
     },
@@ -57,7 +57,7 @@ const testUsers = [
         email: 'abebe@cbe.com',
         password: 'emp123',
         department: 'Finance',
-        role: 'Worker',
+        role: 'Employee',
         companyId: 2, // Commercial Bank of Ethiopia
         isAvailable: false
     },
@@ -66,7 +66,7 @@ const testUsers = [
         email: 'sara@ethiotelecom.com',
         password: 'emp123',
         department: 'Marketing',
-        role: 'Worker',
+        role: 'Employee',
         companyId: 3, // Ethio Telecom
         isAvailable: false
     },
@@ -75,7 +75,7 @@ const testUsers = [
         email: 'daniel@aacaa.gov.et',
         password: 'emp123',
         department: 'Operations',
-        role: 'Worker',
+        role: 'Employee',
         companyId: 4, // AACAA
         isAvailable: false
     },

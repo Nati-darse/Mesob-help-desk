@@ -177,7 +177,7 @@ async function seedTickets() {
         console.log('MongoDB Connected...');
 
         // Get a user to be the requester (use the first employee)
-        const requester = await User.findOne({ role: 'Worker' });
+        const requester = await User.findOne({ role: 'Employee' });
         if (!requester) {
             console.log('⚠ No employee users found. Please run the user seeder first.');
             process.exit(1);

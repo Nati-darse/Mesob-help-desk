@@ -14,7 +14,7 @@ const testCredentials = [
     { email: 'tech@mesob.com', password: 'tech123', expectedRole: 'Technician' },
     { email: 'solomon@mesob.com', password: 'tech123', expectedRole: 'Technician' },
     { email: 'lead@mesob.com', password: 'lead123', expectedRole: 'Team Lead' },
-    { email: 'ermias@eeu.com', password: 'emp123', expectedRole: 'Worker' },
+    { email: 'ermias@eeu.com', password: 'emp123', expectedRole: 'Employee' },
 ];
 
 async function testAuthentication() {
