@@ -13,9 +13,13 @@ const express = require('express');
 const compression = require('compression');
 const morgan = require('morgan');
 const cors = require('cors');
+const path = require('path');
 const { Server } = require('socket.io');
 const http = require('http');
+const jwt = require('jsonwebtoken');
 const connectDB = require('./config/db');
+const mongoose = require('mongoose');
+const User = require('./models/User');
 const authRoutes = require('./routes/authRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -23,9 +27,14 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const technicianRoutes = require('./routes/technicianRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const adminReportRoutes = require('./routes/adminReportRoutes');
-
-// Connect to Database
-connectDB();
+const auditLogRoutes = require('./routes/auditLogRoutes');
+const systemAdminRoutes = require('./routes/systemAdminRoutes');
+const companyRoutes = require('./routes/companyRoutes');
+const { apiLimiter } = require('./middleware/rateLimiter');
+const { refreshSettings, getGlobalSettingsSync } = require('./utils/settingsCache');
+const { startBackupScheduler } = require('./utils/backupScheduler');
+const { seedCompanies } = require('./utils/companySeed');
+const { recordRequest, setSocketCount } = require('./utils/metrics');
 
 const app = express();
 const server = http.createServer(app);
@@ -85,6 +94,35 @@ const io = new Server(server, {
 
 app.set('io', io);
 
+io.use(async (socket, next) => {
+    try {
+        const token = socket.handshake.auth?.token;
+        if (!token) {
+            return next(new Error('Socket authentication failed'));
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const currentTokenVersion = Number(getGlobalSettingsSync()?.meta?.tokenVersion || 1);
+        const tokenVersion = Number(decoded?.tv || 1);
+        if (tokenVersion !== currentTokenVersion) {
+            return next(new Error('Socket authentication failed'));
+        }
+        const user = await User.findById(decoded.id).select('_id role companyId');
+        if (!user) {
+            return next(new Error('Socket authentication failed'));
+        }
+
+        socket.data.user = {
+            id: String(user._id),
+            role: user.role,
+            companyId: Number(user.companyId)
+        };
+        return next();
+    } catch (error) {
+        return next(new Error('Socket authentication failed'));
+    }
+});
+
 // Middleware
 app.use(compression());
 if (process.env.NODE_ENV !== 'production') {
@@ -92,6 +130,21 @@ if (process.env.NODE_ENV !== 'production') {
 }
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        recordRequest(Date.now() - start);
+    });
+    next();
+});
+app.use((req, res, next) => {
+    const settings = getGlobalSettingsSync();
+    if (settings.system?.debugMode) {
+        console.log(`[DEBUG] ${req.method} ${req.originalUrl}`);
+    }
+    next();
+});
 app.use((req, res, next) => {
     const h = req.headers['x-tenant-id'];
     if (h) {
@@ -117,6 +170,7 @@ const maintenanceMiddleware = require('./middleware/maintenanceMiddleware');
 // For now, let's insert a "soft" auth middleware that tries to decode token but doesn't error if missing.
 
 const { protect } = require('./middleware/authMiddleware');
+const auditMiddleware = require('./middleware/auditMiddleware');
 
 // Routes
 app.use('/api/auth', authRoutes); // Auth is always public
@@ -128,37 +182,60 @@ app.use('/api/auth', authRoutes); // Auth is always public
 // So, for protected routes:
 const checkMaint = [protect, maintenanceMiddleware];
 
-app.use('/api/tickets', checkMaint, ticketRoutes);
-app.use('/api/users', checkMaint, userRoutes);
-app.use('/api/dashboard', checkMaint, dashboardRoutes);
-app.use('/api/technician', checkMaint, technicianRoutes);
-app.use('/api/settings', checkMaint, settingsRoutes);
-app.use('/api/notifications', checkMaint, require('./routes/notificationRoutes'));
-app.use('/api/admin/reports', checkMaint, adminReportRoutes);
+app.use('/api/tickets', checkMaint, apiLimiter, auditMiddleware, ticketRoutes);
+app.use('/api/users', checkMaint, apiLimiter, auditMiddleware, userRoutes);
+app.use('/api/dashboard', checkMaint, apiLimiter, auditMiddleware, dashboardRoutes);
+app.use('/api/technician', checkMaint, apiLimiter, auditMiddleware, technicianRoutes);
+app.use('/api/settings', checkMaint, apiLimiter, auditMiddleware, settingsRoutes);
+app.use('/api/notifications', checkMaint, apiLimiter, auditMiddleware, require('./routes/notificationRoutes'));
+app.use('/api/admin/reports', checkMaint, apiLimiter, auditMiddleware, adminReportRoutes);
+app.use('/api/audit-logs', checkMaint, apiLimiter, auditMiddleware, auditLogRoutes);
+app.use('/api/system-admin', checkMaint, apiLimiter, auditMiddleware, systemAdminRoutes);
+app.use('/api/companies', checkMaint, apiLimiter, auditMiddleware, companyRoutes);
+
+// Upload error handling (multer/image-only)
+app.use((err, req, res, next) => {
+    if (err && (err.name === 'MulterError' || err.message?.toLowerCase().includes('image') || err.message?.toLowerCase().includes('boundary'))) {
+        return res.status(400).json({ message: err.message });
+    }
+    return next(err);
+});
 
 // Socket.io connection
 io.on('connection', (socket) => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
+    setSocketCount(io.engine.clientsCount);
 
-    const h = socket.handshake.headers['x-tenant-id'];
-    const a = socket.handshake.auth && socket.handshake.auth.companyId;
-    const n = Number(h || a);
-    const companyId = Number.isNaN(n) ? (h || a) : n;
+    const authUser = socket.data.user || {};
+    const companyId = Number(authUser.companyId);
+    const role = authUser.role;
+    const userId = authUser.id;
 
     if (companyId) {
         socket.join(`company:${companyId}`);
         console.log(`[Socket.IO] Client ${socket.id} joined company room: ${companyId}`);
     }
+    if (role) {
+        socket.join(`role:${role}`);
+        if (companyId) {
+            socket.join(`company:${companyId}:role:${role}`);
+        }
+    }
+    if (userId) {
+        socket.join(`user:${userId}`);
+    }
 
     socket.on('join_company', (cid) => {
-        if (cid) {
-            socket.join(`company:${cid}`);
-            console.log(`[Socket.IO] Client ${socket.id} manually joined company: ${cid}`);
+        const requestedCompany = Number(cid);
+        if (!Number.isNaN(requestedCompany) && requestedCompany === companyId) {
+            socket.join(`company:${requestedCompany}`);
+            console.log(`[Socket.IO] Client ${socket.id} manually joined company: ${requestedCompany}`);
         }
     });
 
     socket.on('disconnect', () => {
         console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+        setSocketCount(io.engine.clientsCount);
     });
 
     socket.on('error', (error) => {
@@ -173,16 +250,42 @@ app.get('/api/health', (req, res) => {
 
 // Root route for easy verification
 app.get('/', (req, res) => {
-    res.send('Mesob Help Desk API is running 🚀');
+    res.send('Mesob Help Desk API is running ðŸš€');
 });
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`✅ Socket.IO initialized and ready`);
-    console.log(`✅ Client URL: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
-    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+const startServer = async () => {
+    await connectDB();
+    mongoose.connection.on('connected', () => app.set('dbState', 'connected'));
+    mongoose.connection.on('disconnected', () => app.set('dbState', 'disconnected'));
+    mongoose.connection.on('error', () => app.set('dbState', 'error'));
 
+    server.listen(PORT, () => {
+        console.log(`âœ… Server running on port ${PORT}`);
+        console.log(`âœ… Socket.IO initialized and ready`);
+        console.log(`âœ… Client URL: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
+        console.log(`ðŸ“Š Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+
+    await refreshSettings();
+    startBackupScheduler();
+    await seedCompanies();
+
+    setInterval(async () => {
+        try {
+            const stats = await mongoose.connection.db.command({ dbStats: 1 });
+            app.set('dbStats', stats);
+        } catch (error) {
+            // ignore stats errors
+        }
+    }, 60000);
+};
+
+startServer().catch((error) => {
+    console.error('[Startup] Failed to start server:', error.message);
+    process.exit(1);
+});
 module.exports = { app, io, server };
+
+

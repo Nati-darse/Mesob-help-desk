@@ -1,16 +1,31 @@
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
+const {
+    getSmtpSettingsSync,
+    isEmailNotificationsEnabled,
+    isSmsNotificationsEnabled,
+    isCriticalAlertsEnabled
+} = require('../utils/settingsCache');
 
-// Transporter for emails
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_PORT == 465,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+const buildTransporter = (smtp) => {
+    if (smtp && smtp.host) {
+        return nodemailer.createTransport({
+            host: smtp.host,
+            port: Number(smtp.port) || 587,
+            secure: Boolean(smtp.secure),
+            auth: smtp.user ? { user: smtp.user, pass: smtp.pass || '' } : undefined,
+        });
+    }
+    return nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        secure: process.env.SMTP_PORT == 465,
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+};
 
 // Twilio Client
 const twilioClient = process.env.TWILIO_ACCOUNT_SID ? twilio(
@@ -20,14 +35,20 @@ const twilioClient = process.env.TWILIO_ACCOUNT_SID ? twilio(
 
 // @desc    Send Email Notification
 exports.sendEmail = async (to, subject, text, html) => {
-    if (!process.env.SMTP_USER || process.env.SMTP_USER === 'your_email@gmail.com') {
+    if (!isEmailNotificationsEnabled()) {
+        return;
+    }
+    const smtp = getSmtpSettingsSync();
+    const smtpUser = smtp?.user || process.env.SMTP_USER;
+    if (!smtpUser || smtpUser === 'your_email@gmail.com') {
         console.log(`[Email Simulation] To: ${to}, Subject: ${subject}`);
         return;
     }
 
     try {
+        const transporter = buildTransporter(smtp);
         await transporter.sendMail({
-            from: `"Mesob Help Desk" <${process.env.SMTP_USER}>`,
+            from: `"Mesob Help Desk" <${smtpUser}>`,
             to,
             subject,
             text,
@@ -39,7 +60,13 @@ exports.sendEmail = async (to, subject, text, html) => {
 };
 
 // @desc    Send SMS Notification
-exports.sendSMS = async (to, message) => {
+exports.sendSMS = async (to, message, options = {}) => {
+    if (!isSmsNotificationsEnabled()) {
+        return;
+    }
+    if (options.isCritical && !isCriticalAlertsEnabled()) {
+        return;
+    }
     if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
         console.log(`[SMS Simulation] To: ${to}, Message: ${message}`);
         return;

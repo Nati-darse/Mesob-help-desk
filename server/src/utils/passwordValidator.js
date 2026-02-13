@@ -1,5 +1,8 @@
+const { getGlobalSettingsSync } = require('./settingsCache');
+
 const validatePassword = (password) => {
-    const minLength = 8;
+    const settings = getGlobalSettingsSync();
+    const minLength = Number(settings.security?.passwordMinLength) || 8;
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
@@ -8,7 +11,7 @@ const validatePassword = (password) => {
     const errors = [];
 
     if (!password || password.length < minLength) {
-        errors.push('Password must be at least 8 characters long');
+        errors.push(`Password must be at least ${minLength} characters long`);
     }
     if (!hasUpperCase) {
         errors.push('Password must contain at least one uppercase letter');
