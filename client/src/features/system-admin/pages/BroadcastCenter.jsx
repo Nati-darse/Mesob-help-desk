@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Typography, Paper, TextField, MenuItem, Button, Select, FormControl, InputLabel, Grid, Alert, Snackbar, Chip, Card, CardContent, Avatar, LinearProgress } from '@mui/material';
 import { Send as SendIcon, Campaign as CampaignIcon, Group as GroupIcon, NotificationsActive as BellIcon, TrendingUp as TrendingIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
-import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { getCompanyById, formatCompanyLabel } from '../../../utils/companies';
 import { ROLE_LABELS, ROLES } from '../../../constants/roles';
 import { useAuth } from '../../auth/context/AuthContext';
 import axios from 'axios';
+import { useCompanyOptions } from '../../../hooks/useCompanyOptions';
 
 const BroadcastCenter = () => {
+    const companyOptions = useCompanyOptions();
     const { user } = useAuth();
     const isSuperAdmin = user?.role === ROLES.SUPER_ADMIN;
     const isSystemAdmin = user?.role === ROLES.SYSTEM_ADMIN;
@@ -32,9 +34,9 @@ const BroadcastCenter = () => {
 
     const describeAudience = (audience) => {
         if (audience === 'all') return 'all active users';
-        if (audience === 'company:self') return formatCompanyLabel(getCompanyById(user?.companyId));
+        if (audience === 'company:self') return formatCompanyLabel(getCompanyById(user?.companyId, companyOptions));
         if (audience.startsWith('company:')) {
-            const company = getCompanyById(audience.replace('company:', ''));
+            const company = getCompanyById(audience.replace('company:', ''), companyOptions);
             return company ? formatCompanyLabel(company) : audience;
         }
         if (audience.startsWith('role:')) {
@@ -108,7 +110,7 @@ const BroadcastCenter = () => {
     const getTargetLabel = (item) => {
         if (item.targetType === 'all') return 'All Users';
         if (item.targetType === 'company') {
-            const company = getCompanyById(Number(item.targetValue));
+            const company = getCompanyById(Number(item.targetValue), companyOptions);
             return company ? formatCompanyLabel(company) : `Company ${item.targetValue}`;
         }
         if (item.targetType === 'role') {
@@ -242,12 +244,12 @@ const BroadcastCenter = () => {
                                 )}
                                 {isSuperAdmin ? (
                                     <MenuItem value="company:self">
-                                        {formatCompanyLabel(getCompanyById(user?.companyId))}
+                                        {formatCompanyLabel(getCompanyById(user?.companyId, companyOptions))}
                                     </MenuItem>
                                 ) : (
                                     <>
                                         <MenuItem disabled>--- Specific Company ---</MenuItem>
-                                        {COMPANIES.map(c => (
+                                        {companyOptions.map((c) => (
                                             <MenuItem key={c.id} value={`company:${c.id}`}>{formatCompanyLabel(c)}</MenuItem>
                                         ))}
                                     </>

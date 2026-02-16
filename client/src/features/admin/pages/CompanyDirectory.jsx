@@ -141,7 +141,7 @@ const CompanyDirectory = () => {
                         Company Directory
                     </Typography>
                     <Typography variant="body1" color="text.secondary">
-                        Monitor all 24 government bureaus and private organizations
+                        Monitor all organizations and private entities
                     </Typography>
                 </Box>
                 <Tooltip title="Refresh Data">

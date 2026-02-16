@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Container, Paper, TextField, Button, Typography, Box, Link, Alert, MenuItem } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { COMPANIES } from '../../../utils/companies';
+import { formatCompanyLabel } from '../../../utils/companies';
 import { ROLES } from '../../../constants/roles';
 import logo from '../../../assets/logo.png';
+import { useCompanyOptions } from '../../../hooks/useCompanyOptions';
 
 const departments = [
     'IT Support',
@@ -15,6 +16,7 @@ const departments = [
 ];
 
 const Register = () => {
+    const companyOptions = useCompanyOptions();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -131,9 +133,9 @@ const Register = () => {
                         value={formData.companyId}
                         onChange={handleChange}
                     >
-                        {COMPANIES.map((option) => (
+                        {companyOptions.map((option) => (
                             <MenuItem key={option.id} value={option.id}>
-                                {option.name}
+                                {formatCompanyLabel(option)}
                             </MenuItem>
                         ))}
                     </TextField>

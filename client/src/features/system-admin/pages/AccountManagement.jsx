@@ -14,10 +14,12 @@ import {
     History as HistoryIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { getCompanyById, formatCompanyLabel } from '../../../utils/companies';
 import { ROLES, ROLE_LABELS } from '../../../constants/roles';
+import { useCompanyOptions } from '../../../hooks/useCompanyOptions';
 
 const AccountManagement = () => {
+    const companyOptions = useCompanyOptions();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [companyFilter, setCompanyFilter] = useState('all');
@@ -122,7 +124,7 @@ const AccountManagement = () => {
                             onChange={(e) => setCompanyFilter(e.target.value)}
                         >
                             <MenuItem value="all">All Organizations</MenuItem>
-                            {COMPANIES.map(comp => (
+                            {companyOptions.map(comp => (
                                 <MenuItem key={comp.id} value={comp.id}>
                                     {formatCompanyLabel(comp)}
                                 </MenuItem>
@@ -150,7 +152,7 @@ const AccountManagement = () => {
                     </TableHead>
                     <TableBody>
                         {filteredUsers.map((user) => {
-                            const company = getCompanyById(user.companyId);
+                            const company = getCompanyById(user.companyId, companyOptions);
                             const isSystemAdmin = user.role === ROLES.SYSTEM_ADMIN;
                             
                             return (

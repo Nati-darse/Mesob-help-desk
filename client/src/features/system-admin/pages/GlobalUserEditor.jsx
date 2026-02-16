@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     Typography, Button, Chip, Select, MenuItem, FormControl, InputLabel,
@@ -11,10 +11,12 @@ import {
     LockReset as ResetIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { getCompanyById, formatCompanyLabel } from '../../../utils/companies';
 import { ROLES, ROLE_LABELS } from '../../../constants/roles';
+import { useCompanyOptions } from '../../../hooks/useCompanyOptions';
 
 const GlobalUserEditor = () => {
+    const companyOptions = useCompanyOptions();
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -31,15 +33,23 @@ const GlobalUserEditor = () => {
         companyId: 1
     });
     const editableRoles = [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.TEAM_LEAD, ROLES.TECHNICIAN, ROLES.EMPLOYEE];
+    const digitalizationCompanyId = useMemo(() => {
+        const digitalization = companyOptions.find((company) => {
+            const name = String(company.name || '').toLowerCase();
+            const initials = String(company.initials || '').toUpperCase();
+            return initials === 'DB' || name.includes('digitalization');
+        });
+        return Number(digitalization?.id || 20);
+    }, [companyOptions]);
 
     // Auto-assign to Digitalization Bureau if IT role is selected
     const handleRoleChange = (role) => {
         const isITRole = role === ROLES.ADMIN || role === ROLES.TECHNICIAN;
-        setRegFormData({ 
-            ...regFormData, 
-            role, 
-            companyId: isITRole ? 19 : regFormData.companyId // Assuming Digitalization Bureau has ID 19
-        });
+        setRegFormData((prev) => ({
+            ...prev,
+            role,
+            companyId: isITRole ? digitalizationCompanyId : prev.companyId
+        }));
     };
 
     useEffect(() => {
@@ -133,7 +143,7 @@ const GlobalUserEditor = () => {
                             onChange={(e) => setCompanyFilter(e.target.value)}
                         >
                             <MenuItem value="all"><em>Show All Organizations</em></MenuItem>
-                            {COMPANIES.map(comp => (
+                            {companyOptions.map(comp => (
                                 <MenuItem key={comp.id} value={comp.id}>
                                     {formatCompanyLabel(comp)}
                                 </MenuItem>
@@ -155,7 +165,7 @@ const GlobalUserEditor = () => {
                     </TableHead>
                     <TableBody>
                         {filteredUsers.map((user) => {
-                            const company = getCompanyById(user.companyId);
+                            const company = getCompanyById(user.companyId, companyOptions);
                             return (
                                 <TableRow key={user._id}>
                                     <TableCell>
@@ -299,7 +309,11 @@ const GlobalUserEditor = () => {
                                 onChange={(e) => setRegFormData({ ...regFormData, companyId: e.target.value })}
                                 disabled={regFormData.role === ROLES.ADMIN || regFormData.role === ROLES.TECHNICIAN}
                             >
-                                {COMPANIES.map(c => <MenuItem key={c.id} value={c.id}>{formatCompanyLabel(c)}</MenuItem>)}
+                                {companyOptions.map((company) => (
+                                    <MenuItem key={company.id} value={company.id}>
+                                        {formatCompanyLabel(company)}
+                                    </MenuItem>
+                                ))}
                             </Select>
                         </FormControl>
                     </Box>

@@ -18,9 +18,11 @@ import {
     Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { useCompanyOptions } from '../../../hooks/useCompanyOptions';
 
 const GlobalTicketSearch = () => {
+    const companyOptions = useCompanyOptions();
     // Real ticket data fetch
     const [tickets, setTickets] = useState([]);
     const [filteredTickets, setFilteredTickets] = useState([]);
@@ -65,7 +67,7 @@ const GlobalTicketSearch = () => {
 
     const applyFilters = () => {
         let filtered = tickets.filter(ticket => {
-            const orgLabel = formatCompanyLabel(getCompanyById(ticket.companyId));
+            const orgLabel = formatCompanyLabel(getCompanyById(ticket.companyId, companyOptions));
             const requesterName = ticket.requester?.name || ticket.requester || '';
             const matchesSearch = !searchQuery ||
                 ticket.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,7 +100,7 @@ const GlobalTicketSearch = () => {
         setViewDialog(true);
     };
 
-    const getTicketOrganizationLabel = (ticket) => formatCompanyLabel(getCompanyById(ticket.companyId));
+    const getTicketOrganizationLabel = (ticket) => formatCompanyLabel(getCompanyById(ticket.companyId, companyOptions));
     const getRequesterName = (ticket) => ticket.requester?.name || ticket.requester || 'Unknown';
     const getAssigneeName = (ticket) => ticket.technician?.name || ticket.assignee || 'Unassigned';
 
@@ -270,7 +272,7 @@ const GlobalTicketSearch = () => {
                                 onChange={(e) => setFilters({ ...filters, company: e.target.value })}
                             >
                                 <MenuItem value="all">All Organizations</MenuItem>
-                                {COMPANIES.map(company => (
+                                {companyOptions.map((company) => (
                                     <MenuItem key={company.id} value={company.id}>
                                         {formatCompanyLabel(company)}
                                     </MenuItem>

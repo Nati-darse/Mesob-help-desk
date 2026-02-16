@@ -20,10 +20,12 @@ import {
     History as HistoryIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { COMPANIES, getCompanyById, formatCompanyLabel } from '../../../utils/companies';
+import { getCompanyById, formatCompanyLabel } from '../../../utils/companies';
 import { ROLES, ROLE_LABELS } from '../../../constants/roles';
+import { useCompanyOptions } from '../../../hooks/useCompanyOptions';
 
 const MasterUserTable = () => {
+    const companyOptions = useCompanyOptions();
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -113,7 +115,7 @@ const MasterUserTable = () => {
         const csvContent = [
             ['Name', 'Email', 'Role', 'Organization', 'Status', 'Last Login', 'Login Count', 'Tickets Created'].join(','),
             ...filteredUsers.map(user => {
-                const company = getCompanyById(user.companyId);
+                const company = getCompanyById(user.companyId, companyOptions);
                 return [
                     `"${user.name}"`,
                     user.email,
@@ -236,7 +238,7 @@ const MasterUserTable = () => {
                                 onChange={(e) => setFilters({ ...filters, company: e.target.value })}
                             >
                                 <MenuItem value="all">All Organizations</MenuItem>
-                                {COMPANIES.map(company => (
+                                {companyOptions.map((company) => (
                                     <MenuItem key={company.id} value={company.id}>
                                         {formatCompanyLabel(company)}
                                     </MenuItem>
@@ -351,7 +353,7 @@ const MasterUserTable = () => {
                     </TableHead>
                     <TableBody>
                         {paginatedUsers.map((user) => {
-                            const company = getCompanyById(user.companyId);
+                            const company = getCompanyById(user.companyId, companyOptions);
                             const daysSinceLogin = user.lastLogin ?
                                 Math.floor((new Date() - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24)) : null;
 
@@ -495,7 +497,7 @@ const MasterUserTable = () => {
                                 <strong>Role:</strong> {ROLE_LABELS[selectedUser.role] || selectedUser.role}
                             </Typography>
                             <Typography variant="body2">
-                                <strong>Organization:</strong> {formatCompanyLabel(getCompanyById(selectedUser.companyId))}
+                                <strong>Organization:</strong> {formatCompanyLabel(getCompanyById(selectedUser.companyId, companyOptions))}
                             </Typography>
                         </Box>
                     )}

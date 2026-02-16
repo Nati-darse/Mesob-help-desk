@@ -116,7 +116,7 @@ const CompanyRegistry = () => {
                     Organization Registry
                 </Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-                    Manage all 19 government bureaus and their digital infrastructure
+                    Manage all organizations and their digital infrastructure
                 </Typography>
                 
                 {/* Stats Overview */}
