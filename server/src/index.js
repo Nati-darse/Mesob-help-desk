@@ -45,7 +45,7 @@ app.enable('trust proxy');
 // ===== CORS =====
 const allowedOrigins = [
     'https://mesob-help-desk.vercel.app',
-    'https://mesob-help-desk.onrender.com', // Self
+    'https://mesob-help-desk-i26g.onrender.com', // Self
     'http://localhost:5173',
     'http://localhost:5000'
 ];
@@ -191,7 +191,7 @@ app.use('/api/notifications', checkMaint, apiLimiter, auditMiddleware, require('
 app.use('/api/admin/reports', checkMaint, apiLimiter, auditMiddleware, adminReportRoutes);
 app.use('/api/audit-logs', checkMaint, apiLimiter, auditMiddleware, auditLogRoutes);
 app.use('/api/system-admin', checkMaint, apiLimiter, auditMiddleware, systemAdminRoutes);
-app.use('/api/companies', checkMaint, apiLimiter, auditMiddleware, companyRoutes);
+app.use('/api/companies', apiLimiter, auditMiddleware, companyRoutes);
 
 // Upload error handling (multer/image-only)
 app.use((err, req, res, next) => {

@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { setRuntimeCompanies } from '../../../utils/companies';
 
 const AuthContext = createContext();
 
@@ -23,6 +24,21 @@ export const AuthProvider = ({ children }) => {
         }
         setLoading(false);
     }, []);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const hydrateCompanies = async () => {
+            try {
+                const response = await axios.get('/api/companies');
+                setRuntimeCompanies(response.data || []);
+            } catch {
+                // Ignore company hydration errors; fallback list remains available.
+            }
+        };
+
+        hydrateCompanies();
+    }, [user]);
 
     const login = async (email, password) => {
         try {

@@ -21,17 +21,27 @@ const DEFAULT_COMPANIES = [
   { companyId: 18, name: 'Ethio Post', amharicName: 'የኢትዮጵያ ፖስታ', initials: 'EP', logo: '/company-logos/EP.png' },
   { companyId: 19, name: 'Ethio Telecom', amharicName: 'ኢቲዮ ቴሌኮም', initials: 'ET', logo: '/company-logos/ET.png' },
   { companyId: 20, name: 'Digitalization Bureau', amharicName: 'ዲጂታላይዜሽን ቢሮ', initials: 'DB', logo: '/company-logos/DB.png' },
+  { companyId: 21, name: 'HR', amharicName: 'የሰው ሀብት አስተዳደር', initials: 'HR', logo: '' },
+  { companyId: 22, name: 'Finance', amharicName: 'ፋይናንስ', initials: 'FIN', logo: '' },
+  { companyId: 23, name: 'Administration', amharicName: 'አስተዳደር', initials: 'ADM', logo: '' },
+  { companyId: 24, name: 'Security', amharicName: 'ሴኩሪቲ', initials: 'SEC', logo: '' },
 ];
 
 const seedCompanies = async () => {
   try {
-    const count = await Company.countDocuments({});
-    if (count === 0) {
-      await Company.insertMany(DEFAULT_COMPANIES);
-    }
+    const operations = DEFAULT_COMPANIES.map((company) => ({
+      updateOne: {
+        filter: { companyId: company.companyId },
+        update: { $setOnInsert: company },
+        upsert: true,
+      },
+    }));
+
+    await Company.bulkWrite(operations, { ordered: false });
   } catch (error) {
     console.error('[CompanySeed] Skipped:', error.message);
   }
 };
 
 module.exports = { seedCompanies, DEFAULT_COMPANIES };
+
