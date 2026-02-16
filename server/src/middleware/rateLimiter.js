@@ -1,12 +1,12 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { getLoginAttemptsLimit, isRateLimitingEnabled } = require('../utils/settingsCache');
 
-// Login rate limiter - 5 attempts per 15 minutes
+// Login rate limiter - 5 attempts per 5 minutes
 const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 5 * 60 * 1000, // 5 minutes
     max: () => getLoginAttemptsLimit(),
     message: {
-        message: 'Too many login attempts from this IP, please try again after 15 minutes'
+        message: 'Too many login attempts from this IP, please try again after 5 minutes'
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -26,15 +26,21 @@ const registerLimiter = rateLimit({
     skip: () => !isRateLimitingEnabled(),
 });
 
-// General API rate limiter - 100 requests per 15 minutes
+// General API rate limiter - 600 requests per 15 minutes (per user when authenticated)
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    // Dashboards poll frequently; keep this high enough for normal usage.
+    max: 600,
     message: {
         message: 'Too many requests from this IP, please try again later'
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // Use user identity when available so one public/shared IP does not throttle everyone.
+    keyGenerator: (req) => {
+        const userId = req.user?._id || req.user?.id;
+        return userId ? `user:${String(userId)}` : ipKeyGenerator(req.ip);
+    },
     skip: () => !isRateLimitingEnabled(),
 });
 
