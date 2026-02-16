@@ -44,9 +44,20 @@ const AdminCommandCenter = () => {
     // Socket Synchronization
     React.useEffect(() => {
         if (user) {
+            let authToken = user?.token;
+            if (!authToken) {
+                try {
+                    const stored = JSON.parse(sessionStorage.getItem('mesob_user') || '{}');
+                    authToken = stored?.token;
+                } catch {
+                    authToken = null;
+                }
+            }
+            if (!authToken) return;
+
             const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
                 transports: ['websocket'],
-                auth: { companyId: user.companyId },
+                auth: { token: authToken, companyId: user.companyId },
                 extraHeaders: { 'x-tenant-id': String(user.companyId || '') }
             });
 
